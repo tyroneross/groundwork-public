@@ -1,11 +1,11 @@
 // ───────────────────────────────────────────────────────────────────────
-// Groundwork — typed Spec domain schema (pure zod)
+// Groundwork — typed Spec domain schema
 //
-// Ported from ProductPilot's shared/schema.ts zod block (the "Adaptive intake /
-// structured spec" section). Drizzle tables, drizzle-zod, and createInsertSchema
-// were intentionally left behind — this module imports ONLY from `zod` and is the
-// single source of truth for the structured Spec object that flows through
-// intake, doc generation, the spec linter, and the coding-agent handoff.
+// The original domain definitions were ported from ProductPilot's
+// shared/schema.ts (the "Adaptive intake / structured spec" section).
+// Validation now uses Groundwork's source-owned validation.ts. This module
+// defines the structured Spec that flows through intake, doc generation,
+// the spec linter, and the coding-agent handoff.
 //
 // Conventions:
 //   - Every entity carries a stable string `id`. Cross-references use these ids
@@ -13,7 +13,7 @@
 //   - "because" clauses on stance entries and non-goals are required by the
 //     PRD-Builder methodology and become linter rules downstream.
 //
-// Groundwork extensions (SPEC.md §"Zod Spec additions needed"):
+// Groundwork extensions:
 //   - EARS-shaped acceptance criteria on requirements (needs) and features.
 //   - observability section (SLIs/SLOs).
 //   - boundaries block (always / askFirst / never).
@@ -21,7 +21,7 @@
 // All four are OPTIONAL so specs authored before they landed still validate.
 // ───────────────────────────────────────────────────────────────────────
 
-import { z } from "zod";
+import * as v from "./validation.js";
 import {
   ArchitectureSchema,
   ProvenanceSchema,
@@ -39,18 +39,18 @@ import {
 } from "./platform-topology.js";
 import { DeclaredNewFileSchema, OwnedFileSchema, OwnedFilesSchema } from "./owned-files.js";
 
-const IdSchema = z.string().min(1);
-const Priority = z.enum(["P0", "P1", "P2", "P3"]).optional();
-const Severity = z.enum(["block", "warn", "info"]);
-const Reversibility = z.enum(["high", "medium", "low"]);
+const IdSchema = v.string().min(1);
+const Priority = v.enum(["P0", "P1", "P2", "P3"]).optional();
+const Severity = v.enum(["block", "warn", "info"]);
+const Reversibility = v.enum(["high", "medium", "low"]);
 
 // ── Groundwork extension: EARS acceptance criterion ──────────────────────
 // `ears` is a "WHEN … THE SYSTEM SHALL …" statement. Attached (optionally) to
 // requirements and features so acceptance criteria carry a stable id + an
 // EARS-shaped assertion the linter and handoff can trace to tests.
-export const EarsCriterionSchema = z.object({
+export const EarsCriterionSchema = v.object({
   id: IdSchema,
-  ears: z.string(), // "WHEN <trigger>, THE SYSTEM SHALL <response>."
+  ears: v.string(), // "WHEN <trigger>, THE SYSTEM SHALL <response>."
 });
 
 // ── Groundwork extension: NFR forcing-field template ─────────────────────
@@ -59,40 +59,40 @@ export const EarsCriterionSchema = z.object({
 // is the forcing surface: an empty field emits a TAG:UNRESOLVED prompt naming
 // what is missing, rather than silently omitting the section. Attachable at the
 // spec level (global posture) and per-feature (local override).
-export const NfrSchema = z.object({
+export const NfrSchema = v.object({
   /** Test levels + what each proves, e.g. "unit for reducers, e2e for checkout". */
-  testStrategy: z.string().optional(),
-  edgeCases: z.array(z.string()).default([]),
-  errorHandling: z.array(z.string()).default([]),
-  validation: z.array(z.string()).default([]),
-  security: z.array(z.string()).default([]),
-  accessibility: z.array(z.string()).default([]),
+  testStrategy: v.string().optional(),
+  edgeCases: v.array(v.string()).default([]),
+  errorHandling: v.array(v.string()).default([]),
+  validation: v.array(v.string()).default([]),
+  security: v.array(v.string()).default([]),
+  accessibility: v.array(v.string()).default([]),
 });
 
-export const NeedSchema = z.object({
+export const NeedSchema = v.object({
   id: IdSchema,
-  title: z.string(),
-  description: z.string().optional(),
+  title: v.string(),
+  description: v.string().optional(),
   priority: Priority,
-  source: z.string().optional(), // intake question id or "inferred"
+  source: v.string().optional(), // intake question id or "inferred"
   // Groundwork: EARS-shaped acceptance criteria for this requirement.
-  ears: z.array(EarsCriterionSchema).optional(),
+  ears: v.array(EarsCriterionSchema).optional(),
   // Groundwork: the pillar(s) this requirement serves. Empty means "not yet
   // traced to a pillar" — the trace builder reports that as a coverage gap
   // only when the Spec actually declares pillars.
-  pillarIds: z.array(IdSchema).default([]),
+  pillarIds: v.array(IdSchema).default([]),
 });
 
-export const FeatureSchema = z.object({
+export const FeatureSchema = v.object({
   id: IdSchema,
-  title: z.string(),
-  description: z.string().optional(),
-  surface: z.enum(["unspecified", "ui", "api", "tool", "command", "event", "headless"]).default("unspecified"),
+  title: v.string(),
+  description: v.string().optional(),
+  surface: v.enum(["unspecified", "ui", "api", "tool", "command", "event", "headless"]).default("unspecified"),
   priority: Priority,
-  needIds: z.array(IdSchema).default([]),
-  acceptanceCriteria: z.array(z.string()).default([]),
+  needIds: v.array(IdSchema).default([]),
+  acceptanceCriteria: v.array(v.string()).default([]),
   // Groundwork: EARS-shaped acceptance criteria for this feature.
-  ears: z.array(EarsCriterionSchema).optional(),
+  ears: v.array(EarsCriterionSchema).optional(),
   // Groundwork: per-feature NFR override. When present its non-empty fields
   // land in this feature's task definition-of-done; when absent the feature
   // inherits the spec-level `nfr` posture.
@@ -100,84 +100,84 @@ export const FeatureSchema = z.object({
   ownedFiles: OwnedFilesSchema.optional(),
 });
 
-export const PersonaSchema = z.object({
+export const PersonaSchema = v.object({
   id: IdSchema,
-  name: z.string(),
-  trigger: z.string().optional(),
-  exclusions: z.array(z.string()).default([]), // "Who they are NOT"
-  jobs: z.array(z.string()).default([]),
+  name: v.string(),
+  trigger: v.string().optional(),
+  exclusions: v.array(v.string()).default([]), // "Who they are NOT"
+  jobs: v.array(v.string()).default([]),
 });
 
-export const ScenarioSchema = z.object({
+export const ScenarioSchema = v.object({
   id: IdSchema,
   personaId: IdSchema.optional(),
-  context: z.string(),
-  goal: z.string(),
-  successSignal: z.string().optional(),
+  context: v.string(),
+  goal: v.string(),
+  successSignal: v.string().optional(),
 });
 
 // ── Groundwork extension: element-level data I/O (pointer-grade) ────────────
 // Attached to a screen element so a mockup can declare what data it needs and
 // what it shows without Groundwork owning the full persistence spec. Optional
 // so screens/elements authored before this landed still validate.
-export const ElementDataInSchema = z.object({
-  source: z.enum(["user-entry", "search", "computed", "fetched", "none"]),
-  expectedType: z.string().optional(),
-  note: z.string().optional(),
+export const ElementDataInSchema = v.object({
+  source: v.enum(["user-entry", "search", "computed", "fetched", "none"]),
+  expectedType: v.string().optional(),
+  note: v.string().optional(),
 });
-export const ElementDataOutSchema = z.object({
-  shows: z.string().optional(),
-  expectedType: z.string().optional(),
-  note: z.string().optional(),
+export const ElementDataOutSchema = v.object({
+  shows: v.string().optional(),
+  expectedType: v.string().optional(),
+  note: v.string().optional(),
 });
-export const ScreenElementSchema = z.object({
+export const ScreenElementSchema = v.object({
   id: IdSchema,
-  name: z.string(),
-  role: z.string().optional(),
+  name: v.string(),
+  role: v.string().optional(),
   // Pointer-grade: what data this element needs / displays, not an
   // authoritative persistence or data-flow spec.
   dataIn: ElementDataInSchema.optional(),
   dataOut: ElementDataOutSchema.optional(),
 });
 
-export const ScreenSchema = z.object({
+export const ScreenSchema = v.object({
   id: IdSchema,
-  name: z.string(),
-  purpose: z.string(),
-  featureIds: z.array(IdSchema).default([]),
-  primaryAction: z.string().optional(),
-  states: z.array(z.string()).default([]),
+  name: v.string(),
+  purpose: v.string(),
+  featureIds: v.array(IdSchema).default([]),
+  primaryAction: v.string().optional(),
+  states: v.array(v.string()).default([]),
   // Groundwork: per-screen design-card fields the DESIGN.md 6-field card needs
   // (purpose/elements/data/states/interactions/rationale). Both optional so
   // screens authored before they landed still validate.
   // UI elements on the screen; `role` is a free-form affordance hint.
-  elements: z.array(ScreenElementSchema).optional(),
+  elements: v.array(ScreenElementSchema).optional(),
   // Data the screen reads/writes; `source` is a free-form origin hint
   // (e.g. a dataPoint id, an API path, "local", …).
-  data: z.array(z.object({
-    field: z.string(),
-    source: z.string().optional(),
+  data: v.array(v.object({
+    field: v.string(),
+    source: v.string().optional(),
   })).optional(),
   ownedFiles: OwnedFilesSchema.optional(),
 });
 
-export const UXFlowSchema = z.object({
+export const UXFlowSchema = v.object({
   id: IdSchema,
-  name: z.string(),
-  steps: z.array(z.string()).default([]),
-  screenIds: z.array(IdSchema).default([]),
+  name: v.string(),
+  steps: v.array(v.string()).default([]),
+  screenIds: v.array(IdSchema).default([]),
 });
 
-export const DataPointSchema = z.object({
+export const DataPointSchema = v.object({
   id: IdSchema,
-  name: z.string(),
-  type: z.string(), // free-form: "string", "uuid", "decimal(12,2)", etc.
-  description: z.string().optional(),
-  pii: z.boolean().default(false),
+  name: v.string(),
+  type: v.string(), // free-form: "string", "uuid", "decimal(12,2)", etc.
+  description: v.string().optional(),
+  pii: v.boolean().default(false),
   // Required when pii=true. Linter treats missing handlingNote as a non-waivable
   // block. Schema does NOT enforce here; the linter is the surface that explains
   // the policy.
-  handlingNote: z.string().optional(),
+  handlingNote: v.string().optional(),
 });
 
 // ── Groundwork extension: pointer-grade entity/data-model layer ────────────
@@ -186,23 +186,23 @@ export const DataPointSchema = z.object({
 // where — NOT an authoritative migration or data-flow specification; that
 // detail lives downstream in build-loop. Optional/additive so existing specs
 // (which carry no dataModel) still validate.
-export const DataModelFieldSchema = z.object({
-  name: z.string(),
-  type: z.string().optional(),
-  note: z.string().optional(),
+export const DataModelFieldSchema = v.object({
+  name: v.string(),
+  type: v.string().optional(),
+  note: v.string().optional(),
 });
-export const DataModelEntitySchema = z.object({
+export const DataModelEntitySchema = v.object({
   id: IdSchema,
-  name: z.string(),
-  description: z.string().optional(),
-  fields: z.array(DataModelFieldSchema).default([]),
-  readByFeatureIds: z.array(IdSchema).optional(),
-  writtenByFeatureIds: z.array(IdSchema).optional(),
+  name: v.string(),
+  description: v.string().optional(),
+  fields: v.array(DataModelFieldSchema).default([]),
+  readByFeatureIds: v.array(IdSchema).optional(),
+  writtenByFeatureIds: v.array(IdSchema).optional(),
   // Free-form pointers into screen elements (e.g. "screen-today:Current streak
   // counter") rather than a strict IdSchema, since screen elements don't carry
   // their own stable id.
-  elementRefs: z.array(z.string()).optional(),
-  ownedFiles: z.array(OwnedFileSchema).default([]),
+  elementRefs: v.array(v.string()).optional(),
+  ownedFiles: v.array(OwnedFileSchema).default([]),
 });
 
 const SECRET_VALUE_PATTERNS: readonly RegExp[] = [
@@ -243,21 +243,21 @@ export function externalManualActionSecretReason(value: string): string | undefi
   return undefined;
 }
 
-export const ExternalManualActionSchema = z.object({
+export const ExternalManualActionSchema = v.object({
   id: IdSchema,
-  surface: z.string().min(1),
-  action: z.string().min(1),
+  surface: v.string().min(1),
+  action: v.string().min(1),
   // A name such as STRIPE_SECRET_KEY or "HealthKit read permission" — never
   // the credential/permission value itself.
-  requiredValue: z.string().min(1),
-  appDestination: z.string().min(1),
-  verification: z.string().min(1),
+  requiredValue: v.string().min(1),
+  appDestination: v.string().min(1),
+  verification: v.string().min(1),
 }).strict().superRefine((action, ctx) => {
   for (const field of ["id", "surface", "action", "requiredValue", "appDestination", "verification"] as const) {
     const reason = externalManualActionSecretReason(action[field]);
     if (reason) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: [field],
         message: `External manual actions may name required values or permissions, but must not contain actual secrets (${reason}).`,
       });
@@ -270,207 +270,207 @@ export function validateExternalManualActionForPublication(value: unknown) {
   return ExternalManualActionSchema.parse(value);
 }
 
-export const IntegrationSchema = z.object({
+export const IntegrationSchema = v.object({
   id: IdSchema,
-  name: z.string(),
-  purpose: z.string(),
-  authMode: z.string().optional(),
-  docsUrl: z.string().url().optional(),
-  featureIds: z.array(IdSchema).default([]),
-  ownedFiles: z.array(OwnedFileSchema).default([]),
-  requiredEnv: z.array(z.string()).default([]),
-  codeSetup: z.array(z.string().min(1)).default([]),
-  unclassifiedSetup: z.array(z.string().min(1)).default([]),
-  externalManualActions: z.array(ExternalManualActionSchema).default([]),
-  verification: z
-    .array(z.string().min(1))
+  name: v.string(),
+  purpose: v.string(),
+  authMode: v.string().optional(),
+  docsUrl: v.string().url().optional(),
+  featureIds: v.array(IdSchema).default([]),
+  ownedFiles: v.array(OwnedFileSchema).default([]),
+  requiredEnv: v.array(v.string()).default([]),
+  codeSetup: v.array(v.string().min(1)).default([]),
+  unclassifiedSetup: v.array(v.string().min(1)).default([]),
+  externalManualActions: v.array(ExternalManualActionSchema).default([]),
+  verification: v
+    .array(v.string().min(1))
     .min(1, "Every integration must declare at least one provider verification step."),
 }).strict();
 
-export const APIContractSchema = z.object({
+export const APIContractSchema = v.object({
   id: IdSchema,
-  method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]),
-  path: z.string(),
-  description: z.string().optional(),
-  requestSchema: z.string().optional(),
-  responseSchema: z.string().optional(),
-  featureIds: z.array(IdSchema).default([]),
-  ownedFiles: z.array(OwnedFileSchema).default([]),
+  method: v.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]),
+  path: v.string(),
+  description: v.string().optional(),
+  requestSchema: v.string().optional(),
+  responseSchema: v.string().optional(),
+  featureIds: v.array(IdSchema).default([]),
+  ownedFiles: v.array(OwnedFileSchema).default([]),
 });
 
-export const TestSchema = z.object({
+export const TestSchema = v.object({
   id: IdSchema,
-  description: z.string(),
-  dependsOnTestIds: z.array(IdSchema).default([]),
-  needIds: z.array(IdSchema).default([]),
-  featureIds: z.array(IdSchema).default([]),
-  screenIds: z.array(IdSchema).default([]),
+  description: v.string(),
+  dependsOnTestIds: v.array(IdSchema).default([]),
+  needIds: v.array(IdSchema).default([]),
+  featureIds: v.array(IdSchema).default([]),
+  screenIds: v.array(IdSchema).default([]),
   // Optional pointer-grade coverage for an authored state on a screen.
-  stateRefs: z.array(ScreenStateRefSchema).default([]),
-  integrationIds: z.array(IdSchema).default([]),
-  platformSurfaceIds: z.array(IdSchema).default([]),
-  ownedFiles: z.array(OwnedFileSchema).default([]),
-  kind: z.enum(["acceptance", "smoke", "unit", "manual"]).default("acceptance"),
+  stateRefs: v.array(ScreenStateRefSchema).default([]),
+  integrationIds: v.array(IdSchema).default([]),
+  platformSurfaceIds: v.array(IdSchema).default([]),
+  ownedFiles: v.array(OwnedFileSchema).default([]),
+  kind: v.enum(["acceptance", "smoke", "unit", "manual"]).default("acceptance"),
   // Free-form framework name. Linter pattern-matches per platformTarget:
   //   web|vite-spa  → /vitest|jest|playwright/i
   //   ios|macos     → /xctest|swift testing/i
   //   claude-plugin → /plugin-builder|manifest-validator|skill-validator|hook-validator|command-validator/i
   // Empty string → linter blocker (waivable).
-  testFramework: z.string().default(""),
+  testFramework: v.string().default(""),
   // Exact repository command when known. A production-ready handoff must not
   // substitute an unresolved scheme, destination, package, or script name.
-  command: z.string().min(1).optional(),
+  command: v.string().min(1).optional(),
   // Optional validator references — used primarily by claude-plugin platform target where each
   // command/skill/hook artifact must point at a validator (manifest-validator, skill-validator, etc.).
-  validatorRefs: z.array(z.string()).default([]),
+  validatorRefs: v.array(v.string()).default([]),
 });
 
 // ── Reproducible product/design contract (optional Spec v3 extension) ──────
 // These records capture intended behavior and the evidence needed to rebuild a
 // visual direction. They deliberately reference the existing Spec graph rather
 // than creating a second document authority.
-export const DecisionRigiditySchema = z.enum(["locked", "leaning", "open", "experimental", "superseded"]);
-export const ContractScopeSchema = z.object({
-  kind: z.enum(["product", "screen", "element", "component", "behavior", "architecture"]),
-  refs: z.array(IdSchema).min(1),
+export const DecisionRigiditySchema = v.enum(["locked", "leaning", "open", "experimental", "superseded"]);
+export const ContractScopeSchema = v.object({
+  kind: v.enum(["product", "screen", "element", "component", "behavior", "architecture"]),
+  refs: v.array(IdSchema).min(1),
 }).strict();
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
-export const JsonValueSchema: z.ZodType<JsonValue> = z.lazy(() => z.union([
-  z.string(), z.number(), z.boolean(), z.null(), z.array(JsonValueSchema), z.record(z.string(), JsonValueSchema),
+export const JsonValueSchema: v.Schema<JsonValue> = v.lazy(() => v.union([
+  v.string(), v.number(), v.boolean(), v.null(), v.array(JsonValueSchema), v.record(v.string(), JsonValueSchema),
 ]));
-export const PredicateSchema = z.object({
+export const PredicateSchema = v.object({
   subjectRef: IdSchema,
-  propertyPath: z.string().min(1),
-  operator: z.enum(["eq", "neq", "in", "not-in", "exists", "not-exists", "gte", "lte", "contains", "excludes"]),
+  propertyPath: v.string().min(1),
+  operator: v.enum(["eq", "neq", "in", "not-in", "exists", "not-exists", "gte", "lte", "contains", "excludes"]),
   value: JsonValueSchema.optional(),
 }).strict();
-export const EffectSchema = z.object({
-  kind: z.enum(["state-change", "create", "update", "delete", "schedule", "notify", "navigate", "none"]),
+export const EffectSchema = v.object({
+  kind: v.enum(["state-change", "create", "update", "delete", "schedule", "notify", "navigate", "none"]),
   targetRef: IdSchema,
-  propertyPath: z.string().min(1).optional(),
+  propertyPath: v.string().min(1).optional(),
   value: JsonValueSchema.optional(),
 }).strict();
-export const WriteSchema = z.object({
+export const WriteSchema = v.object({
   storeRef: IdSchema,
-  entity: z.string().min(1),
-  fields: z.array(z.string().min(1)).default([]),
-  mode: z.enum(["create", "update", "delete"]),
+  entity: v.string().min(1),
+  fields: v.array(v.string().min(1)).default([]),
+  mode: v.enum(["create", "update", "delete"]),
 }).strict();
-export const UserFeedbackSchema = z.object({
-  channel: z.enum(["inline", "toast", "modal", "notification", "none"]),
-  timing: z.enum(["immediate", "deferred"]),
-  message: z.string().min(1).optional(),
+export const UserFeedbackSchema = v.object({
+  channel: v.enum(["inline", "toast", "modal", "notification", "none"]),
+  timing: v.enum(["immediate", "deferred"]),
+  message: v.string().min(1).optional(),
 }).strict();
-export const FailureRecoverySchema = z.object({
+export const FailureRecoverySchema = v.object({
   failureCondition: PredicateSchema,
-  strategy: z.enum(["retry", "rollback", "resume", "manual", "none"]),
+  strategy: v.enum(["retry", "rollback", "resume", "manual", "none"]),
   toStateId: IdSchema.optional(),
-  guidance: z.string().min(1),
+  guidance: v.string().min(1),
 }).strict();
-export const ConfirmationSchema = z.object({
-  required: z.boolean(),
+export const ConfirmationSchema = v.object({
+  required: v.boolean(),
   when: PredicateSchema.optional(),
-  message: z.string().min(1).optional(),
+  message: v.string().min(1).optional(),
 }).strict();
-export const BehaviorActionSchema = z.object({
+export const BehaviorActionSchema = v.object({
   id: IdSchema,
-  name: z.string().min(1),
-  fromStateIds: z.array(IdSchema).default([]),
+  name: v.string().min(1),
+  fromStateIds: v.array(IdSchema).default([]),
   toStateId: IdSchema.optional(),
-  effects: z.array(EffectSchema).default([]),
-  writes: z.array(WriteSchema).default([]),
-  prohibitedWrites: z.array(WriteSchema).default([]),
+  effects: v.array(EffectSchema).default([]),
+  writes: v.array(WriteSchema).default([]),
+  prohibitedWrites: v.array(WriteSchema).default([]),
   feedback: UserFeedbackSchema.optional(),
   failure: FailureRecoverySchema.optional(),
   recovery: FailureRecoverySchema.optional(),
   confirmation: ConfirmationSchema.optional(),
 }).strict();
-export const BehaviorStateSchema = z.object({ id: IdSchema, name: z.string().min(1), visibleRefs: z.array(IdSchema).default([]) }).strict();
-export const BehaviorTransitionSchema = z.object({ fromStateId: IdSchema, actionId: IdSchema, toStateId: IdSchema }).strict();
-export const InformationFlowSchema = z.object({
-  sourceRef: IdSchema, targetRef: IdSchema, data: z.string().min(1), transform: z.string().min(1).optional(),
-  classification: z.enum(["public", "local-private", "sensitive"]), persistence: z.enum(["none", "session", "durable"]),
+export const BehaviorStateSchema = v.object({ id: IdSchema, name: v.string().min(1), visibleRefs: v.array(IdSchema).default([]) }).strict();
+export const BehaviorTransitionSchema = v.object({ fromStateId: IdSchema, actionId: IdSchema, toStateId: IdSchema }).strict();
+export const InformationFlowSchema = v.object({
+  sourceRef: IdSchema, targetRef: IdSchema, data: v.string().min(1), transform: v.string().min(1).optional(),
+  classification: v.enum(["public", "local-private", "sensitive"]), persistence: v.enum(["none", "session", "durable"]),
 }).strict();
-export const VerificationSchema = z.object({
-  id: IdSchema, kind: z.enum(["schema", "assertion", "hash", "snapshot", "ibr", "manual"]),
-  targetRefs: z.array(IdSchema).default([]), method: z.string().min(1), passCriteria: z.array(PredicateSchema).default([]),
+export const VerificationSchema = v.object({
+  id: IdSchema, kind: v.enum(["schema", "assertion", "hash", "snapshot", "ibr", "manual"]),
+  targetRefs: v.array(IdSchema).default([]), method: v.string().min(1), passCriteria: v.array(PredicateSchema).default([]),
 }).strict();
-export const BehaviorContractSchema = z.object({
-  id: IdSchema, name: z.string().min(1), scope: ContractScopeSchema, trigger: z.string().min(1),
-  preconditions: z.array(PredicateSchema).default([]), states: z.array(BehaviorStateSchema).default([]),
-  actions: z.array(BehaviorActionSchema).default([]), transitions: z.array(BehaviorTransitionSchema).default([]),
-  invariants: z.array(z.string().min(1)).default([]), informationFlow: z.array(InformationFlowSchema).default([]),
-  verificationRefs: z.array(IdSchema).default([]),
+export const BehaviorContractSchema = v.object({
+  id: IdSchema, name: v.string().min(1), scope: ContractScopeSchema, trigger: v.string().min(1),
+  preconditions: v.array(PredicateSchema).default([]), states: v.array(BehaviorStateSchema).default([]),
+  actions: v.array(BehaviorActionSchema).default([]), transitions: v.array(BehaviorTransitionSchema).default([]),
+  invariants: v.array(v.string().min(1)).default([]), informationFlow: v.array(InformationFlowSchema).default([]),
+  verificationRefs: v.array(IdSchema).default([]),
 }).strict();
-export const BaselineArtifactSchema = z.object({
-  id: IdSchema, path: z.string().min(1), type: z.string().min(1), digest: z.string().regex(/^sha256:[a-f0-9]{64}$/),
+export const BaselineArtifactSchema = v.object({
+  id: IdSchema, path: v.string().min(1), type: v.string().min(1), digest: v.string().regex(/^sha256:[a-f0-9]{64}$/),
 }).strict();
-export const BaselinePrecedenceSchema = z.object({ rank: z.number().int().min(1), artifactId: IdSchema }).strict();
-export const DesignConstraintSchema = z.object({
-  id: IdSchema, kind: z.enum(["exact", "relational", "behavioral", "architectural"]), scope: ContractScopeSchema,
-  targetRef: IdSchema, propertyPath: z.string().min(1), operator: PredicateSchema.shape.operator,
-  value: JsonValueSchema.optional(), unit: z.string().min(1).optional(), tolerance: z.number().min(0).optional(),
-  sourceArtifactId: IdSchema.optional(), verificationRefs: z.array(IdSchema).default([]),
+export const BaselinePrecedenceSchema = v.object({ rank: v.number().int().min(1), artifactId: IdSchema }).strict();
+export const DesignConstraintSchema = v.object({
+  id: IdSchema, kind: v.enum(["exact", "relational", "behavioral", "architectural"]), scope: ContractScopeSchema,
+  targetRef: IdSchema, propertyPath: v.string().min(1), operator: PredicateSchema.shape.operator,
+  value: JsonValueSchema.optional(), unit: v.string().min(1).optional(), tolerance: v.number().min(0).optional(),
+  sourceArtifactId: IdSchema.optional(), verificationRefs: v.array(IdSchema).default([]),
 }).strict();
-export const DesignDeltaSchema = z.object({
-  id: IdSchema, baselineId: IdSchema.optional(), targetRefs: z.array(IdSchema).min(1),
-  operation: z.enum(["add", "remove", "replace", "reorder", "preserve"]), before: JsonValueSchema.optional(), after: JsonValueSchema.optional(),
-  direction: z.string().min(1), verificationRefs: z.array(IdSchema).default([]),
+export const DesignDeltaSchema = v.object({
+  id: IdSchema, baselineId: IdSchema.optional(), targetRefs: v.array(IdSchema).min(1),
+  operation: v.enum(["add", "remove", "replace", "reorder", "preserve"]), before: JsonValueSchema.optional(), after: JsonValueSchema.optional(),
+  direction: v.string().min(1), verificationRefs: v.array(IdSchema).default([]),
 }).strict();
-export const DesignContractSchema = z.object({
-  intent: z.object({
-    type: z.literal("conformance"),
-    evidenceRefs: z.array(IdSchema).min(1),
+export const DesignContractSchema = v.object({
+  intent: v.object({
+    type: v.literal("conformance"),
+    evidenceRefs: v.array(IdSchema).min(1),
     acceptanceTestRef: IdSchema,
-    verificationRefs: z.array(IdSchema).min(1),
+    verificationRefs: v.array(IdSchema).min(1),
   }).strict().optional(),
-  baseline: z.object({
-    disposition: z.enum(["observed", "declared", "not-applicable"]), id: IdSchema.optional(), version: z.string().min(1).optional(),
-    status: DecisionRigiditySchema.optional(), scope: ContractScopeSchema.optional(), supersedes: IdSchema.optional(), environment: z.record(z.string(), JsonValueSchema).default({}),
-    artifacts: z.array(BaselineArtifactSchema).default([]), precedence: z.array(BaselinePrecedenceSchema).default([]),
+  baseline: v.object({
+    disposition: v.enum(["observed", "declared", "not-applicable"]), id: IdSchema.optional(), version: v.string().min(1).optional(),
+    status: DecisionRigiditySchema.optional(), scope: ContractScopeSchema.optional(), supersedes: IdSchema.optional(), environment: v.record(v.string(), JsonValueSchema).default({}),
+    artifacts: v.array(BaselineArtifactSchema).default([]), precedence: v.array(BaselinePrecedenceSchema).default([]),
   }).strict(),
-  constraints: z.array(DesignConstraintSchema).default([]),
-  direction: z.object({ summary: z.string().min(1), intentRefs: z.array(IdSchema).default([]), mustPreserve: z.array(z.string().min(1)).default([]), mayVary: z.array(z.string().min(1)).default([]) }).strict(),
-  deltas: z.array(DesignDeltaSchema).default([]), verification: z.array(VerificationSchema).default([]),
+  constraints: v.array(DesignConstraintSchema).default([]),
+  direction: v.object({ summary: v.string().min(1), intentRefs: v.array(IdSchema).default([]), mustPreserve: v.array(v.string().min(1)).default([]), mayVary: v.array(v.string().min(1)).default([]) }).strict(),
+  deltas: v.array(DesignDeltaSchema).default([]), verification: v.array(VerificationSchema).default([]),
 }).strict();
 
-export const ADRSchema = z.object({
+export const ADRSchema = v.object({
   id: IdSchema,
-  title: z.string(),
-  context: z.string(),
-  decision: z.string(),
-  consequences: z.string().optional(),
+  title: v.string(),
+  context: v.string(),
+  decision: v.string(),
+  consequences: v.string().optional(),
   reversibility: Reversibility,
   // Cites tradeoff weights and stance "because" clauses.
-  cites: z.array(z.string()).default([]),
+  cites: v.array(v.string()).default([]),
   rigidity: DecisionRigiditySchema.optional(),
   scope: ContractScopeSchema.optional(),
-  constraintRefs: z.array(IdSchema).optional(),
-  mustPreserve: z.array(z.string().min(1)).optional(),
-  mayVary: z.array(z.string().min(1)).optional(),
-  changePolicy: z.string().min(1).optional(),
+  constraintRefs: v.array(IdSchema).optional(),
+  mustPreserve: v.array(v.string().min(1)).optional(),
+  mayVary: v.array(v.string().min(1)).optional(),
+  changePolicy: v.string().min(1).optional(),
   supersededBy: IdSchema.optional(),
 });
 
-export const AssumptionSchema = z.object({
+export const AssumptionSchema = v.object({
   id: IdSchema,
-  text: z.string(),
-  confidence: z.enum(["high", "medium", "low"]).default("medium"),
+  text: v.string(),
+  confidence: v.enum(["high", "medium", "low"]).default("medium"),
 });
 
-export const RiskSchema = z.object({
+export const RiskSchema = v.object({
   id: IdSchema,
-  text: z.string(),
-  likelihood: z.enum(["high", "medium", "low"]).default("medium"),
-  impact: z.enum(["high", "medium", "low"]).default("medium"),
-  mitigation: z.string().optional(),
+  text: v.string(),
+  likelihood: v.enum(["high", "medium", "low"]).default("medium"),
+  impact: v.enum(["high", "medium", "low"]).default("medium"),
+  mitigation: v.string().optional(),
 });
 
 // Agent systems need a harness spec, not only app requirements. These schemas
 // capture the Agent Builder / Prompt Builder primitives: autonomy, topology,
 // tool permissions, memory, guardrails, research evidence, UI archetype, and
 // eval coverage.
-export const AgentArchitecturePatternSchema = z.enum([
+export const AgentArchitecturePatternSchema = v.enum([
   "single-agent",
   "sequential",
   "router",
@@ -481,69 +481,69 @@ export const AgentArchitecturePatternSchema = z.enum([
   "hybrid",
 ]);
 
-export const AgentAutonomyLevelSchema = z.enum([
+export const AgentAutonomyLevelSchema = v.enum([
   "draft-only",
   "human-in-loop",
   "supervised",
   "autonomous",
 ]);
 
-export const AgentBuilderScaleSchema = z.enum(["skill", "plugin", "agent", "human"]);
+export const AgentBuilderScaleSchema = v.enum(["skill", "plugin", "agent", "human"]);
 
-export const AgentToolPermissionTierSchema = z.enum(["T0", "T1", "T2", "T3", "T4", "T5"]);
+export const AgentToolPermissionTierSchema = v.enum(["T0", "T1", "T2", "T3", "T4", "T5"]);
 
-export const AgentToolContractSchema = z.object({
+export const AgentToolContractSchema = v.object({
   id: IdSchema,
-  name: z.string(),
-  purpose: z.string(),
+  name: v.string(),
+  purpose: v.string(),
   permissionTier: AgentToolPermissionTierSchema.default("T1"),
-  allowedActions: z.array(z.string()).default([]),
-  forbiddenActions: z.array(z.string()).default([]),
-  dataAccess: z.string().optional(),
-  sideEffects: z.array(z.string()).default([]),
-  requiresHumanApproval: z.boolean().default(false),
-  auditLog: z.string().optional(),
-  rollbackPlan: z.string().optional(),
-  failureMode: z.string().optional(),
+  allowedActions: v.array(v.string()).default([]),
+  forbiddenActions: v.array(v.string()).default([]),
+  dataAccess: v.string().optional(),
+  sideEffects: v.array(v.string()).default([]),
+  requiresHumanApproval: v.boolean().default(false),
+  auditLog: v.string().optional(),
+  rollbackPlan: v.string().optional(),
+  failureMode: v.string().optional(),
 });
 
-export const AgentModelRouteSchema = z.object({
+export const AgentModelRouteSchema = v.object({
   id: IdSchema,
-  purpose: z.string(),
-  provider: z.string().optional(),
-  modelTier: z.string().optional(),
-  promptContract: z.string().optional(),
+  purpose: v.string(),
+  provider: v.string().optional(),
+  modelTier: v.string().optional(),
+  promptContract: v.string().optional(),
 });
 
-export const AgentGuardrailSchema = z.object({
+export const AgentGuardrailSchema = v.object({
   id: IdSchema,
-  appliesTo: z.array(z.string()).default([]),
-  trigger: z.string(),
-  check: z.string(),
-  action: z.string(),
+  appliesTo: v.array(v.string()).default([]),
+  trigger: v.string(),
+  check: v.string(),
+  action: v.string(),
   severity: Severity.default("warn"),
-  escalation: z.string().optional(),
+  escalation: v.string().optional(),
 });
 
-export const AgentEvaluationSchema = z.object({
+export const AgentEvaluationSchema = v.object({
   id: IdSchema,
-  name: z.string(),
-  metric: z.string(),
-  coverageRefs: z.array(IdSchema).default([]),
-  blocking: z.boolean().default(false),
+  name: v.string(),
+  metric: v.string(),
+  coverageRefs: v.array(IdSchema).default([]),
+  blocking: v.boolean().default(false),
 });
 
-export const AgentResearchProtocolSchema = z.object({
-  sourcePolicy: z.string().optional(),
-  evidenceStandard: z.string().optional(),
-  confidencePolicy: z.string().optional(),
-  citationRequired: z.boolean().default(false),
-  evidenceRefs: z.array(z.string()).default([]),
-  openQuestions: z.array(z.string()).default([]),
+export const AgentResearchProtocolSchema = v.object({
+  sourcePolicy: v.string().optional(),
+  evidenceStandard: v.string().optional(),
+  confidencePolicy: v.string().optional(),
+  citationRequired: v.boolean().default(false),
+  evidenceRefs: v.array(v.string()).default([]),
+  openQuestions: v.array(v.string()).default([]),
 });
 
-export const AgentUiProtocolSchema = z.object({
-  archetype: z.enum([
+export const AgentUiProtocolSchema = v.object({
+  archetype: v.enum([
     "ai-agent-chat",
     "editor-workbench",
     "data-research-tool",
@@ -552,49 +552,49 @@ export const AgentUiProtocolSchema = z.object({
     "content-publication",
     "commerce-checkout",
   ]).optional(),
-  designMode: z.string().optional(),
-  userResearchQuestions: z.array(z.string()).default([]),
-  highRiskFailures: z.array(z.string()).default([]),
+  designMode: v.string().optional(),
+  userResearchQuestions: v.array(v.string()).default([]),
+  highRiskFailures: v.array(v.string()).default([]),
 });
 
-export const AgentSystemSchema = z.object({
-  mission: z.string().optional(),
-  systemBoundary: z.object({
-    inScope: z.array(z.string()).default([]),
-    outOfScope: z.array(z.string()).default([]),
+export const AgentSystemSchema = v.object({
+  mission: v.string().optional(),
+  systemBoundary: v.object({
+    inScope: v.array(v.string()).default([]),
+    outOfScope: v.array(v.string()).default([]),
   }).default({ inScope: [], outOfScope: [] }),
   builderScale: AgentBuilderScaleSchema.optional(),
   architecturePattern: AgentArchitecturePatternSchema.optional(),
   autonomyLevel: AgentAutonomyLevelSchema.optional(),
-  stateOwner: z.string().optional(),
-  stopCondition: z.string().optional(),
-  modelRoutes: z.array(AgentModelRouteSchema).default([]),
-  toolContracts: z.array(AgentToolContractSchema).default([]),
-  memoryPolicy: z.string().optional(),
+  stateOwner: v.string().optional(),
+  stopCondition: v.string().optional(),
+  modelRoutes: v.array(AgentModelRouteSchema).default([]),
+  toolContracts: v.array(AgentToolContractSchema).default([]),
+  memoryPolicy: v.string().optional(),
   researchProtocol: AgentResearchProtocolSchema.optional(),
   uiProtocol: AgentUiProtocolSchema.optional(),
-  guardrails: z.array(AgentGuardrailSchema).default([]),
-  evaluations: z.array(AgentEvaluationSchema).default([]),
-  humanCheckpoints: z.array(z.string()).default([]),
-  traceabilityRefs: z.array(z.string()).default([]),
+  guardrails: v.array(AgentGuardrailSchema).default([]),
+  evaluations: v.array(AgentEvaluationSchema).default([]),
+  humanCheckpoints: v.array(v.string()).default([]),
+  traceabilityRefs: v.array(v.string()).default([]),
 });
 
 // Stance "because" clause from PRD-Builder Q3. Captures the qualitative judgment
 // that complements numeric tradeoffWeights.
-export const StanceBecauseClauseSchema = z.object({
+export const StanceBecauseClauseSchema = v.object({
   id: IdSchema,
-  category: z.enum(["privacy_data", "complexity", "cost", "category"]),
-  stance: z.string(), // "we will not store any user audio on our servers"
-  because: z.string(), // "because this is healthcare-adjacent and trust is the moat"
+  category: v.enum(["privacy_data", "complexity", "cost", "category"]),
+  stance: v.string(), // "we will not store any user audio on our servers"
+  because: v.string(), // "because this is healthcare-adjacent and trust is the moat"
 });
 
 // pivotLog — strategic-decision history that survives message-version regenerations.
-export const PivotLogEntrySchema = z.object({
+export const PivotLogEntrySchema = v.object({
   id: IdSchema,
-  at: z.string(), // ISO date
-  summary: z.string(),
-  reason: z.string().optional(),
-  affects: z.array(z.string()).default([]), // ids of needs/features the pivot touches
+  at: v.string(), // ISO date
+  summary: v.string(),
+  reason: v.string().optional(),
+  affects: v.array(v.string()).default([]), // ids of needs/features the pivot touches
 });
 
 // The six tradeoff axes a Phase 4 allocation distributes 100 points across.
@@ -610,15 +610,15 @@ export type TradeoffAxis = typeof TRADEOFF_AXES[number];
 
 // Phase 4 — 100-point allocation across the six axes plus one "unacceptable
 // tradeoff" choice. The sum===100 invariant is enforced via the .refine block.
-export const TradeoffWeightsSchema = z
+export const TradeoffWeightsSchema = v
   .object({
-    speed_to_alpha: z.number().int().min(0).max(100),
-    scalability: z.number().int().min(0).max(100),
-    ux_polish: z.number().int().min(0).max(100),
-    maintainability: z.number().int().min(0).max(100),
-    cost: z.number().int().min(0).max(100),
-    security: z.number().int().min(0).max(100),
-    unacceptable_tradeoff: z.enum(TRADEOFF_AXES),
+    speed_to_alpha: v.number().int().min(0).max(100),
+    scalability: v.number().int().min(0).max(100),
+    ux_polish: v.number().int().min(0).max(100),
+    maintainability: v.number().int().min(0).max(100),
+    cost: v.number().int().min(0).max(100),
+    security: v.number().int().min(0).max(100),
+    unacceptable_tradeoff: v.enum(TRADEOFF_AXES),
   })
   .refine(
     (w) =>
@@ -637,44 +637,44 @@ export const TradeoffWeightsSchema = z
 
 // ProductState — per-project working memory used by the intake controller and
 // every doc-generation prompt.
-export const ProductStateSchema = z.object({
-  version: z.number().int().default(1),
-  stanceBecauseClauses: z.array(StanceBecauseClauseSchema).default([]),
-  pivotLog: z.array(PivotLogEntrySchema).default([]),
+export const ProductStateSchema = v.object({
+  version: v.number().int().default(1),
+  stanceBecauseClauses: v.array(StanceBecauseClauseSchema).default([]),
+  pivotLog: v.array(PivotLogEntrySchema).default([]),
   tradeoffWeights: TradeoffWeightsSchema.optional(),
-  workingMemory: z.record(z.string(), z.any()).default({}),
+  workingMemory: v.record(v.string(), v.any()).default({}),
   agentProfile: AgentSystemSchema.optional(),
 });
 
-export const NonGoalSchema = z.object({
+export const NonGoalSchema = v.object({
   id: IdSchema,
-  text: z.string(),
+  text: v.string(),
   // Required by PRD-Builder: every non-goal carries a "because" clause.
   // Linter blocks empty `because` (waivable with reason).
-  because: z.string().default(""),
+  because: v.string().default(""),
 });
 
 // OpenQuestion — typed contract for inline-answer affordances on generated docs.
-export const OpenQuestionKind = z.enum(["text", "choice"]);
-export const OpenQuestionSchema = z.object({
-  topicId: z.string().min(1),
-  prompt: z.string().min(1).max(500),
-  stageId: z.string().optional(),
-  stageNumber: z.number().int().optional(),
+export const OpenQuestionKind = v.enum(["text", "choice"]);
+export const OpenQuestionSchema = v.object({
+  topicId: v.string().min(1),
+  prompt: v.string().min(1).max(500),
+  stageId: v.string().optional(),
+  stageNumber: v.number().int().optional(),
   answerKind: OpenQuestionKind.default("text"),
-  answerChips: z.array(z.string().min(1).max(120)).max(8).optional(),
-  feedsField: z.string().optional(),
-  answeredValue: z.string().max(500).optional(),
-  answeredAt: z.string().optional(),
+  answerChips: v.array(v.string().min(1).max(120)).max(8).optional(),
+  feedsField: v.string().optional(),
+  answeredValue: v.string().max(500).optional(),
+  answeredAt: v.string().optional(),
 });
-export type OpenQuestion = z.infer<typeof OpenQuestionSchema>;
+export type OpenQuestion = v.Infer<typeof OpenQuestionSchema>;
 
 // PlatformTarget — declared per-spec so the linter can apply platform-appropriate
 // test-framework rules. Default 'web' for backward compatibility.
 // Compatibility projection used by existing render/lint consumers. The full
 // topology can describe additional companion/service surfaces, while an
 // unsupported primary remains unresolved until those consumers gain support.
-export const PlatformTargetSchema = z.enum([
+export const PlatformTargetSchema = v.enum([
   "web",
   "vite-spa",
   "ios",
@@ -688,39 +688,39 @@ export const PlatformTargetSchema = z.enum([
 // element dataIn/dataOut to notes only (fast UI-iteration path, no stall
 // collecting types), "design-app" scales up to typed, entity-linked data I/O.
 // "unspecified" is the default so existing specs still validate.
-export const DesignIntentSchema = z.enum(["iterate-ui", "design-app", "unspecified"]);
+export const DesignIntentSchema = v.enum(["iterate-ui", "design-app", "unspecified"]);
 
 // ── Groundwork extension: observability (SLIs/SLOs) ──────────────────────
-export const ServiceLevelSchema = z.object({
-  metric: z.string(),
-  target: z.string(),
+export const ServiceLevelSchema = v.object({
+  metric: v.string(),
+  target: v.string(),
 });
-export const ObservabilitySchema = z.object({
-  slis: z.array(ServiceLevelSchema).default([]),
-  slos: z.array(ServiceLevelSchema).default([]),
+export const ObservabilitySchema = v.object({
+  slis: v.array(ServiceLevelSchema).default([]),
+  slos: v.array(ServiceLevelSchema).default([]),
 });
 
 // ── Groundwork extension: agent boundaries (Always / Ask-first / Never) ──
-export const BoundariesSchema = z.object({
-  always: z.array(z.string()).default([]),
-  askFirst: z.array(z.string()).default([]),
-  never: z.array(z.string()).default([]),
+export const BoundariesSchema = v.object({
+  always: v.array(v.string()).default([]),
+  askFirst: v.array(v.string()).default([]),
+  never: v.array(v.string()).default([]),
 });
 
 // ── Groundwork extension: goals & success metrics ───────────────────────
 // Dedicated fields for requirements.md "Goals" / "Success metrics". Previously
 // the renderer DERIVED both from scenarios; these give the spec author explicit
 // control. Both optional — when absent the renderer falls back to scenarios.
-export const GoalSchema = z.object({
+export const GoalSchema = v.object({
   id: IdSchema,
-  statement: z.string(),
+  statement: v.string(),
   // Optional success metric paired with this goal.
-  metric: z.string().optional(),
+  metric: v.string().optional(),
 });
-export const SuccessMetricSchema = z.object({
+export const SuccessMetricSchema = v.object({
   id: IdSchema,
-  metric: z.string(),
-  target: z.string(),
+  metric: v.string(),
+  target: v.string(),
 });
 
 // ── Groundwork extension: voice profile (principles + do/don't + examples) ─
@@ -728,17 +728,17 @@ export const SuccessMetricSchema = z.object({
 // and word lists describe a register; only an example shows it. Optional so
 // voice profiles authored before it landed still validate — but a profile with
 // principles and no examples renders a TAG:UNRESOLVED prompt.
-export const VoiceExampleSchema = z.object({
+export const VoiceExampleSchema = v.object({
   /** Where this copy appears, e.g. "empty state — no saved runs yet". */
-  context: z.string().min(1),
+  context: v.string().min(1),
   /** The literal string to ship. */
-  copy: z.string().min(1),
+  copy: v.string().min(1),
 });
-export const VoiceProfileSchema = z.object({
-  principles: z.array(z.string()).default([]),
-  doWords: z.array(z.string()).default([]),
-  dontWords: z.array(z.string()).default([]),
-  examples: z.array(VoiceExampleSchema).default([]),
+export const VoiceProfileSchema = v.object({
+  principles: v.array(v.string()).default([]),
+  doWords: v.array(v.string()).default([]),
+  dontWords: v.array(v.string()).default([]),
+  examples: v.array(VoiceExampleSchema).default([]),
 });
 
 // ── Groundwork extension: pillars + governing sentence ────────────────────
@@ -747,11 +747,11 @@ export const VoiceProfileSchema = z.object({
 // of requirements.md: a reader (human or agent) resolves priority conflicts
 // from these before reading a single requirement. Ranks must be unique — a tie
 // defeats the purpose of ranking.
-export const PillarSchema = z.object({
+export const PillarSchema = v.object({
   id: IdSchema,
   /** 1 = highest. Unique across the pillar list (enforced in superRefine). */
-  rank: z.number().int().min(1),
-  statement: z.string().min(1),
+  rank: v.number().int().min(1),
+  statement: v.string().min(1),
 });
 
 // ── Groundwork extension: prime-directive acceptance test ─────────────────
@@ -759,16 +759,16 @@ export const PillarSchema = z.object({
 // Not a test id in `tests[]` — that layer proves individual requirements; this
 // proves the product. Every field below is required ONCE the object is present:
 // an acceptance test that is not observable or not time-boxed cannot be run.
-export const AcceptanceTestSchema = z.object({
+export const AcceptanceTestSchema = v.object({
   id: IdSchema.default("acceptance-prime"),
   /** "A first-time user records a run and sees their streak update." */
-  statement: z.string().min(1),
+  statement: v.string().min(1),
   /** What an observer literally watches happen — no inference, no logs-only. */
-  observable: z.string().min(1),
+  observable: v.string().min(1),
   /** The clock bound, e.g. "within 3 minutes of first launch, no docs read". */
-  timeBox: z.string().min(1),
-  steps: z.array(z.string()).default([]),
-  pillarIds: z.array(IdSchema).default([]),
+  timeBox: v.string().min(1),
+  steps: v.array(v.string()).default([]),
+  pillarIds: v.array(IdSchema).default([]),
 });
 
 // ── Groundwork extension: per-phase runnable acceptance ───────────────────
@@ -776,52 +776,52 @@ export const AcceptanceTestSchema = z.object({
 // phase closed. Optional — when absent the handoff emitter DERIVES a table from
 // the task layers plus the platform's native verification commands, so a spec
 // authored before this field existed still gets runnable phase gates.
-export const PhaseAcceptanceSchema = z.object({
-  phase: z.string().min(1),
-  scope: z.string().min(1),
+export const PhaseAcceptanceSchema = v.object({
+  phase: v.string().min(1),
+  scope: v.string().min(1),
   /** Runnable: a command, not a wish. */
-  acceptance: z.string().min(1),
+  acceptance: v.string().min(1),
 });
 
 // ── Groundwork extension: hard constraints + performance budget ───────────
-export const HardConstraintSchema = z.object({
+export const HardConstraintSchema = v.object({
   id: IdSchema,
   /** Non-negotiable technical or product bound, e.g. "no server-side audio". */
-  constraint: z.string().min(1),
-  because: z.string().optional(),
+  constraint: v.string().min(1),
+  because: v.string().optional(),
 });
-export const PerformanceBudgetEntrySchema = z.object({
+export const PerformanceBudgetEntrySchema = v.object({
   id: IdSchema,
-  metric: z.string().min(1),
+  metric: v.string().min(1),
   /** The number and its percentile, e.g. "< 1.5s p95". */
-  budget: z.string().min(1),
+  budget: v.string().min(1),
   /** How the budget is measured — ideally a command. */
-  measuredBy: z.string().optional(),
+  measuredBy: v.string().optional(),
 });
 
 // ── Groundwork extension: architectural invariants (as executable checks) ──
 // `rule` is the prose an implementer reads; `check` is the command CI runs. A
 // rule without a check is a wish, so `check` is required once the invariant
 // exists — the emitter renders every check into a runnable block.
-export const ArchitecturalInvariantSchema = z.object({
+export const ArchitecturalInvariantSchema = v.object({
   id: IdSchema,
-  rule: z.string().min(1),
+  rule: v.string().min(1),
   /** Executable: shell command, grep, or test id that fails when violated. */
-  check: z.string().min(1),
-  pillarIds: z.array(IdSchema).default([]),
+  check: v.string().min(1),
+  pillarIds: v.array(IdSchema).default([]),
 });
 
 // ── Groundwork extension: spec ↔ code sync rule ───────────────────────────
 // Names which artifact wins when implementation and spec disagree, and the
 // command that re-syncs. Optional; the emitter falls back to the spec-first
 // default so the rule is stated in every handoff whether or not it is authored.
-export const SpecCodeSyncSchema = z.object({
-  policy: z.enum(["spec-first", "code-first", "bidirectional"]).default("spec-first"),
-  specPath: z.string().default("spec.json"),
+export const SpecCodeSyncSchema = v.object({
+  policy: v.enum(["spec-first", "code-first", "bidirectional"]).default("spec-first"),
+  specPath: v.string().default("spec.json"),
   /** Command that regenerates the projections after a Spec edit. */
-  regenerateCommand: z.string().optional(),
+  regenerateCommand: v.string().optional(),
   /** Changes that oblige a Spec update before the work is considered done. */
-  triggers: z.array(z.string()).default([]),
+  triggers: v.array(v.string()).default([]),
 });
 
 // ── Groundwork extension: reading contract (the generated set's config header) ─
@@ -834,21 +834,21 @@ export const SpecCodeSyncSchema = z.object({
 // authored or not: a reading rule nobody states is a reading rule nobody
 // follows. Optional/additive, so specs authored before it existed are
 // unaffected.
-export const ReadingContractSchema = z.object({
+export const ReadingContractSchema = v.object({
   /** Model tier the set is written for, e.g. "frontier". */
-  tier: z.string().min(1).default("frontier"),
+  tier: v.string().min(1).default("frontier"),
   /** What the reader is doing with it, e.g. "codegen", "review", "estimation". */
-  context: z.string().min(1).default("codegen"),
+  context: v.string().min(1).default("codegen"),
   /** Extra standing instructions rendered under the no-compression rule. */
-  notes: z.array(z.string().min(1)).default([]),
+  notes: v.array(v.string().min(1)).default([]),
 });
 
-export const EvidenceStatusSchema = z.enum(["observed", "decided", "assumed"]);
-export const EvidenceRecordSchema = z.object({
+export const EvidenceStatusSchema = v.enum(["observed", "decided", "assumed"]);
+export const EvidenceRecordSchema = v.object({
   id: IdSchema,
   status: EvidenceStatusSchema,
-  statement: z.string().min(1),
-  sourceRefs: z.array(z.string().min(1)).default([]),
+  statement: v.string().min(1),
+  sourceRefs: v.array(v.string().min(1)).default([]),
 });
 
 // ── Groundwork extension: observed repo layout (owned-file path steering) ──
@@ -859,102 +859,102 @@ export const EvidenceRecordSchema = z.object({
 // existing generic-per-platform default for that one field only. Additive:
 // specs authored before this field existed carry no `repoLayout` and are
 // unaffected.
-export const RepoLayoutSchema = z.object({
+export const RepoLayoutSchema = v.object({
   /** Where the data model lives, e.g. "prisma/schema.prisma" or "src/db/schema.ts". */
-  dataModel: z.string().optional(),
+  dataModel: v.string().optional(),
   /**
    * Template for API route files. Must contain the literal token `{path}`,
    * e.g. "app/api/{path}/route.ts". When present without `{path}`, the
    * emitter appends the path segment rather than dropping it.
    */
-  apiFilePattern: z.string().optional(),
-  integrationsDir: z.string().optional(),
-  featuresDir: z.string().optional(),
-  screensDir: z.string().optional(),
-  testsDir: z.string().optional(),
+  apiFilePattern: v.string().optional(),
+  integrationsDir: v.string().optional(),
+  featuresDir: v.string().optional(),
+  screensDir: v.string().optional(),
+  testsDir: v.string().optional(),
   /** File suffix for generated test files, e.g. ".test.ts" or ".test.tsx". */
-  testFileSuffix: z.string().optional(),
+  testFileSuffix: v.string().optional(),
 });
 
-export const BootstrapCommandsSchema = z.object({
-  install: z.string().min(1),
-  typecheck: z.string().min(1),
-  test: z.string().min(1),
-  build: z.string().min(1),
+export const BootstrapCommandsSchema = v.object({
+  install: v.string().min(1),
+  typecheck: v.string().min(1),
+  test: v.string().min(1),
+  build: v.string().min(1),
 }).strict();
 
-export const ProjectBootstrapSchema = z.object({
-  ownedFiles: z.array(OwnedFileSchema).min(1),
+export const ProjectBootstrapSchema = v.object({
+  ownedFiles: v.array(OwnedFileSchema).min(1),
   commands: BootstrapCommandsSchema,
 }).strict();
 
-export const ProjectContextSchema = z.object({
-  startingPoint: z.enum([
+export const ProjectContextSchema = v.object({
+  startingPoint: v.enum([
     "unspecified",
     "initial-idea",
     "existing-definition",
     "existing-app",
   ]).default("unspecified"),
-  sourceRepo: z.string().optional(),
-  sourceUrl: z.string().url().optional(),
-  sourceArtifacts: z.array(z.string().min(1)).default([]),
-  inspectedAt: z.string().optional(),
-  evidence: z.array(EvidenceRecordSchema).default([]),
+  sourceRepo: v.string().optional(),
+  sourceUrl: v.string().url().optional(),
+  sourceArtifacts: v.array(v.string().min(1)).default([]),
+  inspectedAt: v.string().optional(),
+  evidence: v.array(EvidenceRecordSchema).default([]),
   // Groundwork: observed repo layout (see RepoLayoutSchema doc comment).
   // Optional/additive so existing specs keep validating unchanged.
   repoLayout: RepoLayoutSchema.optional(),
-  declaredNewFiles: z.array(DeclaredNewFileSchema).min(1).optional(),
+  declaredNewFiles: v.array(DeclaredNewFileSchema).min(1).optional(),
   bootstrap: ProjectBootstrapSchema.optional(),
 });
 
-export const ResponsiveTargetsSchema = z.object({
-  minimum: z.string().optional(),
-  maximum: z.string().optional(),
-  deviceClasses: z.array(z.string().min(1)).default([]),
+export const ResponsiveTargetsSchema = v.object({
+  minimum: v.string().optional(),
+  maximum: v.string().optional(),
+  deviceClasses: v.array(v.string().min(1)).default([]),
 });
 
-export const UiPreferencesSchema = z.object({
-  informationDensity: z.string().optional(),
-  brandAdjectives: z.array(z.string().min(1)).default([]),
-  accessibilityFloor: z.array(z.string().min(1)).default([]),
+export const UiPreferencesSchema = v.object({
+  informationDensity: v.string().optional(),
+  brandAdjectives: v.array(v.string().min(1)).default([]),
+  accessibilityFloor: v.array(v.string().min(1)).default([]),
   responsiveTargets: ResponsiveTargetsSchema.optional(),
-  mustKeep: z.array(z.string().min(1)).default([]),
-  mustAvoid: z.array(z.string().min(1)).default([]),
-  mayEvolve: z.array(z.string().min(1)).default([]),
-  visualReferences: z.array(z.string().min(1)).default([]),
+  mustKeep: v.array(v.string().min(1)).default([]),
+  mustAvoid: v.array(v.string().min(1)).default([]),
+  mayEvolve: v.array(v.string().min(1)).default([]),
+  visualReferences: v.array(v.string().min(1)).default([]),
 });
 
 // Spec v3 makes project constraints and current/proposed/verified change
 // semantics explicit. Implementation evidence remains outside the intended
 // Spec and can only be referenced after independent reconciliation.
-export const GovernanceSchema = z.object({
-  constraints: z.array(z.string().min(1)).default([]),
-  decisions: z.array(IdSchema).default([]),
-  owners: z.array(z.string().min(1)).default([]),
+export const GovernanceSchema = v.object({
+  constraints: v.array(v.string().min(1)).default([]),
+  decisions: v.array(IdSchema).default([]),
+  owners: v.array(v.string().min(1)).default([]),
 }).strict();
 
-export const ChangeRecordSchema = z.object({
+export const ChangeRecordSchema = v.object({
   id: IdSchema,
   target: QualifiedRefSchema,
-  summary: z.string().min(1),
+  summary: v.string().min(1),
   provenance: ProvenanceSchema,
-  evidenceRefs: z.array(IdSchema).default([]),
+  evidenceRefs: v.array(IdSchema).default([]),
 }).strict();
 
-export const ChangeSetSchema = z.object({
+export const ChangeSetSchema = v.object({
   id: IdSchema,
-  current: z.array(ChangeRecordSchema).default([]),
-  proposed: z.array(ChangeRecordSchema).default([]),
-  verified: z.array(ChangeRecordSchema).default([]),
+  current: v.array(ChangeRecordSchema).default([]),
+  proposed: v.array(ChangeRecordSchema).default([]),
+  verified: v.array(ChangeRecordSchema).default([]),
 }).strict();
 
 // Spec — the source-of-truth structured document. Doc generation emits this
 // first; the renderer produces stage-specific Markdown second.
-const SpecObjectSchema = z.object({
-  schemaVersion: z.literal(3),
+const SpecObjectSchema = v.object({
+  schemaVersion: v.literal(3),
   id: IdSchema,
-  productName: z.string(),
-  productDescription: z.string(),
+  productName: v.string(),
+  productDescription: v.string(),
   // Drives platform-specific lint rules. Defaults to 'web' so specs created
   // before the field existed continue to validate.
   platformTarget: PlatformTargetSchema.default("web"),
@@ -964,41 +964,41 @@ const SpecObjectSchema = z.object({
   // downstream flow docs read it as a cross-cutting mode switch, not
   // project-inspection metadata.
   designIntent: DesignIntentSchema.default("unspecified"),
-  personas: z.array(PersonaSchema).default([]),
-  scenarios: z.array(ScenarioSchema).default([]),
-  needs: z.array(NeedSchema).default([]),
-  features: z.array(FeatureSchema).default([]),
-  uxFlows: z.array(UXFlowSchema).default([]),
-  screens: z.array(ScreenSchema).default([]),
-  dataPoints: z.array(DataPointSchema).default([]),
+  personas: v.array(PersonaSchema).default([]),
+  scenarios: v.array(ScenarioSchema).default([]),
+  needs: v.array(NeedSchema).default([]),
+  features: v.array(FeatureSchema).default([]),
+  uxFlows: v.array(UXFlowSchema).default([]),
+  screens: v.array(ScreenSchema).default([]),
+  dataPoints: v.array(DataPointSchema).default([]),
   // Groundwork: pointer-grade entity layer (see DataModelEntitySchema doc
   // comment). Optional/additive.
-  dataModel: z.array(DataModelEntitySchema).default([]),
-  integrations: z.array(IntegrationSchema).default([]),
-  apiContracts: z.array(APIContractSchema).default([]),
+  dataModel: v.array(DataModelEntitySchema).default([]),
+  integrations: v.array(IntegrationSchema).default([]),
+  apiContracts: v.array(APIContractSchema).default([]),
   /** Optional behavior-first contract. Empty preserves every existing Spec v3 input. */
-  behaviorContracts: z.array(BehaviorContractSchema).optional(),
-  tests: z.array(TestSchema).default([]),
-  adrs: z.array(ADRSchema).default([]),
-  assumptions: z.array(AssumptionSchema).default([]),
-  risks: z.array(RiskSchema).default([]),
-  nonGoals: z.array(NonGoalSchema).default([]),
+  behaviorContracts: v.array(BehaviorContractSchema).optional(),
+  tests: v.array(TestSchema).default([]),
+  adrs: v.array(ADRSchema).default([]),
+  assumptions: v.array(AssumptionSchema).default([]),
+  risks: v.array(RiskSchema).default([]),
+  nonGoals: v.array(NonGoalSchema).default([]),
   agentSystem: AgentSystemSchema.optional(),
   // ── Groundwork extensions (all optional; existing specs stay valid) ──
-  goals: z.array(GoalSchema).optional(),
-  successMetrics: z.array(SuccessMetricSchema).optional(),
+  goals: v.array(GoalSchema).optional(),
+  successMetrics: v.array(SuccessMetricSchema).optional(),
   observability: ObservabilitySchema.optional(),
   boundaries: BoundariesSchema.optional(),
   voiceProfile: VoiceProfileSchema.optional(),
   // ── Self-resolving-output extensions (all optional; see each schema's
   // doc comment for why the field exists and how absence renders) ──
-  pillars: z.array(PillarSchema).optional(),
-  governingSentence: z.string().optional(),
+  pillars: v.array(PillarSchema).optional(),
+  governingSentence: v.string().optional(),
   acceptanceTest: AcceptanceTestSchema.optional(),
-  phaseAcceptance: z.array(PhaseAcceptanceSchema).optional(),
-  hardConstraints: z.array(HardConstraintSchema).optional(),
-  performanceBudget: z.array(PerformanceBudgetEntrySchema).optional(),
-  architecturalInvariants: z.array(ArchitecturalInvariantSchema).optional(),
+  phaseAcceptance: v.array(PhaseAcceptanceSchema).optional(),
+  hardConstraints: v.array(HardConstraintSchema).optional(),
+  performanceBudget: v.array(PerformanceBudgetEntrySchema).optional(),
+  architecturalInvariants: v.array(ArchitecturalInvariantSchema).optional(),
   nfr: NfrSchema.optional(),
   specCodeSync: SpecCodeSyncSchema.optional(),
   readingContract: ReadingContractSchema.optional(),
@@ -1014,7 +1014,7 @@ const ValidatedSpecObjectSchema = SpecObjectSchema.superRefine((spec, ctx) => {
   const declaredNew = spec.projectContext.declaredNewFiles ?? [];
   const declaredPaths = new Set<string>();
   declaredNew.forEach((entry, index) => {
-    if (declaredPaths.has(entry.path)) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["projectContext", "declaredNewFiles", index, "path"], message: `Duplicate declared-new file: ${entry.path}` });
+    if (declaredPaths.has(entry.path)) ctx.addIssue({ code: "custom", path: ["projectContext", "declaredNewFiles", index, "path"], message: `Duplicate declared-new file: ${entry.path}` });
     declaredPaths.add(entry.path);
   });
   const ownedPaths = new Set<string>([
@@ -1029,7 +1029,7 @@ const ValidatedSpecObjectSchema = SpecObjectSchema.superRefine((spec, ctx) => {
     ...spec.architecture.contracts.flatMap((item) => item.ownedFiles ?? []),
   ]);
   declaredNew.forEach((entry, index) => {
-    if (!ownedPaths.has(entry.path)) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["projectContext", "declaredNewFiles", index, "path"], message: `Declared-new file is not owned by any entity: ${entry.path}` });
+    if (!ownedPaths.has(entry.path)) ctx.addIssue({ code: "custom", path: ["projectContext", "declaredNewFiles", index, "path"], message: `Declared-new file is not owned by any entity: ${entry.path}` });
   });
   const ids = {
     persona: new Set(spec.personas.map((item) => item.id)),
@@ -1047,7 +1047,7 @@ const ValidatedSpecObjectSchema = SpecObjectSchema.superRefine((spec, ctx) => {
     values.forEach((value, index) => {
       if (!valid.has(value)) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           path: [...path, index],
           message: `Unknown ${kind} reference: ${value}`,
         });
@@ -1063,13 +1063,13 @@ const ValidatedSpecObjectSchema = SpecObjectSchema.superRefine((spec, ctx) => {
       const states = screenStates.get(ref.screenId);
       if (!states) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           path: [...path, index, "screenId"],
           message: `Unknown screen reference: ${ref.screenId}`,
         });
       } else if (!states.has(ref.state)) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           path: [...path, index, "state"],
           message: `Unknown state ${ref.state} on screen ${ref.screenId}`,
         });
@@ -1089,7 +1089,7 @@ const ValidatedSpecObjectSchema = SpecObjectSchema.superRefine((spec, ctx) => {
     item.dependsOnTestIds.forEach((testId, dependencyIndex) => {
       if (testId === item.id) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           path: ["tests", index, "dependsOnTestIds", dependencyIndex],
           message: `Test ${item.id} cannot depend on itself.`,
         });
@@ -1123,7 +1123,7 @@ const ValidatedSpecObjectSchema = SpecObjectSchema.superRefine((spec, ctx) => {
     const prior = seenRanks.get(pillar.rank);
     if (prior) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["pillars", index, "rank"],
         message: `Duplicate pillar rank ${pillar.rank} (already used by ${prior}). Ranks must be unique.`,
       });
@@ -1150,7 +1150,7 @@ const ValidatedSpecObjectSchema = SpecObjectSchema.superRefine((spec, ctx) => {
     ...spec.architecture.contracts.map((item) => item.id),
     ...spec.architecture.flows.map((item) => item.id),
   ]);
-  const idsByScopeKind: Record<z.infer<typeof ContractScopeSchema>["kind"], Set<string>> = {
+  const idsByScopeKind: Record<v.Infer<typeof ContractScopeSchema>["kind"], Set<string>> = {
     product: new Set([spec.id]),
     screen: ids.screen,
     element: elementIds,
@@ -1158,10 +1158,10 @@ const ValidatedSpecObjectSchema = SpecObjectSchema.superRefine((spec, ctx) => {
     behavior: ids.behavior,
     architecture: componentIds,
   };
-  const validateScope = (scope: z.infer<typeof ContractScopeSchema>, path: Array<string | number>, label: string) => {
+  const validateScope = (scope: v.Infer<typeof ContractScopeSchema>, path: Array<string | number>, label: string) => {
     check(scope.refs, idsByScopeKind[scope.kind], [...path, "refs"], `${label} ${scope.kind}`);
   };
-  const scopesIntersect = (left: z.infer<typeof ContractScopeSchema>, right: z.infer<typeof ContractScopeSchema>) =>
+  const scopesIntersect = (left: v.Infer<typeof ContractScopeSchema>, right: v.Infer<typeof ContractScopeSchema>) =>
     left.kind === "product" || right.kind === "product"
       ? left.kind === right.kind && left.refs.some((ref) => right.refs.includes(ref))
       : left.kind === right.kind && left.refs.some((ref) => right.refs.includes(ref));
@@ -1170,14 +1170,14 @@ const ValidatedSpecObjectSchema = SpecObjectSchema.superRefine((spec, ctx) => {
   const decisionByIdAlways = new Map(spec.adrs.map((adr) => [adr.id, adr]));
   spec.adrs.forEach((adr, index) => {
     if (adr.rigidity === "superseded") {
-      if (!adr.supersededBy || adr.supersededBy === adr.id || !decisionByIdAlways.has(adr.supersededBy)) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["adrs", index, "supersededBy"], message: "A superseded ADR requires an existing non-self supersededBy ADR." });
-    } else if (adr.supersededBy) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["adrs", index, "supersededBy"], message: "Only a superseded ADR may declare supersededBy." });
+      if (!adr.supersededBy || adr.supersededBy === adr.id || !decisionByIdAlways.has(adr.supersededBy)) ctx.addIssue({ code: "custom", path: ["adrs", index, "supersededBy"], message: "A superseded ADR requires an existing non-self supersededBy ADR." });
+    } else if (adr.supersededBy) ctx.addIssue({ code: "custom", path: ["adrs", index, "supersededBy"], message: "Only a superseded ADR may declare supersededBy." });
     if (adr.scope) validateScope(adr.scope, ["adrs", index, "scope"], "ADR scope");
-    if (adr.rigidity === "locked" && !spec.designContract) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["adrs", index, "constraintRefs"], message: "A locked ADR requires a designContract with an enforceable scoped constraint." });
+    if (adr.rigidity === "locked" && !spec.designContract) ctx.addIssue({ code: "custom", path: ["adrs", index, "constraintRefs"], message: "A locked ADR requires a designContract with an enforceable scoped constraint." });
     const seen = new Set([adr.id]);
     let next = adr.supersededBy;
     while (next) {
-      if (seen.has(next)) { ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["adrs", index, "supersededBy"], message: "ADR supersession graph contains a cycle." }); break; }
+      if (seen.has(next)) { ctx.addIssue({ code: "custom", path: ["adrs", index, "supersededBy"], message: "ADR supersession graph contains a cycle." }); break; }
       seen.add(next);
       next = decisionByIdAlways.get(next)?.supersededBy;
     }
@@ -1188,7 +1188,7 @@ const ValidatedSpecObjectSchema = SpecObjectSchema.superRefine((spec, ctx) => {
     const rejectDuplicateIds = (items: Array<{ id: string }>, path: Array<string | number>, label: string) => {
       const seen = new Set<string>();
       items.forEach((item, index) => {
-        if (seen.has(item.id)) ctx.addIssue({ code: z.ZodIssueCode.custom, path: [...path, index, "id"], message: `Duplicate ${label} id: ${item.id}` });
+        if (seen.has(item.id)) ctx.addIssue({ code: "custom", path: [...path, index, "id"], message: `Duplicate ${label} id: ${item.id}` });
         seen.add(item.id);
       });
     };
@@ -1209,7 +1209,7 @@ const ValidatedSpecObjectSchema = SpecObjectSchema.superRefine((spec, ctx) => {
       checkKnown([item.targetRef], referenceIds, ["designContract", "constraints", index, "targetRef"], "constraint target");
       checkKnown(item.verificationRefs, verificationIds, ["designContract", "constraints", index, "verificationRefs"], "verification");
       if (item.kind === "exact" && (!item.sourceArtifactId || !item.verificationRefs.length)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["designContract", "constraints", index], message: "Exact constraints require sourceArtifactId and verificationRefs." });
+        ctx.addIssue({ code: "custom", path: ["designContract", "constraints", index], message: "Exact constraints require sourceArtifactId and verificationRefs." });
       }
       if (item.sourceArtifactId) checkKnown([item.sourceArtifactId], artifactIds, ["designContract", "constraints", index, "sourceArtifactId"], "baseline artifact");
       const compatible = item.kind === "architectural"
@@ -1217,94 +1217,94 @@ const ValidatedSpecObjectSchema = SpecObjectSchema.superRefine((spec, ctx) => {
         : item.kind === "behavioral"
           ? ["behavior", "screen", "element", "product"].includes(item.scope.kind)
           : true;
-      if (!compatible) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["designContract", "constraints", index, "kind"], message: `${item.kind} constraint is incompatible with ${item.scope.kind} scope.` });
+      if (!compatible) ctx.addIssue({ code: "custom", path: ["designContract", "constraints", index, "kind"], message: `${item.kind} constraint is incompatible with ${item.scope.kind} scope.` });
     });
     const baseline = design.baseline;
     const conformance = design.intent?.type === "conformance";
     const requiresBaseline = baseline.disposition === "observed" || baseline.disposition === "declared";
     if (requiresBaseline && (!baseline.id || !baseline.artifacts.length || !baseline.precedence.length)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["designContract", "baseline"], message: "Observed or declared baselines require id, artifacts, and precedence." });
+      ctx.addIssue({ code: "custom", path: ["designContract", "baseline"], message: "Observed or declared baselines require id, artifacts, and precedence." });
     }
     if (requiresBaseline && !conformance && !design.deltas.length) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["designContract", "deltas"], message: "A change design contract requires at least one linked delta." });
+      ctx.addIssue({ code: "custom", path: ["designContract", "deltas"], message: "A change design contract requires at least one linked delta." });
     }
     if (conformance) {
-      if (!requiresBaseline) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["designContract", "baseline", "disposition"], message: "A conformance design contract requires an observed or declared baseline." });
-      if (design.deltas.length) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["designContract", "deltas"], message: "A conformance design contract forbids proposed deltas." });
-      if (spec.changeSet.proposed.length) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["changeSet", "proposed"], message: "A conformance design contract requires an empty proposed change set." });
-      if (!design.constraints.length) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["designContract", "constraints"], message: "A conformance design contract requires evidence-backed constraints." });
-      if (!design.verification.length) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["designContract", "verification"], message: "A conformance design contract requires verification with acceptance predicates." });
+      if (!requiresBaseline) ctx.addIssue({ code: "custom", path: ["designContract", "baseline", "disposition"], message: "A conformance design contract requires an observed or declared baseline." });
+      if (design.deltas.length) ctx.addIssue({ code: "custom", path: ["designContract", "deltas"], message: "A conformance design contract forbids proposed deltas." });
+      if (spec.changeSet.proposed.length) ctx.addIssue({ code: "custom", path: ["changeSet", "proposed"], message: "A conformance design contract requires an empty proposed change set." });
+      if (!design.constraints.length) ctx.addIssue({ code: "custom", path: ["designContract", "constraints"], message: "A conformance design contract requires evidence-backed constraints." });
+      if (!design.verification.length) ctx.addIssue({ code: "custom", path: ["designContract", "verification"], message: "A conformance design contract requires verification with acceptance predicates." });
       const evidenceById = new Map(spec.projectContext.evidence.map((item) => [item.id, item]));
       const evidenceRefs = design.intent!.evidenceRefs;
-      if (new Set(evidenceRefs).size !== evidenceRefs.length) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["designContract", "intent", "evidenceRefs"], message: "Conformance evidenceRefs must be unique." });
+      if (new Set(evidenceRefs).size !== evidenceRefs.length) ctx.addIssue({ code: "custom", path: ["designContract", "intent", "evidenceRefs"], message: "Conformance evidenceRefs must be unique." });
       evidenceRefs.forEach((ref, index) => {
         const evidence = evidenceById.get(ref);
         const allowedStatuses = baseline.disposition === "observed" ? ["observed"] : ["observed", "decided"];
-        if (!evidence) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["designContract", "intent", "evidenceRefs", index], message: `Unknown conformance evidence reference: ${ref}` });
-        else if (!evidence.sourceRefs.length || !allowedStatuses.includes(evidence.status)) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["designContract", "intent", "evidenceRefs", index], message: `Conformance evidence ${ref} must be source-backed with status ${allowedStatuses.join(" or ")}.` });
+        if (!evidence) ctx.addIssue({ code: "custom", path: ["designContract", "intent", "evidenceRefs", index], message: `Unknown conformance evidence reference: ${ref}` });
+        else if (!evidence.sourceRefs.length || !allowedStatuses.includes(evidence.status)) ctx.addIssue({ code: "custom", path: ["designContract", "intent", "evidenceRefs", index], message: `Conformance evidence ${ref} must be source-backed with status ${allowedStatuses.join(" or ")}.` });
       });
       if (!spec.acceptanceTest || design.intent!.acceptanceTestRef !== spec.acceptanceTest.id || !spec.acceptanceTest.steps.some((step) => step.trim().length > 0)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["designContract", "intent", "acceptanceTestRef"], message: "Conformance requires the canonical acceptanceTest with at least one executable step." });
+        ctx.addIssue({ code: "custom", path: ["designContract", "intent", "acceptanceTestRef"], message: "Conformance requires the canonical acceptanceTest with at least one executable step." });
       }
       const verificationRefs = design.intent!.verificationRefs;
-      if (new Set(verificationRefs).size !== verificationRefs.length) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["designContract", "intent", "verificationRefs"], message: "Conformance verificationRefs must be unique." });
+      if (new Set(verificationRefs).size !== verificationRefs.length) ctx.addIssue({ code: "custom", path: ["designContract", "intent", "verificationRefs"], message: "Conformance verificationRefs must be unique." });
       const verificationById = new Map(design.verification.map((item) => [item.id, item]));
       verificationRefs.forEach((ref, index) => {
         const verification = verificationById.get(ref);
-        if (!verification) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["designContract", "intent", "verificationRefs", index], message: `Unknown conformance verification reference: ${ref}` });
-        else if (!verification.targetRefs.length || !verification.passCriteria.length) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["designContract", "intent", "verificationRefs", index], message: `Conformance verification ${ref} requires targetRefs and acceptance predicates.` });
+        if (!verification) ctx.addIssue({ code: "custom", path: ["designContract", "intent", "verificationRefs", index], message: `Unknown conformance verification reference: ${ref}` });
+        else if (!verification.targetRefs.length || !verification.passCriteria.length) ctx.addIssue({ code: "custom", path: ["designContract", "intent", "verificationRefs", index], message: `Conformance verification ${ref} requires targetRefs and acceptance predicates.` });
       });
       design.constraints.forEach((item, index) => {
-        if (!item.sourceArtifactId || !item.verificationRefs.length) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["designContract", "constraints", index], message: "Conformance constraints require sourceArtifactId and verificationRefs." });
-        if (!item.verificationRefs.some((ref) => verificationRefs.includes(ref))) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["designContract", "constraints", index, "verificationRefs"], message: "Conformance constraints must cite a substantive intent verification." });
+        if (!item.sourceArtifactId || !item.verificationRefs.length) ctx.addIssue({ code: "custom", path: ["designContract", "constraints", index], message: "Conformance constraints require sourceArtifactId and verificationRefs." });
+        if (!item.verificationRefs.some((ref) => verificationRefs.includes(ref))) ctx.addIssue({ code: "custom", path: ["designContract", "constraints", index, "verificationRefs"], message: "Conformance constraints must cite a substantive intent verification." });
       });
     }
     if (baseline.disposition === "not-applicable" && (baseline.id || baseline.artifacts.length || baseline.precedence.length)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["designContract", "baseline"], message: "A not-applicable baseline cannot declare identity, artifacts, or precedence." });
+      ctx.addIssue({ code: "custom", path: ["designContract", "baseline"], message: "A not-applicable baseline cannot declare identity, artifacts, or precedence." });
     }
     if (baseline.scope) validateScope(baseline.scope, ["designContract", "baseline", "scope"], "baseline scope");
     const artifactPaths = new Map<string, number>();
     baseline.artifacts.forEach((artifact, index) => {
       const segments = artifact.path.split(/[\\/]+/);
       if (/[*?[\]{}]/.test(artifact.path) || artifact.path.startsWith("/") || segments.includes("..")) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["designContract", "baseline", "artifacts", index, "path"], message: "Baseline artifact paths must be exact relative paths without globs or parent traversal." });
+        ctx.addIssue({ code: "custom", path: ["designContract", "baseline", "artifacts", index, "path"], message: "Baseline artifact paths must be exact relative paths without globs or parent traversal." });
       }
       const normalized = segments.filter((segment) => segment && segment !== ".").join("/");
       for (const [prior, priorIndex] of artifactPaths) {
         if (normalized === prior || normalized.startsWith(`${prior}/`) || prior.startsWith(`${normalized}/`)) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["designContract", "baseline", "artifacts", index, "path"], message: `Baseline artifact path overlaps artifact at index ${priorIndex}; precedence would be ambiguous.` });
+          ctx.addIssue({ code: "custom", path: ["designContract", "baseline", "artifacts", index, "path"], message: `Baseline artifact path overlaps artifact at index ${priorIndex}; precedence would be ambiguous.` });
         }
       }
       artifactPaths.set(normalized, index);
     });
     const ranks = new Set<number>();
     baseline.precedence.forEach((item, index) => {
-      if (ranks.has(item.rank)) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["designContract", "baseline", "precedence", index, "rank"], message: `Duplicate precedence rank ${item.rank}.` });
+      if (ranks.has(item.rank)) ctx.addIssue({ code: "custom", path: ["designContract", "baseline", "precedence", index, "rank"], message: `Duplicate precedence rank ${item.rank}.` });
       ranks.add(item.rank);
       checkKnown([item.artifactId], artifactIds, ["designContract", "baseline", "precedence", index, "artifactId"], "baseline artifact");
     });
     design.deltas.forEach((item, index) => {
-      if (requiresBaseline && item.baselineId !== baseline.id) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["designContract", "deltas", index, "baselineId"], message: "A delta for an observed or declared baseline must identify that baseline." });
-      if (!requiresBaseline && item.baselineId) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["designContract", "deltas", index, "baselineId"], message: "A not-applicable baseline forbids a baseline-linked delta." });
+      if (requiresBaseline && item.baselineId !== baseline.id) ctx.addIssue({ code: "custom", path: ["designContract", "deltas", index, "baselineId"], message: "A delta for an observed or declared baseline must identify that baseline." });
+      if (!requiresBaseline && item.baselineId) ctx.addIssue({ code: "custom", path: ["designContract", "deltas", index, "baselineId"], message: "A not-applicable baseline forbids a baseline-linked delta." });
       checkKnown(item.targetRefs, referenceIds, ["designContract", "deltas", index, "targetRefs"], "delta target");
       checkKnown(item.verificationRefs, verificationIds, ["designContract", "deltas", index, "verificationRefs"], "verification");
     });
     const decisionById = new Map(spec.adrs.map((adr) => [adr.id, adr]));
     spec.adrs.forEach((adr, index) => {
       if (adr.rigidity === "superseded") {
-        if (!adr.supersededBy || adr.supersededBy === adr.id || !decisionById.has(adr.supersededBy)) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["adrs", index, "supersededBy"], message: "A superseded ADR requires an existing non-self supersededBy ADR." });
-      } else if (adr.supersededBy) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["adrs", index, "supersededBy"], message: "Only a superseded ADR may declare supersededBy." });
+        if (!adr.supersededBy || adr.supersededBy === adr.id || !decisionById.has(adr.supersededBy)) ctx.addIssue({ code: "custom", path: ["adrs", index, "supersededBy"], message: "A superseded ADR requires an existing non-self supersededBy ADR." });
+      } else if (adr.supersededBy) ctx.addIssue({ code: "custom", path: ["adrs", index, "supersededBy"], message: "Only a superseded ADR may declare supersededBy." });
       const constraintRefs = adr.constraintRefs ?? [];
       if (adr.rigidity === "locked") {
         const enforceable = Boolean(adr.scope) && constraintRefs.some((id) => design.constraints.some((constraint) => constraint.id === id && scopesIntersect(adr.scope!, constraint.scope)));
-        if (!enforceable) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["adrs", index, "constraintRefs"], message: "A locked ADR requires an enforceable scoped constraint, including a relational constraint when its scope matches." });
+        if (!enforceable) ctx.addIssue({ code: "custom", path: ["adrs", index, "constraintRefs"], message: "A locked ADR requires an enforceable scoped constraint, including a relational constraint when its scope matches." });
       }
       checkKnown(constraintRefs, constraintIds, ["adrs", index, "constraintRefs"], "constraint");
       if (adr.scope) {
         validateScope(adr.scope, ["adrs", index, "scope"], "ADR scope");
         constraintRefs.forEach((id, constraintIndex) => {
           const constraint = design.constraints.find((candidate) => candidate.id === id);
-          if (constraint && !scopesIntersect(adr.scope!, constraint.scope)) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["adrs", index, "constraintRefs", constraintIndex], message: `ADR scope does not intersect constraint ${id} scope.` });
+          if (constraint && !scopesIntersect(adr.scope!, constraint.scope)) ctx.addIssue({ code: "custom", path: ["adrs", index, "constraintRefs", constraintIndex], message: `ADR scope does not intersect constraint ${id} scope.` });
         });
       }
     });
@@ -1314,7 +1314,7 @@ const ValidatedSpecObjectSchema = SpecObjectSchema.superRefine((spec, ctx) => {
       let next = adr.supersededBy;
       while (next) {
         if (seen.has(next)) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["adrs", index, "supersededBy"], message: "ADR supersession graph contains a cycle." });
+          ctx.addIssue({ code: "custom", path: ["adrs", index, "supersededBy"], message: "ADR supersession graph contains a cycle." });
           break;
         }
         seen.add(next);
@@ -1324,9 +1324,9 @@ const ValidatedSpecObjectSchema = SpecObjectSchema.superRefine((spec, ctx) => {
     });
     const lockedConstraints = spec.adrs
       .filter((adr) => adr.rigidity === "locked")
-      .flatMap((adr) => (adr.constraintRefs ?? []).map((id) => ({ adr, constraint: design.constraints.find((item) => item.id === id) })).filter((item): item is { adr: typeof adr; constraint: z.infer<typeof DesignConstraintSchema> } => Boolean(item.constraint)));
+      .flatMap((adr) => (adr.constraintRefs ?? []).map((id) => ({ adr, constraint: design.constraints.find((item) => item.id === id) })).filter((item): item is { adr: typeof adr; constraint: v.Infer<typeof DesignConstraintSchema> } => Boolean(item.constraint)));
     const pathsOverlap = (left: string, right: string) => left === right || left.startsWith(`${right}.`) || right.startsWith(`${left}.`);
-    const conflicts = (left: z.infer<typeof DesignConstraintSchema>, right: z.infer<typeof DesignConstraintSchema>) => {
+    const conflicts = (left: v.Infer<typeof DesignConstraintSchema>, right: v.Infer<typeof DesignConstraintSchema>) => {
       if (left.operator === "eq" && right.operator === "eq") return JSON.stringify(left.value) !== JSON.stringify(right.value);
       if (left.operator === "exists" && right.operator === "not-exists" || left.operator === "not-exists" && right.operator === "exists") return true;
       if ((left.operator === "contains" && right.operator === "excludes" || left.operator === "excludes" && right.operator === "contains") && JSON.stringify(left.value) === JSON.stringify(right.value)) return true;
@@ -1343,7 +1343,7 @@ const ValidatedSpecObjectSchema = SpecObjectSchema.superRefine((spec, ctx) => {
     lockedConstraints.forEach((left, leftIndex) => lockedConstraints.slice(leftIndex + 1).forEach((right) => {
       if (left.constraint.id === right.constraint.id || left.constraint.targetRef !== right.constraint.targetRef) return;
       if (!scopesIntersect(left.constraint.scope, right.constraint.scope) || !pathsOverlap(left.constraint.propertyPath, right.constraint.propertyPath)) return;
-      if (conflicts(left.constraint, right.constraint)) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["adrs", decisionIndex.get(right.adr.id) ?? 0, "constraintRefs"], message: `Locked constraints ${left.constraint.id} and ${right.constraint.id} conflict.` });
+      if (conflicts(left.constraint, right.constraint)) ctx.addIssue({ code: "custom", path: ["adrs", decisionIndex.get(right.adr.id) ?? 0, "constraintRefs"], message: `Locked constraints ${left.constraint.id} and ${right.constraint.id} conflict.` });
     }));
   }
   const behaviorVerificationIds = new Set(design?.verification.map((item) => item.id) ?? []);
@@ -1352,15 +1352,15 @@ const ValidatedSpecObjectSchema = SpecObjectSchema.superRefine((spec, ctx) => {
     check(contract.verificationRefs, behaviorVerificationIds, ["behaviorContracts", contractIndex, "verificationRefs"], "verification");
     const stateIds = new Set(contract.states.map((state) => state.id));
     const actionIds = new Set(contract.actions.map((action) => action.id));
-    const checkPredicate = (predicate: z.infer<typeof PredicateSchema>, path: Array<string | number>) => check([predicate.subjectRef], referenceIds, [...path, "subjectRef"], "predicate subject");
+    const checkPredicate = (predicate: v.Infer<typeof PredicateSchema>, path: Array<string | number>) => check([predicate.subjectRef], referenceIds, [...path, "subjectRef"], "predicate subject");
     contract.preconditions.forEach((predicate, index) => checkPredicate(predicate, ["behaviorContracts", contractIndex, "preconditions", index]));
     contract.states.forEach((state, stateIndex) => check(state.visibleRefs, referenceIds, ["behaviorContracts", contractIndex, "states", stateIndex, "visibleRefs"], "visible"));
-    const writeIdentity = (write: z.infer<typeof WriteSchema>) => `${write.storeRef}:${write.entity}:${write.mode}:${write.fields.slice().sort().join(",")}`;
+    const writeIdentity = (write: v.Infer<typeof WriteSchema>) => `${write.storeRef}:${write.entity}:${write.mode}:${write.fields.slice().sort().join(",")}`;
     contract.actions.forEach((action, actionIndex) => {
       check(action.fromStateIds, stateIds, ["behaviorContracts", contractIndex, "actions", actionIndex, "fromStateIds"], "behavior state");
       if (action.toStateId) check([action.toStateId], stateIds, ["behaviorContracts", contractIndex, "actions", actionIndex, "toStateId"], "behavior state");
       const prohibited = new Set(action.prohibitedWrites.map(writeIdentity));
-      action.writes.forEach((write, writeIndex) => { if (prohibited.has(writeIdentity(write))) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["behaviorContracts", contractIndex, "actions", actionIndex, "writes", writeIndex], message: "An action cannot both write and prohibit the same normalized write." }); });
+      action.writes.forEach((write, writeIndex) => { if (prohibited.has(writeIdentity(write))) ctx.addIssue({ code: "custom", path: ["behaviorContracts", contractIndex, "actions", actionIndex, "writes", writeIndex], message: "An action cannot both write and prohibit the same normalized write." }); });
       action.effects.forEach((effect, effectIndex) => check([effect.targetRef], referenceIds, ["behaviorContracts", contractIndex, "actions", actionIndex, "effects", effectIndex, "targetRef"], "effect target"));
       for (const [field, recovery] of [["failure", action.failure], ["recovery", action.recovery]] as const) {
         if (!recovery) continue;
@@ -1386,7 +1386,7 @@ const ValidatedSpecObjectSchema = SpecObjectSchema.superRefine((spec, ctx) => {
   if (!topologyResult.success) {
     topologyResult.error.issues.forEach((issue) => {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: issue.path,
         message: issue.message,
       });
@@ -1407,7 +1407,7 @@ const ValidatedSpecObjectSchema = SpecObjectSchema.superRefine((spec, ctx) => {
   ];
   validateArchitecture(spec.architecture, { specId: spec.id, localRefs }).forEach((issue) => {
     ctx.addIssue({
-      code: z.ZodIssueCode.custom,
+      code: "custom",
       path: ["architecture", ...issue.path],
       message: issue.message,
     });
@@ -1434,7 +1434,7 @@ const ValidatedSpecObjectSchema = SpecObjectSchema.superRefine((spec, ctx) => {
         : dependencySpecIds.has(record.target.specId);
       if (!targetIsKnown) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           path: ["changeSet", bucket, index, "target"],
           message: `Unknown change target: ${identity}`,
         });
@@ -1447,7 +1447,7 @@ const ValidatedSpecObjectSchema = SpecObjectSchema.superRefine((spec, ctx) => {
       const firstPath = seenChangeRecordIds.get(record.id);
       if (firstPath) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           path: ["changeSet", bucket, index, "id"],
           message: `Duplicate change record ID ${record.id}; first declared at ${firstPath}`,
         });
@@ -1579,20 +1579,20 @@ function migrateSpecInput(input: unknown): unknown {
   };
 }
 
-export const SpecSchema = z.preprocess(migrateSpecInput, ValidatedSpecObjectSchema);
+export const SpecSchema = v.preprocess(migrateSpecInput, ValidatedSpecObjectSchema);
 
 // LintIssue — the linter emits a list of these. Severity ladder: `block` halts
 // export, `warn` is a soft nudge, `info` is observational.
-export const LintIssueSchema = z.object({
+export const LintIssueSchema = v.object({
   id: IdSchema,
-  rule: z.string(),
+  rule: v.string(),
   severity: Severity,
   // Non-waivable blockers (PII without handlingNote) set this to false.
-  waivable: z.boolean().default(true),
-  message: z.string(),
+  waivable: v.boolean().default(true),
+  message: v.string(),
   // Pointers back into the Spec graph.
-  refs: z.array(z.object({
-    kind: z.enum([
+  refs: v.array(v.object({
+    kind: v.enum([
       "need", "feature", "persona", "scenario", "uxflow", "screen",
       "datapoint", "integration", "api", "test", "adr", "assumption",
       "risk", "non_goal", "stance", "agent",
@@ -1603,101 +1603,101 @@ export const LintIssueSchema = z.object({
 
 // TraceMatrix — derived index, computed & materialized so the linter and handoff
 // export don't recompute on every read.
-export const TraceMatrixSchema = z.object({
-  generatedBy: z.string(),
+export const TraceMatrixSchema = v.object({
+  generatedBy: v.string(),
   // need_id → feature_ids
-  needToFeatures: z.record(z.string(), z.array(IdSchema)).default({}),
+  needToFeatures: v.record(v.string(), v.array(IdSchema)).default({}),
   // need_id → test_ids
-  needToTests: z.record(z.string(), z.array(IdSchema)).default({}),
+  needToTests: v.record(v.string(), v.array(IdSchema)).default({}),
   // feature_id → api_ids
-  featureToApis: z.record(z.string(), z.array(IdSchema)).default({}),
-  featureToTests: z.record(z.string(), z.array(IdSchema)).default({}),
+  featureToApis: v.record(v.string(), v.array(IdSchema)).default({}),
+  featureToTests: v.record(v.string(), v.array(IdSchema)).default({}),
   // feature_id → screen_ids / integration_ids / task_ids
-  featureToScreens: z.record(z.string(), z.array(IdSchema)).default({}),
-  featureToIntegrations: z.record(z.string(), z.array(IdSchema)).default({}),
-  featureToTasks: z.record(z.string(), z.array(IdSchema)).default({}),
+  featureToScreens: v.record(v.string(), v.array(IdSchema)).default({}),
+  featureToIntegrations: v.record(v.string(), v.array(IdSchema)).default({}),
+  featureToTasks: v.record(v.string(), v.array(IdSchema)).default({}),
   // screen / integration / need → implementation task ids
-  screenToTasks: z.record(z.string(), z.array(IdSchema)).default({}),
-  integrationToTasks: z.record(z.string(), z.array(IdSchema)).default({}),
-  needToTasks: z.record(z.string(), z.array(IdSchema)).default({}),
+  screenToTasks: v.record(v.string(), v.array(IdSchema)).default({}),
+  integrationToTasks: v.record(v.string(), v.array(IdSchema)).default({}),
+  needToTasks: v.record(v.string(), v.array(IdSchema)).default({}),
   // implementation task id → tests that verify its satisfied entities
-  taskToTests: z.record(z.string(), z.array(IdSchema)).default({}),
-  integrationToTests: z.record(z.string(), z.array(IdSchema)).default({}),
-  screenToTests: z.record(z.string(), z.array(IdSchema)).default({}),
-  flowToScreens: z.record(z.string(), z.array(IdSchema)).default({}),
-  platformSurfaceToTests: z.record(z.string(), z.array(IdSchema)).default({}),
-  behaviorToScopeRefs: z.record(z.string(), z.array(IdSchema)).default({}),
-  behaviorToScreens: z.record(z.string(), z.array(IdSchema)).default({}),
-  behaviorToElements: z.record(z.string(), z.array(IdSchema)).default({}),
-  behaviorToComponents: z.record(z.string(), z.array(IdSchema)).default({}),
-  behaviorToTasks: z.record(z.string(), z.array(IdSchema)).default({}),
-  behaviorToStates: z.record(z.string(), z.array(IdSchema)).default({}),
-  behaviorToActions: z.record(z.string(), z.array(IdSchema)).default({}),
-  behaviorToVerifications: z.record(z.string(), z.array(IdSchema)).default({}),
-  behaviorToTests: z.record(z.string(), z.array(IdSchema)).default({}),
-  decisionToConstraints: z.record(z.string(), z.array(IdSchema)).default({}),
-  decisionToScopeRefs: z.record(z.string(), z.array(IdSchema)).default({}),
-  decisionToScreens: z.record(z.string(), z.array(IdSchema)).default({}),
-  decisionToElements: z.record(z.string(), z.array(IdSchema)).default({}),
-  decisionToComponents: z.record(z.string(), z.array(IdSchema)).default({}),
-  decisionToTasks: z.record(z.string(), z.array(IdSchema)).default({}),
-  decisionToTests: z.record(z.string(), z.array(IdSchema)).default({}),
-  decisionSupersession: z.record(z.string(), IdSchema).default({}),
-  designContractIntent: z.enum(["change", "conformance"]).optional(),
-  baselineToDeltas: z.record(z.string(), z.array(IdSchema)).default({}),
-  constraintToVerifications: z.record(z.string(), z.array(IdSchema)).default({}),
-  deltaToTargets: z.record(z.string(), z.array(IdSchema)).default({}),
-  deltaToVerifications: z.record(z.string(), z.array(IdSchema)).default({}),
+  taskToTests: v.record(v.string(), v.array(IdSchema)).default({}),
+  integrationToTests: v.record(v.string(), v.array(IdSchema)).default({}),
+  screenToTests: v.record(v.string(), v.array(IdSchema)).default({}),
+  flowToScreens: v.record(v.string(), v.array(IdSchema)).default({}),
+  platformSurfaceToTests: v.record(v.string(), v.array(IdSchema)).default({}),
+  behaviorToScopeRefs: v.record(v.string(), v.array(IdSchema)).default({}),
+  behaviorToScreens: v.record(v.string(), v.array(IdSchema)).default({}),
+  behaviorToElements: v.record(v.string(), v.array(IdSchema)).default({}),
+  behaviorToComponents: v.record(v.string(), v.array(IdSchema)).default({}),
+  behaviorToTasks: v.record(v.string(), v.array(IdSchema)).default({}),
+  behaviorToStates: v.record(v.string(), v.array(IdSchema)).default({}),
+  behaviorToActions: v.record(v.string(), v.array(IdSchema)).default({}),
+  behaviorToVerifications: v.record(v.string(), v.array(IdSchema)).default({}),
+  behaviorToTests: v.record(v.string(), v.array(IdSchema)).default({}),
+  decisionToConstraints: v.record(v.string(), v.array(IdSchema)).default({}),
+  decisionToScopeRefs: v.record(v.string(), v.array(IdSchema)).default({}),
+  decisionToScreens: v.record(v.string(), v.array(IdSchema)).default({}),
+  decisionToElements: v.record(v.string(), v.array(IdSchema)).default({}),
+  decisionToComponents: v.record(v.string(), v.array(IdSchema)).default({}),
+  decisionToTasks: v.record(v.string(), v.array(IdSchema)).default({}),
+  decisionToTests: v.record(v.string(), v.array(IdSchema)).default({}),
+  decisionSupersession: v.record(v.string(), IdSchema).default({}),
+  designContractIntent: v.enum(["change", "conformance"]).optional(),
+  baselineToDeltas: v.record(v.string(), v.array(IdSchema)).default({}),
+  constraintToVerifications: v.record(v.string(), v.array(IdSchema)).default({}),
+  deltaToTargets: v.record(v.string(), v.array(IdSchema)).default({}),
+  deltaToVerifications: v.record(v.string(), v.array(IdSchema)).default({}),
   // adr_id → need_ids/feature_ids it justifies
-  adrToTargets: z.record(z.string(), z.array(IdSchema)).default({}),
+  adrToTargets: v.record(v.string(), v.array(IdSchema)).default({}),
   // Groundwork: pointer-grade entity layer wiring (additive; existing keys
   // above are untouched). entity_id → feature_ids that read or write it.
-  entityToFeatures: z.record(z.string(), z.array(IdSchema)).default({}),
+  entityToFeatures: v.record(v.string(), v.array(IdSchema)).default({}),
   // Groundwork: the pillar → requirement → design → task → acceptance chain.
   // This is the edge ANNALS-style prompt output cannot produce: a pillar that
   // reaches no acceptance evidence is a stated priority nothing verifies.
-  pillarToNeeds: z.record(z.string(), z.array(IdSchema)).default({}),
-  pillarToFeatures: z.record(z.string(), z.array(IdSchema)).default({}),
-  pillarToInvariants: z.record(z.string(), z.array(IdSchema)).default({}),
-  pillarToTasks: z.record(z.string(), z.array(IdSchema)).default({}),
+  pillarToNeeds: v.record(v.string(), v.array(IdSchema)).default({}),
+  pillarToFeatures: v.record(v.string(), v.array(IdSchema)).default({}),
+  pillarToInvariants: v.record(v.string(), v.array(IdSchema)).default({}),
+  pillarToTasks: v.record(v.string(), v.array(IdSchema)).default({}),
   /** Test ids plus the prime acceptanceTest id when it cites this pillar. */
-  pillarToAcceptance: z.record(z.string(), z.array(IdSchema)).default({}),
+  pillarToAcceptance: v.record(v.string(), v.array(IdSchema)).default({}),
   // Spec v3 architecture and ordered-task projections. Keys use qualified
   // identities where collisions across Specs are possible.
-  componentToFeatures: z.record(z.string(), z.array(IdSchema)).default({}),
-  componentToTasks: z.record(z.string(), z.array(IdSchema)).default({}),
-  contractToComponents: z.record(z.string(), z.array(IdSchema)).default({}),
-  contractToTasks: z.record(z.string(), z.array(IdSchema)).default({}),
-  relationshipToTasks: z.record(z.string(), z.array(IdSchema)).default({}),
-  architectureFlowToTasks: z.record(z.string(), z.array(IdSchema)).default({}),
-  specDependencyToRefs: z.record(z.string(), z.array(IdSchema)).default({}),
-  taskDependencies: z.record(z.string(), z.array(IdSchema)).default({}),
-  taskToOwnedFiles: z.record(z.string(), z.array(OwnedFileSchema)).optional(),
-  taskOwnershipSource: z.record(z.string(), z.enum(["explicit", "inferred"])).optional(),
-  taskToPlannedNewFiles: z.record(z.string(), z.array(OwnedFileSchema)).optional(),
+  componentToFeatures: v.record(v.string(), v.array(IdSchema)).default({}),
+  componentToTasks: v.record(v.string(), v.array(IdSchema)).default({}),
+  contractToComponents: v.record(v.string(), v.array(IdSchema)).default({}),
+  contractToTasks: v.record(v.string(), v.array(IdSchema)).default({}),
+  relationshipToTasks: v.record(v.string(), v.array(IdSchema)).default({}),
+  architectureFlowToTasks: v.record(v.string(), v.array(IdSchema)).default({}),
+  specDependencyToRefs: v.record(v.string(), v.array(IdSchema)).default({}),
+  taskDependencies: v.record(v.string(), v.array(IdSchema)).default({}),
+  taskToOwnedFiles: v.record(v.string(), v.array(OwnedFileSchema)).optional(),
+  taskOwnershipSource: v.record(v.string(), v.enum(["explicit", "inferred"])).optional(),
+  taskToPlannedNewFiles: v.record(v.string(), v.array(OwnedFileSchema)).optional(),
   // Per-screen end-to-end impact record. Qualified architecture identities are
   // strings so this remains additive to the compatibility maps above.
-  uiImpact: z.array(z.object({
+  uiImpact: v.array(v.object({
     screenId: IdSchema,
-    needIds: z.array(IdSchema).default([]),
-    featureIds: z.array(IdSchema).default([]),
-    uxFlowIds: z.array(IdSchema).default([]),
-    elementIds: z.array(IdSchema).default([]),
-    stateImpacts: z.array(z.object({
-      state: z.string(),
-      architectureFlowRefs: z.array(IdSchema).default([]),
-      failurePaths: z.array(z.string()).default([]),
-      testIds: z.array(IdSchema).default([]),
+    needIds: v.array(IdSchema).default([]),
+    featureIds: v.array(IdSchema).default([]),
+    uxFlowIds: v.array(IdSchema).default([]),
+    elementIds: v.array(IdSchema).default([]),
+    stateImpacts: v.array(v.object({
+      state: v.string(),
+      architectureFlowRefs: v.array(IdSchema).default([]),
+      failurePaths: v.array(v.string()).default([]),
+      testIds: v.array(IdSchema).default([]),
     })).default([]),
-    dataEntityIds: z.array(IdSchema).default([]),
-    componentRefs: z.array(IdSchema).default([]),
-    contractRefs: z.array(IdSchema).default([]),
-    architectureFlowRefs: z.array(IdSchema).default([]),
-    failurePaths: z.array(z.string()).default([]),
-    securityNotes: z.array(z.string()).default([]),
-    taskIds: z.array(IdSchema).default([]),
-    testIds: z.array(IdSchema).default([]),
-    unresolved: z.array(z.enum([
+    dataEntityIds: v.array(IdSchema).default([]),
+    componentRefs: v.array(IdSchema).default([]),
+    contractRefs: v.array(IdSchema).default([]),
+    architectureFlowRefs: v.array(IdSchema).default([]),
+    failurePaths: v.array(v.string()).default([]),
+    securityNotes: v.array(v.string()).default([]),
+    taskIds: v.array(IdSchema).default([]),
+    testIds: v.array(IdSchema).default([]),
+    unresolved: v.array(v.enum([
       "feature",
       "element-data",
       "data-entity",
@@ -1708,83 +1708,83 @@ export const TraceMatrixSchema = z.object({
       "test",
     ])).default([]),
   })).default([]),
-  coverageGaps: z.array(z.object({
-    kind: z.enum(["need", "feature", "screen", "integration", "task", "pillar"]),
+  coverageGaps: v.array(v.object({
+    kind: v.enum(["need", "feature", "screen", "integration", "task", "pillar"]),
     id: IdSchema,
-    missing: z.enum(["feature", "screen", "api", "task", "test", "need", "pillar", "acceptance"]),
+    missing: v.enum(["feature", "screen", "api", "task", "test", "need", "pillar", "acceptance"]),
   })).default([]),
 });
 
-export type EarsCriterion = z.infer<typeof EarsCriterionSchema>;
-export type Need = z.infer<typeof NeedSchema>;
-export type Feature = z.infer<typeof FeatureSchema>;
-export type Persona = z.infer<typeof PersonaSchema>;
-export type Scenario = z.infer<typeof ScenarioSchema>;
-export type ElementDataIn = z.infer<typeof ElementDataInSchema>;
-export type ElementDataOut = z.infer<typeof ElementDataOutSchema>;
-export type ScreenElement = z.infer<typeof ScreenElementSchema>;
-export type Screen = z.infer<typeof ScreenSchema>;
-export type UXFlow = z.infer<typeof UXFlowSchema>;
-export type DataPoint = z.infer<typeof DataPointSchema>;
-export type DataModelField = z.infer<typeof DataModelFieldSchema>;
-export type DataModelEntity = z.infer<typeof DataModelEntitySchema>;
-export type Integration = z.infer<typeof IntegrationSchema>;
-export type ExternalManualAction = z.infer<typeof ExternalManualActionSchema>;
-export type APIContract = z.infer<typeof APIContractSchema>;
-export type Test = z.infer<typeof TestSchema>;
-export type ADR = z.infer<typeof ADRSchema>;
-export type DecisionRigidity = z.infer<typeof DecisionRigiditySchema>;
-export type ContractScope = z.infer<typeof ContractScopeSchema>;
-export type BehaviorContract = z.infer<typeof BehaviorContractSchema>;
-export type BehaviorAction = z.infer<typeof BehaviorActionSchema>;
-export type DesignConstraint = z.infer<typeof DesignConstraintSchema>;
-export type DesignContract = z.infer<typeof DesignContractSchema>;
-export type Verification = z.infer<typeof VerificationSchema>;
-export type Assumption = z.infer<typeof AssumptionSchema>;
-export type Risk = z.infer<typeof RiskSchema>;
-export type AgentArchitecturePattern = z.infer<typeof AgentArchitecturePatternSchema>;
-export type AgentAutonomyLevel = z.infer<typeof AgentAutonomyLevelSchema>;
-export type AgentBuilderScale = z.infer<typeof AgentBuilderScaleSchema>;
-export type AgentToolPermissionTier = z.infer<typeof AgentToolPermissionTierSchema>;
-export type AgentToolContract = z.infer<typeof AgentToolContractSchema>;
-export type AgentModelRoute = z.infer<typeof AgentModelRouteSchema>;
-export type AgentGuardrail = z.infer<typeof AgentGuardrailSchema>;
-export type AgentEvaluation = z.infer<typeof AgentEvaluationSchema>;
-export type AgentResearchProtocol = z.infer<typeof AgentResearchProtocolSchema>;
-export type AgentUiProtocol = z.infer<typeof AgentUiProtocolSchema>;
-export type AgentSystem = z.infer<typeof AgentSystemSchema>;
-export type StanceBecauseClause = z.infer<typeof StanceBecauseClauseSchema>;
-export type PivotLogEntry = z.infer<typeof PivotLogEntrySchema>;
-export type TradeoffWeights = z.infer<typeof TradeoffWeightsSchema>;
-export type ProductState = z.infer<typeof ProductStateSchema>;
-export type NonGoal = z.infer<typeof NonGoalSchema>;
-export type PlatformTarget = z.infer<typeof PlatformTargetSchema>;
-export type DesignIntent = z.infer<typeof DesignIntentSchema>;
-export type ServiceLevel = z.infer<typeof ServiceLevelSchema>;
-export type Goal = z.infer<typeof GoalSchema>;
-export type SuccessMetric = z.infer<typeof SuccessMetricSchema>;
-export type Observability = z.infer<typeof ObservabilitySchema>;
-export type Boundaries = z.infer<typeof BoundariesSchema>;
-export type VoiceExample = z.infer<typeof VoiceExampleSchema>;
-export type VoiceProfile = z.infer<typeof VoiceProfileSchema>;
-export type Pillar = z.infer<typeof PillarSchema>;
-export type AcceptanceTest = z.infer<typeof AcceptanceTestSchema>;
-export type PhaseAcceptance = z.infer<typeof PhaseAcceptanceSchema>;
-export type HardConstraint = z.infer<typeof HardConstraintSchema>;
-export type PerformanceBudgetEntry = z.infer<typeof PerformanceBudgetEntrySchema>;
-export type ArchitecturalInvariant = z.infer<typeof ArchitecturalInvariantSchema>;
-export type Nfr = z.infer<typeof NfrSchema>;
-export type SpecCodeSync = z.infer<typeof SpecCodeSyncSchema>;
-export type ReadingContract = z.infer<typeof ReadingContractSchema>;
-export type EvidenceStatus = z.infer<typeof EvidenceStatusSchema>;
-export type EvidenceRecord = z.infer<typeof EvidenceRecordSchema>;
-export type ProjectContext = z.infer<typeof ProjectContextSchema>;
-export type RepoLayout = z.infer<typeof RepoLayoutSchema>;
-export type ResponsiveTargets = z.infer<typeof ResponsiveTargetsSchema>;
-export type UiPreferences = z.infer<typeof UiPreferencesSchema>;
-export type Governance = z.infer<typeof GovernanceSchema>;
-export type ChangeRecord = z.infer<typeof ChangeRecordSchema>;
-export type ChangeSet = z.infer<typeof ChangeSetSchema>;
-export type Spec = z.infer<typeof SpecSchema>;
-export type LintIssue = z.infer<typeof LintIssueSchema>;
-export type TraceMatrix = z.infer<typeof TraceMatrixSchema>;
+export type EarsCriterion = v.Infer<typeof EarsCriterionSchema>;
+export type Need = v.Infer<typeof NeedSchema>;
+export type Feature = v.Infer<typeof FeatureSchema>;
+export type Persona = v.Infer<typeof PersonaSchema>;
+export type Scenario = v.Infer<typeof ScenarioSchema>;
+export type ElementDataIn = v.Infer<typeof ElementDataInSchema>;
+export type ElementDataOut = v.Infer<typeof ElementDataOutSchema>;
+export type ScreenElement = v.Infer<typeof ScreenElementSchema>;
+export type Screen = v.Infer<typeof ScreenSchema>;
+export type UXFlow = v.Infer<typeof UXFlowSchema>;
+export type DataPoint = v.Infer<typeof DataPointSchema>;
+export type DataModelField = v.Infer<typeof DataModelFieldSchema>;
+export type DataModelEntity = v.Infer<typeof DataModelEntitySchema>;
+export type Integration = v.Infer<typeof IntegrationSchema>;
+export type ExternalManualAction = v.Infer<typeof ExternalManualActionSchema>;
+export type APIContract = v.Infer<typeof APIContractSchema>;
+export type Test = v.Infer<typeof TestSchema>;
+export type ADR = v.Infer<typeof ADRSchema>;
+export type DecisionRigidity = v.Infer<typeof DecisionRigiditySchema>;
+export type ContractScope = v.Infer<typeof ContractScopeSchema>;
+export type BehaviorContract = v.Infer<typeof BehaviorContractSchema>;
+export type BehaviorAction = v.Infer<typeof BehaviorActionSchema>;
+export type DesignConstraint = v.Infer<typeof DesignConstraintSchema>;
+export type DesignContract = v.Infer<typeof DesignContractSchema>;
+export type Verification = v.Infer<typeof VerificationSchema>;
+export type Assumption = v.Infer<typeof AssumptionSchema>;
+export type Risk = v.Infer<typeof RiskSchema>;
+export type AgentArchitecturePattern = v.Infer<typeof AgentArchitecturePatternSchema>;
+export type AgentAutonomyLevel = v.Infer<typeof AgentAutonomyLevelSchema>;
+export type AgentBuilderScale = v.Infer<typeof AgentBuilderScaleSchema>;
+export type AgentToolPermissionTier = v.Infer<typeof AgentToolPermissionTierSchema>;
+export type AgentToolContract = v.Infer<typeof AgentToolContractSchema>;
+export type AgentModelRoute = v.Infer<typeof AgentModelRouteSchema>;
+export type AgentGuardrail = v.Infer<typeof AgentGuardrailSchema>;
+export type AgentEvaluation = v.Infer<typeof AgentEvaluationSchema>;
+export type AgentResearchProtocol = v.Infer<typeof AgentResearchProtocolSchema>;
+export type AgentUiProtocol = v.Infer<typeof AgentUiProtocolSchema>;
+export type AgentSystem = v.Infer<typeof AgentSystemSchema>;
+export type StanceBecauseClause = v.Infer<typeof StanceBecauseClauseSchema>;
+export type PivotLogEntry = v.Infer<typeof PivotLogEntrySchema>;
+export type TradeoffWeights = v.Infer<typeof TradeoffWeightsSchema>;
+export type ProductState = v.Infer<typeof ProductStateSchema>;
+export type NonGoal = v.Infer<typeof NonGoalSchema>;
+export type PlatformTarget = v.Infer<typeof PlatformTargetSchema>;
+export type DesignIntent = v.Infer<typeof DesignIntentSchema>;
+export type ServiceLevel = v.Infer<typeof ServiceLevelSchema>;
+export type Goal = v.Infer<typeof GoalSchema>;
+export type SuccessMetric = v.Infer<typeof SuccessMetricSchema>;
+export type Observability = v.Infer<typeof ObservabilitySchema>;
+export type Boundaries = v.Infer<typeof BoundariesSchema>;
+export type VoiceExample = v.Infer<typeof VoiceExampleSchema>;
+export type VoiceProfile = v.Infer<typeof VoiceProfileSchema>;
+export type Pillar = v.Infer<typeof PillarSchema>;
+export type AcceptanceTest = v.Infer<typeof AcceptanceTestSchema>;
+export type PhaseAcceptance = v.Infer<typeof PhaseAcceptanceSchema>;
+export type HardConstraint = v.Infer<typeof HardConstraintSchema>;
+export type PerformanceBudgetEntry = v.Infer<typeof PerformanceBudgetEntrySchema>;
+export type ArchitecturalInvariant = v.Infer<typeof ArchitecturalInvariantSchema>;
+export type Nfr = v.Infer<typeof NfrSchema>;
+export type SpecCodeSync = v.Infer<typeof SpecCodeSyncSchema>;
+export type ReadingContract = v.Infer<typeof ReadingContractSchema>;
+export type EvidenceStatus = v.Infer<typeof EvidenceStatusSchema>;
+export type EvidenceRecord = v.Infer<typeof EvidenceRecordSchema>;
+export type ProjectContext = v.Infer<typeof ProjectContextSchema>;
+export type RepoLayout = v.Infer<typeof RepoLayoutSchema>;
+export type ResponsiveTargets = v.Infer<typeof ResponsiveTargetsSchema>;
+export type UiPreferences = v.Infer<typeof UiPreferencesSchema>;
+export type Governance = v.Infer<typeof GovernanceSchema>;
+export type ChangeRecord = v.Infer<typeof ChangeRecordSchema>;
+export type ChangeSet = v.Infer<typeof ChangeSetSchema>;
+export type Spec = v.Infer<typeof SpecSchema>;
+export type LintIssue = v.Infer<typeof LintIssueSchema>;
+export type TraceMatrix = v.Infer<typeof TraceMatrixSchema>;

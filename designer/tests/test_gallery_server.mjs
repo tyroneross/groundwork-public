@@ -757,6 +757,12 @@ test('browser can navigate expanded views, keyboard-annotate, save, exit, and re
     const saved = JSON.parse(fs.readFileSync(path.join(galleryDir, '.canvas', 'gallery-selections.json'), 'utf8'));
     return saved.ratings?.['planner.html'] === 'yay';
   }, 'restored Yay decision was not persisted after the failure-path check');
+  // A server-side file write precedes the response that enables browser controls.
+  // Wait for that acknowledgement before clicking the next decision.
+  await waitUntil(
+    async () => evaluate(cdp, "document.querySelector('.viewer-feedback-status')?.textContent === 'Yay saved' && !Array.from(document.querySelectorAll('.viewer-rating-row .rate-btn')).find(button => button.dataset.rating === 'nay')?.disabled"),
+    'restored Yay decision was not acknowledged by the browser',
+  );
   await evaluate(cdp, `(() => {
     const originalFetch = globalThis.fetch.bind(globalThis);
     let failedOnce = false;

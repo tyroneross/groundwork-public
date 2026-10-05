@@ -4,7 +4,7 @@ The Designer engine ranks its design decisions with an information-gain heuristi
 (`designer/engine/contract.py::information_gain`) that scans a flat
 ``TasteState.context`` dict — ``{description, audience, density, mood}`` — for
 keyword signals. This module is the one-way bridge that reads a validated
-groundwork ``Spec`` (the zod schema in ``engine/src/spec.ts``) and produces that
+groundwork ``Spec`` (the owned schema in ``engine/src/spec.ts``) and produces that
 context dict so a design walk can be seeded from the product spec instead of a
 hand-typed sentence.
 

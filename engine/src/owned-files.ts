@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as v from "./validation.js";
 
 const PRIVATE_SEGMENTS = new Set([".git", ".ssh", ".aws", ".gnupg", ".env", "secrets", "credentials"]);
 const PRIVATE_NAME = /^(?:credentials(?:\.[^.]+)?|secrets?(?:\.[^.]+)?|id_(?:rsa|dsa|ecdsa|ed25519))$/i;
@@ -20,20 +20,20 @@ function isSafeOwnedFile(value: string): boolean {
   });
 }
 
-export const OwnedFileSchema = z.string().min(1).refine(
+export const OwnedFileSchema = v.string().min(1).refine(
   isSafeOwnedFile,
   "Owned files must be traversal-free, non-private repository-relative POSIX file paths.",
 );
 
-export const OwnedFilesSchema = z.array(OwnedFileSchema).min(1).superRefine((values, ctx) => {
+export const OwnedFilesSchema = v.array(OwnedFileSchema).min(1).superRefine((values, ctx) => {
   const seen = new Set<string>();
   values.forEach((value, index) => {
-    if (seen.has(value)) ctx.addIssue({ code: z.ZodIssueCode.custom, path: [index], message: `Duplicate owned file: ${value}` });
+    if (seen.has(value)) ctx.addIssue({ code: "custom", path: [index], message: `Duplicate owned file: ${value}` });
     seen.add(value);
   });
 });
 
-export const DeclaredNewFileSchema = z.object({
+export const DeclaredNewFileSchema = v.object({
   path: OwnedFileSchema,
-  because: z.string().min(1),
+  because: v.string().min(1),
 }).strict();

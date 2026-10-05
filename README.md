@@ -245,6 +245,8 @@ Authenticated host activation is a separate local check.
 ## License and provenance
 
 Groundwork is licensed under [Apache 2.0](LICENSE). [NOTICE](NOTICE) records
-authorship and bundled guidance attribution. [Third-party notices](THIRD-PARTY-NOTICES.md)
-retain the bundled Zod license. The [publication attestation](PUBLICATION-ATTESTATION.md)
+authorship and bundled guidance attribution. The engine uses a source-owned
+contract validator and has no third-party runtime dependencies. TypeScript,
+tsx, and esbuild remain development tools. [Third-party notices](THIRD-PARTY-NOTICES.md)
+retain attribution for earlier bundles. The [publication attestation](PUBLICATION-ATTESTATION.md)
 describes the source boundary, synthetic fixtures, and verification limits.

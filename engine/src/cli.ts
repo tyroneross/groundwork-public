@@ -35,7 +35,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import * as crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
-import { z } from "zod";
+import * as v from "./validation.js";
 import { SpecSchema, TraceMatrixSchema, type Spec } from "./spec.js";
 import { renderDocs } from "./render.js";
 import { deriveTasks, renderBuilderHandoff, renderTasks } from "./handoff.js";
@@ -260,8 +260,8 @@ function fail(message: string): never {
   process.exit(1);
 }
 
-/** Pretty-print zod issues so a human (or agent) can fix the Spec. */
-function reportZodError(err: z.ZodError): never {
+/** Pretty-print validation issues so a human (or agent) can fix the Spec. */
+function reportValidationError(err: v.ValidationError): never {
   const lines = ["Spec validation failed. SpecSchema rejected the input:", ""];
   for (const issue of err.issues) {
     const where = issue.path.length ? issue.path.join(".") : "(root)";
@@ -536,7 +536,7 @@ function main(): void {
   try {
     spec = SpecSchema.parse(rawObj);
   } catch (e) {
-    if (e instanceof z.ZodError) reportZodError(e);
+    if (e instanceof v.ValidationError) reportValidationError(e);
     throw e;
   }
   if (checkOwnedFiles) {

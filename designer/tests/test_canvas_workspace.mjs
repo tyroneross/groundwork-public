@@ -174,6 +174,7 @@ test('workspace navigation preserves draft attribution; preview/apply, Hold and 
       assert.equal(firstOpen.frameHeight, rect.height, 'feedback overlays without resizing the preview');
       assert.equal(await run("document.querySelector('.stage').inert && document.getElementById('feedbackPanel').getAttribute('aria-modal') === 'true' && document.activeElement.id === 'feedbackClose'"), true, 'mobile feedback has modal focus');
       await cdp.send('Input.dispatchKeyEvent', {type:'keyDown', key:'Escape', code:'Escape'});
+      await waitUntil(() => run("!document.body.classList.contains('feedback-open') && !document.querySelector('.stage').inert && document.activeElement.id === 'feedbackToggle'"), 'Escape did not close feedback and restore focus');
       assert.equal(await run("!document.body.classList.contains('feedback-open') && !document.querySelector('.stage').inert && document.activeElement.id === 'feedbackToggle'"), true, 'Escape closes and restores focus');
       await run("document.getElementById('feedbackToggle').click()");
       await cdp.send('Input.dispatchKeyEvent', {type:'keyDown', key:'Tab', code:'Tab', modifiers:8});

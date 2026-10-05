@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as v from "./validation.js";
 import {
   ComponentSchema,
   ContractSchema,
@@ -20,19 +20,19 @@ import {
   type PlatformSurface,
 } from "./platform-topology.js";
 
-const IdSchema = z.string().min(1).regex(/^[A-Za-z0-9][A-Za-z0-9._:-]*$/);
-const RelativePathSchema = z.string().min(1).max(500).superRefine((value, ctx) => {
+const IdSchema = v.string().min(1).regex(/^[A-Za-z0-9][A-Za-z0-9._:-]*$/);
+const RelativePathSchema = v.string().min(1).max(500).superRefine((value, ctx) => {
   if (value.includes("\\") || value.startsWith("/") || /^[A-Za-z]:/.test(value)) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Source paths must be relative POSIX paths." });
+    ctx.addIssue({ code: "custom", message: "Source paths must be relative POSIX paths." });
   }
   if (value.split("/").some((part) => part === ".." || part === "")) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Source paths may not traverse or contain empty segments." });
+    ctx.addIssue({ code: "custom", message: "Source paths may not traverse or contain empty segments." });
   }
 });
 
-export const ObservationProvenanceSchema = z.enum(["observed", "decided", "assumed"]);
+export const ObservationProvenanceSchema = v.enum(["observed", "decided", "assumed"]);
 
-export const ObservationFieldSchema = z.enum([
+export const ObservationFieldSchema = v.enum([
   "platformSurfaces",
   "architecture.components",
   "architecture.contracts",
@@ -47,48 +47,48 @@ export const ObservationFieldSchema = z.enum([
   "changeSet.verified",
 ]);
 
-export const ObservationSourceRefSchema = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("survey"), nodeId: IdSchema }).strict(),
-  z.object({ kind: z.literal("repo"), path: RelativePathSchema }).strict(),
-  z.object({ kind: z.literal("artifact"), path: RelativePathSchema }).strict(),
-  z.object({ kind: z.literal("agent"), id: IdSchema }).strict(),
+export const ObservationSourceRefSchema = v.discriminatedUnion("kind", [
+  v.object({ kind: v.literal("survey"), nodeId: IdSchema }).strict(),
+  v.object({ kind: v.literal("repo"), path: RelativePathSchema }).strict(),
+  v.object({ kind: v.literal("artifact"), path: RelativePathSchema }).strict(),
+  v.object({ kind: v.literal("agent"), id: IdSchema }).strict(),
 ]);
 
-export const ObservationTargetSchema = z.object({
+export const ObservationTargetSchema = v.object({
   field: ObservationFieldSchema,
   entityId: IdSchema,
 }).strict();
 
-export const ObservationSchema = z.object({
+export const ObservationSchema = v.object({
   id: IdSchema,
   target: ObservationTargetSchema,
-  value: z.unknown(),
+  value: v.unknown(),
   provenance: ObservationProvenanceSchema,
-  sourceRefs: z.array(ObservationSourceRefSchema).min(1),
-  confidence: z.number().min(0).max(1).optional(),
+  sourceRefs: v.array(ObservationSourceRefSchema).min(1),
+  confidence: v.number().min(0).max(1).optional(),
 }).strict().superRefine((observation, ctx) => {
   if (!("value" in observation)) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["value"], message: "Observation value is required." });
+    ctx.addIssue({ code: "custom", path: ["value"], message: "Observation value is required." });
   }
 });
 
-export const UnresolvedObservationSchema = z.object({
+export const UnresolvedObservationSchema = v.object({
   field: ObservationFieldSchema,
-  reason: z.string().min(1),
+  reason: v.string().min(1),
 }).strict();
 
-export const ObservationBatchSchema = z.object({
-  contract: z.literal("groundwork.observation-batch/v1"),
+export const ObservationBatchSchema = v.object({
+  contract: v.literal("groundwork.observation-batch/v1"),
   specId: IdSchema,
-  observations: z.array(ObservationSchema),
-  unresolved: z.array(UnresolvedObservationSchema),
+  observations: v.array(ObservationSchema),
+  unresolved: v.array(UnresolvedObservationSchema),
 }).strict().superRefine((batch, ctx) => {
   const observationIds = new Set<string>();
   const targets = new Set<string>();
   batch.observations.forEach((observation, index) => {
     if (observationIds.has(observation.id)) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["observations", index, "id"],
         message: `Duplicate observation ID: ${observation.id}`,
       });
@@ -98,7 +98,7 @@ export const ObservationBatchSchema = z.object({
     const target = `${observation.target.field}:${observation.target.entityId}`;
     if (targets.has(target)) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["observations", index, "target"],
         message: `Duplicate observation target: ${target}`,
       });
@@ -110,14 +110,14 @@ export const ObservationBatchSchema = z.object({
   batch.unresolved.forEach((entry, index) => {
     if (unresolvedFields.has(entry.field)) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["unresolved", index, "field"],
         message: `Duplicate unresolved field: ${entry.field}`,
       });
     }
     if (batch.observations.some((observation) => observation.target.field === entry.field)) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["unresolved", index, "field"],
         message: `Field ${entry.field} cannot be both observed and unresolved.`,
       });
@@ -126,13 +126,13 @@ export const ObservationBatchSchema = z.object({
   });
 });
 
-export type ObservationProvenance = z.infer<typeof ObservationProvenanceSchema>;
-export type ObservationField = z.infer<typeof ObservationFieldSchema>;
-export type ObservationSourceRef = z.infer<typeof ObservationSourceRefSchema>;
-export type ObservationTarget = z.infer<typeof ObservationTargetSchema>;
-export type Observation = z.infer<typeof ObservationSchema>;
-export type UnresolvedObservation = z.infer<typeof UnresolvedObservationSchema>;
-export type ObservationBatch = z.infer<typeof ObservationBatchSchema>;
+export type ObservationProvenance = v.Infer<typeof ObservationProvenanceSchema>;
+export type ObservationField = v.Infer<typeof ObservationFieldSchema>;
+export type ObservationSourceRef = v.Infer<typeof ObservationSourceRefSchema>;
+export type ObservationTarget = v.Infer<typeof ObservationTargetSchema>;
+export type Observation = v.Infer<typeof ObservationSchema>;
+export type UnresolvedObservation = v.Infer<typeof UnresolvedObservationSchema>;
+export type ObservationBatch = v.Infer<typeof ObservationBatchSchema>;
 
 const FIELD_ORDER = new Map(
   ObservationFieldSchema.options.map((field, index) => [field, index]),
@@ -157,12 +157,12 @@ function requireEntityId(value: { id: string }, observation: Observation): void 
   }
 }
 
-function parseWithProvenance<TSchema extends z.ZodTypeAny>(
+function parseWithProvenance<TSchema extends v.Schema<any>>(
   schema: TSchema,
   value: unknown,
   provenance: ObservationProvenance,
-): z.output<TSchema> {
-  return schema.parse({ ...(value as object), provenance }) as z.output<TSchema>;
+): v.Output<TSchema> {
+  return schema.parse({ ...(value as object), provenance }) as v.Output<TSchema>;
 }
 
 function addUniqueString(values: readonly string[], value: string): string[] {
@@ -222,7 +222,7 @@ export function applyObservationBatch(candidate: unknown, inputBatch: unknown): 
         break;
       }
       case "governance.constraints": {
-        const value = z.string().min(1).parse(observation.value);
+        const value = v.string().min(1).parse(observation.value);
         draft.governance.constraints = addUniqueString(draft.governance.constraints, value);
         break;
       }
@@ -232,7 +232,7 @@ export function applyObservationBatch(candidate: unknown, inputBatch: unknown): 
         break;
       }
       case "governance.owners": {
-        const value = z.string().min(1).parse(observation.value);
+        const value = v.string().min(1).parse(observation.value);
         draft.governance.owners = addUniqueString(draft.governance.owners, value);
         break;
       }

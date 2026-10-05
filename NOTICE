@@ -6,8 +6,9 @@ Licensed under the Apache License, Version 2.0.
 Groundwork includes Calm Precision guidance authored by Tyrone Ross,
 vendored from RossLabs-AI-Toolkit (version 6.6.0). The original source
 provenance and bibliography are retained under skills/calm-precision/.
-The engine bundle includes Zod under MIT. Its copyright and full license
-are retained in THIRD-PARTY-NOTICES.md, which ships with every staged bundle.
+The engine uses Groundwork's source-owned contract validator and has no
+third-party runtime dependencies. Historical bundled dependency notices
+are retained in THIRD-PARTY-NOTICES.md.
 Build-time dependencies retain their respective licenses.
 
 Portions of Groundwork were developed with assistance from Anthropic Claude

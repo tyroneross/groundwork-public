@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { z } from "zod";
+import * as v from "./validation.js";
 import { ArchitectureSchema, QualifiedRefSchema, qualifiedRefIdentity } from "./architecture.js";
 import { PlatformSurfaceSchema } from "./platform-topology.js";
 import { externalManualActionSecretReason } from "./spec.js";
@@ -11,30 +11,30 @@ export const CONVERGENCE_CONTRACT = "groundwork.convergence/v1" as const;
 export const SUPPORTED_IMPLEMENTATION_MAP_VERSIONS = [IMPLEMENTATION_MAP_CONTRACT] as const;
 export const SUPPORTED_CONVERGENCE_VERSIONS = [CONVERGENCE_CONTRACT] as const;
 
-const IdSchema = z.string().min(1);
-const NonEmptyStringSchema = z.string().min(1);
-const DigestSchema = z.string().regex(/^sha256:[a-f0-9]{64}$/);
-const DateTimeSchema = z.string().datetime({ offset: true });
+const IdSchema = v.string().min(1);
+const NonEmptyStringSchema = v.string().min(1);
+const DigestSchema = v.string().regex(/^sha256:[a-f0-9]{64}$/);
+const DateTimeSchema = v.string().datetime({ offset: true });
 const EMPTY_DIGEST = `sha256:${"0".repeat(64)}`;
 
-export const BuildTaskSchema = z.object({
+export const BuildTaskSchema = v.object({
   id: IdSchema,
   title: NonEmptyStringSchema,
-  componentRefs: z.array(QualifiedRefSchema),
-  contractRefs: z.array(QualifiedRefSchema),
-  requirementIds: z.array(IdSchema),
-  dependsOn: z.array(IdSchema),
-  acceptanceCriterionIds: z.array(IdSchema),
+  componentRefs: v.array(QualifiedRefSchema),
+  contractRefs: v.array(QualifiedRefSchema),
+  requirementIds: v.array(IdSchema),
+  dependsOn: v.array(IdSchema),
+  acceptanceCriterionIds: v.array(IdSchema),
   ownedFiles: OwnedFilesSchema.optional(),
 }).strict();
 
-export const BuildAcceptanceCriterionSchema = z.object({
+export const BuildAcceptanceCriterionSchema = v.object({
   id: IdSchema,
   statement: NonEmptyStringSchema,
-  testHint: z.string().optional(),
+  testHint: v.string().optional(),
 }).strict();
 
-export const BuildManualActionSchema = z.object({
+export const BuildManualActionSchema = v.object({
   id: IdSchema,
   location: NonEmptyStringSchema,
   action: NonEmptyStringSchema,
@@ -46,7 +46,7 @@ export const BuildManualActionSchema = z.object({
     const reason = externalManualActionSecretReason(action[field]);
     if (reason) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: [field],
         message: `Build manual actions may name required values or permissions, but must not contain actual secrets (${reason}).`,
       });
@@ -54,41 +54,41 @@ export const BuildManualActionSchema = z.object({
   }
 });
 
-export const ReturnVersionsSchema = z.object({
-  implementationMap: z.array(z.literal(IMPLEMENTATION_MAP_CONTRACT)).min(1),
-  convergence: z.array(z.literal(CONVERGENCE_CONTRACT)).min(1),
+export const ReturnVersionsSchema = v.object({
+  implementationMap: v.array(v.literal(IMPLEMENTATION_MAP_CONTRACT)).min(1),
+  convergence: v.array(v.literal(CONVERGENCE_CONTRACT)).min(1),
 }).strict();
 
-export const BuildRequestSchema = z.object({
-  contract: z.literal(BUILD_REQUEST_CONTRACT),
+export const BuildRequestSchema = v.object({
+  contract: v.literal(BUILD_REQUEST_CONTRACT),
   runId: IdSchema,
   specId: IdSchema,
   specDigest: DigestSchema,
   taskDigest: DigestSchema,
-  platformSurfaces: z.array(PlatformSurfaceSchema).min(1),
+  platformSurfaces: v.array(PlatformSurfaceSchema).min(1),
   architecture: ArchitectureSchema,
-  tasks: z.array(BuildTaskSchema).min(1),
-  acceptanceCriteria: z.array(BuildAcceptanceCriterionSchema),
-  manualActions: z.array(BuildManualActionSchema),
+  tasks: v.array(BuildTaskSchema).min(1),
+  acceptanceCriteria: v.array(BuildAcceptanceCriterionSchema),
+  manualActions: v.array(BuildManualActionSchema),
   returnVersions: ReturnVersionsSchema,
   requestDigest: DigestSchema,
   createdAt: DateTimeSchema,
 }).strict();
 
-export const ImplementationProducerSchema = z.object({
-  name: z.literal("build-loop"),
+export const ImplementationProducerSchema = v.object({
+  name: v.literal("build-loop"),
   version: NonEmptyStringSchema,
-  commit: z.string().min(7).optional(),
+  commit: v.string().min(7).optional(),
 }).strict();
 
-export const ImplementationMappingKindSchema = z.enum([
+export const ImplementationMappingKindSchema = v.enum([
   "task",
   "component",
   "contract",
   "requirement",
 ]);
 
-export const ImplementationMappingStatusSchema = z.enum([
+export const ImplementationMappingStatusSchema = v.enum([
   "not-started",
   "implemented",
   "verified",
@@ -97,54 +97,54 @@ export const ImplementationMappingStatusSchema = z.enum([
   "diverged",
 ]);
 
-export const ImplementationMappingSchema = z.object({
+export const ImplementationMappingSchema = v.object({
   id: IdSchema,
   kind: ImplementationMappingKindSchema,
   targetId: IdSchema,
   status: ImplementationMappingStatusSchema,
-  fileRefs: z.array(NonEmptyStringSchema),
-  symbolRefs: z.array(NonEmptyStringSchema),
-  commitRefs: z.array(z.string().min(7)),
-  testEvidenceIds: z.array(IdSchema),
-  runtimeEvidenceIds: z.array(IdSchema),
-  deviationIds: z.array(IdSchema).optional(),
+  fileRefs: v.array(NonEmptyStringSchema),
+  symbolRefs: v.array(NonEmptyStringSchema),
+  commitRefs: v.array(v.string().min(7)),
+  testEvidenceIds: v.array(IdSchema),
+  runtimeEvidenceIds: v.array(IdSchema),
+  deviationIds: v.array(IdSchema).optional(),
 }).strict();
 
-export const ImplementationEvidenceKindSchema = z.enum(["test", "runtime", "inspection"]);
-export const ImplementationEvidenceOutcomeSchema = z.enum(["passed", "failed", "blocked", "manual"]);
+export const ImplementationEvidenceKindSchema = v.enum(["test", "runtime", "inspection"]);
+export const ImplementationEvidenceOutcomeSchema = v.enum(["passed", "failed", "blocked", "manual"]);
 
-export const ImplementationEvidenceSchema = z.object({
+export const ImplementationEvidenceSchema = v.object({
   id: IdSchema,
   kind: ImplementationEvidenceKindSchema,
   command: NonEmptyStringSchema,
   outcome: ImplementationEvidenceOutcomeSchema,
-  summary: z.string().optional(),
+  summary: v.string().optional(),
   artifactDigest: DigestSchema.optional(),
   recordedAt: DateTimeSchema,
 }).strict();
 
-export const ImplementationDeviationSchema = z.object({
+export const ImplementationDeviationSchema = v.object({
   id: IdSchema,
   targetId: IdSchema,
   summary: NonEmptyStringSchema,
-  impact: z.enum(["none", "low", "medium", "high", "blocking"]),
+  impact: v.enum(["none", "low", "medium", "high", "blocking"]),
 }).strict();
 
-export const ImplementationMapSchema = z.object({
-  contract: z.literal(IMPLEMENTATION_MAP_CONTRACT),
+export const ImplementationMapSchema = v.object({
+  contract: v.literal(IMPLEMENTATION_MAP_CONTRACT),
   runId: IdSchema,
   buildRequestDigest: DigestSchema,
   specDigest: DigestSchema,
   taskDigest: DigestSchema,
   producer: ImplementationProducerSchema,
-  mappings: z.array(ImplementationMappingSchema),
-  evidence: z.array(ImplementationEvidenceSchema),
-  deviations: z.array(ImplementationDeviationSchema),
+  mappings: v.array(ImplementationMappingSchema),
+  evidence: v.array(ImplementationEvidenceSchema),
+  deviations: v.array(ImplementationDeviationSchema),
   implementationMapDigest: DigestSchema,
   createdAt: DateTimeSchema,
 }).strict();
 
-export const ConvergenceStatusSchema = z.enum([
+export const ConvergenceStatusSchema = v.enum([
   "unverified",
   "implemented",
   "verified",
@@ -153,63 +153,63 @@ export const ConvergenceStatusSchema = z.enum([
   "manual",
 ]);
 
-export const ConvergenceSummarySchema = z.object({
-  unverified: z.number().int().min(0),
-  implemented: z.number().int().min(0),
-  verified: z.number().int().min(0),
-  diverged: z.number().int().min(0),
-  blocked: z.number().int().min(0),
-  manual: z.number().int().min(0),
+export const ConvergenceSummarySchema = v.object({
+  unverified: v.number().int().min(0),
+  implemented: v.number().int().min(0),
+  verified: v.number().int().min(0),
+  diverged: v.number().int().min(0),
+  blocked: v.number().int().min(0),
+  manual: v.number().int().min(0),
 }).strict();
 
-export const ConvergenceItemSchema = z.object({
+export const ConvergenceItemSchema = v.object({
   kind: ImplementationMappingKindSchema,
   targetId: IdSchema,
   status: ConvergenceStatusSchema,
-  mappingIds: z.array(IdSchema),
-  evidenceIds: z.array(IdSchema),
+  mappingIds: v.array(IdSchema),
+  evidenceIds: v.array(IdSchema),
   reason: NonEmptyStringSchema,
 }).strict();
 
-export const ConvergenceSchema = z.object({
-  contract: z.literal(CONVERGENCE_CONTRACT),
+export const ConvergenceSchema = v.object({
+  contract: v.literal(CONVERGENCE_CONTRACT),
   runId: IdSchema,
   specDigest: DigestSchema,
   taskDigest: DigestSchema,
   buildRequestDigest: DigestSchema,
   implementationMapDigest: DigestSchema,
-  calculatedBy: z.object({
-    name: z.literal("groundwork"),
+  calculatedBy: v.object({
+    name: v.literal("groundwork"),
     version: NonEmptyStringSchema,
   }).strict(),
   summary: ConvergenceSummarySchema,
-  items: z.array(ConvergenceItemSchema),
+  items: v.array(ConvergenceItemSchema),
   calculatedAt: DateTimeSchema,
 }).strict();
 
-export type BuildTask = z.infer<typeof BuildTaskSchema>;
-export type BuildAcceptanceCriterion = z.infer<typeof BuildAcceptanceCriterionSchema>;
-export type BuildManualAction = z.infer<typeof BuildManualActionSchema>;
-export type ReturnVersions = z.infer<typeof ReturnVersionsSchema>;
-export type BuildRequest = z.infer<typeof BuildRequestSchema>;
+export type BuildTask = v.Infer<typeof BuildTaskSchema>;
+export type BuildAcceptanceCriterion = v.Infer<typeof BuildAcceptanceCriterionSchema>;
+export type BuildManualAction = v.Infer<typeof BuildManualActionSchema>;
+export type ReturnVersions = v.Infer<typeof ReturnVersionsSchema>;
+export type BuildRequest = v.Infer<typeof BuildRequestSchema>;
 export type BuildRequestDraft = Omit<BuildRequest, "specDigest" | "taskDigest" | "requestDigest">;
-export type ImplementationProducer = z.infer<typeof ImplementationProducerSchema>;
-export type ImplementationMappingKind = z.infer<typeof ImplementationMappingKindSchema>;
-export type ImplementationMappingStatus = z.infer<typeof ImplementationMappingStatusSchema>;
-export type ImplementationMapping = z.infer<typeof ImplementationMappingSchema>;
-export type ImplementationEvidenceKind = z.infer<typeof ImplementationEvidenceKindSchema>;
-export type ImplementationEvidenceOutcome = z.infer<typeof ImplementationEvidenceOutcomeSchema>;
-export type ImplementationEvidence = z.infer<typeof ImplementationEvidenceSchema>;
-export type ImplementationDeviation = z.infer<typeof ImplementationDeviationSchema>;
-export type ImplementationMap = z.infer<typeof ImplementationMapSchema>;
+export type ImplementationProducer = v.Infer<typeof ImplementationProducerSchema>;
+export type ImplementationMappingKind = v.Infer<typeof ImplementationMappingKindSchema>;
+export type ImplementationMappingStatus = v.Infer<typeof ImplementationMappingStatusSchema>;
+export type ImplementationMapping = v.Infer<typeof ImplementationMappingSchema>;
+export type ImplementationEvidenceKind = v.Infer<typeof ImplementationEvidenceKindSchema>;
+export type ImplementationEvidenceOutcome = v.Infer<typeof ImplementationEvidenceOutcomeSchema>;
+export type ImplementationEvidence = v.Infer<typeof ImplementationEvidenceSchema>;
+export type ImplementationDeviation = v.Infer<typeof ImplementationDeviationSchema>;
+export type ImplementationMap = v.Infer<typeof ImplementationMapSchema>;
 export type ImplementationMapDraft = Omit<
   ImplementationMap,
   "runId" | "buildRequestDigest" | "specDigest" | "taskDigest" | "implementationMapDigest"
 >;
-export type ConvergenceStatus = z.infer<typeof ConvergenceStatusSchema>;
-export type ConvergenceSummary = z.infer<typeof ConvergenceSummarySchema>;
-export type ConvergenceItem = z.infer<typeof ConvergenceItemSchema>;
-export type Convergence = z.infer<typeof ConvergenceSchema>;
+export type ConvergenceStatus = v.Infer<typeof ConvergenceStatusSchema>;
+export type ConvergenceSummary = v.Infer<typeof ConvergenceSummarySchema>;
+export type ConvergenceItem = v.Infer<typeof ConvergenceItemSchema>;
+export type Convergence = v.Infer<typeof ConvergenceSchema>;
 
 export interface ExchangeValidationIssue {
   path: Array<string | number>;
@@ -682,7 +682,7 @@ function addCrossKindTargetIdIssues(
 }
 
 function validateTaskRef(
-  ref: z.infer<typeof QualifiedRefSchema>,
+  ref: v.Infer<typeof QualifiedRefSchema>,
   expectedKind: "component" | "contract",
   specId: string,
   localIds: Set<string>,

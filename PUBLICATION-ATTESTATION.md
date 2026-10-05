@@ -19,6 +19,11 @@ security tests are reviewed as synthetic fixtures. These checks do not certify
 an absolute absence of undiscovered sensitive data or third-party rights.
 
 NOTICE records human authorship, AI assistance, and bundled guidance provenance.
+The engine's contract validator is implemented in `engine/src/validation.ts`.
+It replaces the Zod dependency with new Groundwork source; it does not vendor
+or rename Zod's implementation. Current engine bundles contain no third-party
+runtime dependencies. Earlier public revisions retain their Zod MIT notices;
+development tools retain their own licenses.
 The first public commit is the publication baseline; its Git tree identifies
 the exact published bytes. CI rebuilds the plugin from the checked-out commit,
 runs the source gate, and generates a GitHub artifact provenance attestation

@@ -17,9 +17,6 @@
     "release:verify": "node scripts/release-evidence.mjs verify",
     "conformance": "python3 -m designer.conformance.flow_cli_check --verbose"
   },
-  "dependencies": {
-    "zod": "^3.25.76"
-  },
   "devDependencies": {
     "@types/node": "^26.1.0",
     "tsx": "^4.20.3",

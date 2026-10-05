@@ -1,11 +1,11 @@
-import { z } from "zod";
+import * as v from "./validation.js";
 
-const TopologyIdSchema = z
+const TopologyIdSchema = v
   .string()
   .min(1)
   .regex(/^[A-Za-z0-9][A-Za-z0-9._:-]*$/);
 
-export const PlatformSchema = z.enum([
+export const PlatformSchema = v.enum([
   "web",
   "vite-spa",
   "ios",
@@ -21,7 +21,7 @@ export const PlatformSchema = z.enum([
   "other",
 ]);
 
-export const PlatformSurfaceRoleSchema = z.enum([
+export const PlatformSurfaceRoleSchema = v.enum([
   "primary",
   "companion",
   "admin",
@@ -29,7 +29,7 @@ export const PlatformSurfaceRoleSchema = z.enum([
   "service",
 ]);
 
-export const PlatformSurfaceProvenanceSchema = z.enum([
+export const PlatformSurfaceProvenanceSchema = v.enum([
   "observed",
   "decided",
   "assumed",
@@ -38,14 +38,14 @@ export const PlatformSurfaceProvenanceSchema = z.enum([
 
 function addDuplicateStringIssues(
   values: string[],
-  ctx: z.RefinementCtx,
+  ctx: v.RefinementContext,
   field: "interactionModes" | "featureIds",
 ): void {
   const seen = new Set<string>();
   values.forEach((value, index) => {
     if (seen.has(value)) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: [field, index],
         message: `Duplicate ${field} value: ${value}`,
       });
@@ -54,14 +54,14 @@ function addDuplicateStringIssues(
   });
 }
 
-export const PlatformSurfaceSchema = z
+export const PlatformSurfaceSchema = v
   .object({
     id: TopologyIdSchema,
     platform: PlatformSchema,
     role: PlatformSurfaceRoleSchema,
-    name: z.string().min(1),
-    interactionModes: z.array(z.string().min(1)),
-    featureIds: z.array(TopologyIdSchema),
+    name: v.string().min(1),
+    interactionModes: v.array(v.string().min(1)),
+    featureIds: v.array(TopologyIdSchema),
     provenance: PlatformSurfaceProvenanceSchema.optional(),
   })
   .strict()
@@ -70,7 +70,7 @@ export const PlatformSurfaceSchema = z
     addDuplicateStringIssues(surface.featureIds, ctx, "featureIds");
   });
 
-export const PlatformSurfacesSchema = z
+export const PlatformSurfacesSchema = v
   .array(PlatformSurfaceSchema)
   .min(1)
   .superRefine((surfaces, ctx) => {
@@ -81,7 +81,7 @@ export const PlatformSurfacesSchema = z
       if (surface.role === "primary") primaryCount += 1;
       if (seenIds.has(surface.id)) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           path: [index, "id"],
           message: `Duplicate platform surface id: ${surface.id}`,
         });
@@ -91,14 +91,14 @@ export const PlatformSurfacesSchema = z
 
     if (primaryCount !== 1) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: `Platform topology must contain exactly one primary surface; received ${primaryCount}.`,
       });
     }
   });
 
 /** The canonical v3 compatibility view of a product's platform topology. */
-export const PlatformTopologySchema = z
+export const PlatformTopologySchema = v
   .object({
     platformTarget: PlatformSchema,
     platformSurfaces: PlatformSurfacesSchema,
@@ -108,19 +108,19 @@ export const PlatformTopologySchema = z
     const primary = topology.platformSurfaces.find((surface) => surface.role === "primary");
     if (primary && topology.platformTarget !== primary.platform) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["platformTarget"],
         message: `platformTarget must match primary platform ${primary.platform}.`,
       });
     }
   });
 
-export type Platform = z.infer<typeof PlatformSchema>;
-export type PlatformSurfaceRole = z.infer<typeof PlatformSurfaceRoleSchema>;
-export type PlatformSurfaceProvenance = z.infer<typeof PlatformSurfaceProvenanceSchema>;
-export type PlatformSurface = z.infer<typeof PlatformSurfaceSchema>;
-export type PlatformSurfaces = z.infer<typeof PlatformSurfacesSchema>;
-export type PlatformTopology = z.infer<typeof PlatformTopologySchema>;
+export type Platform = v.Infer<typeof PlatformSchema>;
+export type PlatformSurfaceRole = v.Infer<typeof PlatformSurfaceRoleSchema>;
+export type PlatformSurfaceProvenance = v.Infer<typeof PlatformSurfaceProvenanceSchema>;
+export type PlatformSurface = v.Infer<typeof PlatformSurfaceSchema>;
+export type PlatformSurfaces = v.Infer<typeof PlatformSurfacesSchema>;
+export type PlatformTopology = v.Infer<typeof PlatformTopologySchema>;
 
 /**
  * Project a full topology into the one-value compatibility field used by v2
@@ -152,14 +152,14 @@ export function replacePrimarySurface(
   );
 }
 
-export const LegacyPlatformChoiceSchema = z.enum([
+export const LegacyPlatformChoiceSchema = v.enum([
   "platform-web",
   "platform-ios",
   "platform-macos",
   "platform-multi",
 ]);
 
-export type LegacyPlatformChoice = z.infer<typeof LegacyPlatformChoiceSchema>;
+export type LegacyPlatformChoice = v.Infer<typeof LegacyPlatformChoiceSchema>;
 export type LegacyPlatformChoiceIntent =
   | { kind: "primary"; platform: "web" | "ios" | "macos" }
   | { kind: "equal-peers"; choice: "platform-multi" };

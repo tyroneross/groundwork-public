@@ -956,14 +956,14 @@ test('single source: the schema the contract advertises IS the one the validator
 
 test('engine drift gate: the survey\'s enum mirrors match engine/src/spec.ts', () => {
   // The survey may not edit engine/src (standing non-goal), so CARD_PRIORITIES and
-  // TRADEOFF_AXES are unavoidable MIRRORS of the engine's Zod schemas. An un-gated
+  // TRADEOFF_AXES are unavoidable MIRRORS of the engine's owned schemas. An un-gated
   // mirror is exactly what caused the blank-card bug — a shape defined in two
   // places drifts silently — so the mirror is asserted here instead. Read-only.
   const spec = fs.readFileSync(path.join(ROOT, 'engine', 'src', 'spec.ts'), 'utf8');
 
-  // const Priority = z.enum(["P0", "P1", "P2", "P3"]).optional();
-  const prio = spec.match(/const Priority = z\.enum\(\[([^\]]+)\]\)/);
-  assert.ok(prio, 'could not find the Priority z.enum in engine/src/spec.ts — this gate must be repaired, not deleted');
+  // const Priority = v.enum(["P0", "P1", "P2", "P3"]).optional();
+  const prio = spec.match(/const Priority = v\.enum\(\[([^\]]+)\]\)/);
+  assert.ok(prio, 'could not find the Priority v.enum in engine/src/spec.ts — this gate must be repaired, not deleted');
   const enginePriorities = [...prio[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
   assert.deepEqual(CARD_PRIORITIES, enginePriorities,
     'CARD_PRIORITIES has drifted from engine/src/spec.ts Priority — a card priority the emitter rejects would validate here');
@@ -978,10 +978,10 @@ test('engine drift gate: the survey\'s enum mirrors match engine/src/spec.ts', (
 
   // AND the schema's own required weight keys: a 7th key added to
   // TradeoffWeightsSchema leaves the list above untouched while making every
-  // six-axis allocation the browser produces fail Zod validation.
-  const schemaBody = spec.match(/export const TradeoffWeightsSchema = z\s*\.object\(\{([\s\S]*?)\n  \}\)/);
+  // six-axis allocation the browser produces fail engine validation.
+  const schemaBody = spec.match(/export const TradeoffWeightsSchema = v\s*\.object\(\{([\s\S]*?)\n  \}\)/);
   assert.ok(schemaBody, 'could not find TradeoffWeightsSchema in engine/src/spec.ts');
-  const weightKeys = [...schemaBody[1].matchAll(/(\w+): z\.number\(\)/g)].map((m) => m[1]);
+  const weightKeys = [...schemaBody[1].matchAll(/(\w+): v\.number\(\)/g)].map((m) => m[1]);
   assert.deepEqual([...TRADEOFF_AXES].sort(), [...weightKeys].sort(),
     'TradeoffWeightsSchema requires a different set of weights than the survey serves axes for');
 });

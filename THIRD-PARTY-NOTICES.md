@@ -1,9 +1,13 @@
 # Third-party notices
 
-## Zod
+Current engine bundles use Groundwork's source-owned validator and contain no
+third-party runtime libraries. Build-time dependencies retain their own licenses.
 
-The dependency-free engine bundle includes Zod (package version 3.25.76),
-licensed under MIT. Groundwork's Apache 2.0 license does not replace these terms.
+## Historical Zod bundles
+
+Earlier public revisions bundled Zod (package version 3.25.76), licensed under
+MIT. This notice remains for those revisions and their distributed bundles.
+Groundwork's Apache 2.0 license does not replace these terms.
 
 ```text
 MIT License

@@ -1,16 +1,16 @@
-import { z } from "zod";
+import * as v from "./validation.js";
 import { OwnedFilesSchema } from "./owned-files.js";
 
-const IdSchema = z.string().min(1).regex(/^[A-Za-z0-9][A-Za-z0-9._:-]*$/);
-const NonEmptyStringSchema = z.string().min(1);
+const IdSchema = v.string().min(1).regex(/^[A-Za-z0-9][A-Za-z0-9._:-]*$/);
+const NonEmptyStringSchema = v.string().min(1);
 
 function uniqueStringArraySchema() {
-  return z.array(NonEmptyStringSchema).superRefine((values, ctx) => {
+  return v.array(NonEmptyStringSchema).superRefine((values, ctx) => {
     const seen = new Set<string>();
     values.forEach((value, index) => {
       if (seen.has(value)) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           path: [index],
           message: `Duplicate value: ${value}`,
         });
@@ -20,9 +20,9 @@ function uniqueStringArraySchema() {
   });
 }
 
-export const ProvenanceSchema = z.enum(["observed", "decided", "assumed", "derived"]);
+export const ProvenanceSchema = v.enum(["observed", "decided", "assumed", "derived"]);
 
-export const QualifiedRefKindSchema = z.enum([
+export const QualifiedRefKindSchema = v.enum([
   "component",
   "contract",
   "feature",
@@ -33,25 +33,25 @@ export const QualifiedRefKindSchema = z.enum([
   "task",
 ]);
 
-export const QualifiedRefSchema = z.object({
+export const QualifiedRefSchema = v.object({
   specId: IdSchema,
   kind: QualifiedRefKindSchema,
   id: IdSchema,
 }).strict();
 
 /** Explicit pointer from an architecture exchange to one authored UI state. */
-export const ScreenStateRefSchema = z.object({
+export const ScreenStateRefSchema = v.object({
   screenId: IdSchema,
   state: NonEmptyStringSchema,
 }).strict();
 
-const UniqueQualifiedRefsSchema = z.array(QualifiedRefSchema).min(1).superRefine((refs, ctx) => {
+const UniqueQualifiedRefsSchema = v.array(QualifiedRefSchema).min(1).superRefine((refs, ctx) => {
   const seen = new Set<string>();
   refs.forEach((ref, index) => {
     const identity = qualifiedRefIdentity(ref);
     if (seen.has(identity)) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: [index],
         message: `Duplicate qualified reference: ${identity}`,
       });
@@ -60,17 +60,17 @@ const UniqueQualifiedRefsSchema = z.array(QualifiedRefSchema).min(1).superRefine
   });
 });
 
-export const PortDirectionSchema = z.enum(["input", "output", "bidirectional"]);
+export const PortDirectionSchema = v.enum(["input", "output", "bidirectional"]);
 
-export const PortSchema = z.object({
+export const PortSchema = v.object({
   id: IdSchema,
   name: NonEmptyStringSchema,
   type: NonEmptyStringSchema,
   direction: PortDirectionSchema,
-  required: z.boolean().default(true),
+  required: v.boolean().default(true),
 }).strict();
 
-export const ComponentKindSchema = z.enum([
+export const ComponentKindSchema = v.enum([
   "ui",
   "service",
   "data",
@@ -80,103 +80,103 @@ export const ComponentKindSchema = z.enum([
   "platform",
 ]);
 
-export const ComponentSchema = z.object({
+export const ComponentSchema = v.object({
   id: IdSchema,
   name: NonEmptyStringSchema,
   kind: ComponentKindSchema,
   featureIds: uniqueStringArraySchema(),
   owner: NonEmptyStringSchema,
   /** Optional runtime/data ownership boundary; `owner` remains the accountable team. */
-  ownership: z.array(NonEmptyStringSchema).optional(),
-  description: z.string().optional(),
+  ownership: v.array(NonEmptyStringSchema).optional(),
+  description: v.string().optional(),
   provenance: ProvenanceSchema.optional(),
   ownedFiles: OwnedFilesSchema.optional(),
 }).strict();
 
-export const ContractSchema = z.object({
+export const ContractSchema = v.object({
   id: IdSchema,
   name: NonEmptyStringSchema,
   provider: QualifiedRefSchema,
   consumers: UniqueQualifiedRefsSchema,
-  ports: z.array(PortSchema).min(1),
+  ports: v.array(PortSchema).min(1),
   transport: NonEmptyStringSchema,
-  failureModes: z.array(NonEmptyStringSchema).min(1),
-  securityNotes: z.array(NonEmptyStringSchema).min(1),
+  failureModes: v.array(NonEmptyStringSchema).min(1),
+  securityNotes: v.array(NonEmptyStringSchema).min(1),
   /** Named writes this boundary may perform; prose stays available for legacy contracts. */
-  writeBoundaryNotes: z.array(NonEmptyStringSchema).optional(),
+  writeBoundaryNotes: v.array(NonEmptyStringSchema).optional(),
   provenance: ProvenanceSchema.optional(),
   ownedFiles: OwnedFilesSchema.optional(),
 }).strict();
 
-export const RelationshipDirectionSchema = z.enum([
+export const RelationshipDirectionSchema = v.enum([
   "unidirectional",
   "bidirectional",
   "event",
 ]);
 
-export const RelationshipCriticalitySchema = z.enum(["hard", "soft", "informational"]);
+export const RelationshipCriticalitySchema = v.enum(["hard", "soft", "informational"]);
 
-export const RelationshipSchema = z.object({
+export const RelationshipSchema = v.object({
   id: IdSchema,
   from: QualifiedRefSchema,
   to: QualifiedRefSchema,
   direction: RelationshipDirectionSchema,
   contractRef: QualifiedRefSchema.optional(),
   criticality: RelationshipCriticalitySchema,
-  optional: z.boolean(),
+  optional: v.boolean(),
   rationale: NonEmptyStringSchema,
   provenance: ProvenanceSchema.optional(),
 }).strict();
 
-export const ExchangeSchema = z.object({
+export const ExchangeSchema = v.object({
   id: IdSchema,
-  order: z.number().int().min(1),
+  order: v.number().int().min(1),
   from: QualifiedRefSchema,
   to: QualifiedRefSchema,
   contractRef: QualifiedRefSchema,
-  inputRefs: z.array(QualifiedRefSchema),
-  outputRefs: z.array(QualifiedRefSchema),
-  stateRefs: z.array(ScreenStateRefSchema).default([]),
-  failurePaths: z.array(NonEmptyStringSchema).min(1),
-  effects: z.array(NonEmptyStringSchema).optional(),
-  writes: z.array(NonEmptyStringSchema).optional(),
+  inputRefs: v.array(QualifiedRefSchema),
+  outputRefs: v.array(QualifiedRefSchema),
+  stateRefs: v.array(ScreenStateRefSchema).default([]),
+  failurePaths: v.array(NonEmptyStringSchema).min(1),
+  effects: v.array(NonEmptyStringSchema).optional(),
+  writes: v.array(NonEmptyStringSchema).optional(),
 }).strict();
 
-export const FlowSchema = z.object({
+export const FlowSchema = v.object({
   id: IdSchema,
   name: NonEmptyStringSchema,
   trigger: NonEmptyStringSchema,
-  exchanges: z.array(ExchangeSchema).min(1),
+  exchanges: v.array(ExchangeSchema).min(1),
   provenance: ProvenanceSchema.optional(),
 }).strict();
 
-export const SpecDependencyLocationSchema = z.discriminatedUnion("kind", [
-  z.object({
-    kind: z.literal("local"),
+export const SpecDependencyLocationSchema = v.discriminatedUnion("kind", [
+  v.object({
+    kind: v.literal("local"),
     path: NonEmptyStringSchema,
   }).strict(),
-  z.object({
-    kind: z.literal("uri"),
-    uri: z.string().url(),
+  v.object({
+    kind: v.literal("uri"),
+    uri: v.string().url(),
   }).strict(),
 ]);
 
-export const SpecDependencyRelationshipSchema = z.enum([
+export const SpecDependencyRelationshipSchema = v.enum([
   "uses",
   "extends",
   "implements",
   "companion",
 ]);
 
-export const SpecDependencySchema = z.object({
+export const SpecDependencySchema = v.object({
   id: IdSchema,
   specId: IdSchema,
   location: SpecDependencyLocationSchema,
-  schemaVersion: z.number().int().min(1),
+  schemaVersion: v.number().int().min(1),
   revision: NonEmptyStringSchema,
-  digest: z.string().regex(/^sha256:[a-f0-9]{64}$/),
+  digest: v.string().regex(/^sha256:[a-f0-9]{64}$/),
   relationship: SpecDependencyRelationshipSchema,
-  optional: z.boolean().default(false),
+  optional: v.boolean().default(false),
 }).strict();
 
 /**
@@ -184,32 +184,32 @@ export const SpecDependencySchema = z.object({
  * in `validateArchitecture`, because an Architecture object does not itself
  * contain the current Spec ID or the Spec's feature/screen/element identities.
  */
-export const ArchitectureSchema = z.object({
-  components: z.array(ComponentSchema),
-  contracts: z.array(ContractSchema),
-  relationships: z.array(RelationshipSchema),
-  flows: z.array(FlowSchema),
-  specDependencies: z.array(SpecDependencySchema),
+export const ArchitectureSchema = v.object({
+  components: v.array(ComponentSchema),
+  contracts: v.array(ContractSchema),
+  relationships: v.array(RelationshipSchema),
+  flows: v.array(FlowSchema),
+  specDependencies: v.array(SpecDependencySchema),
 }).strict();
 
-export type Provenance = z.infer<typeof ProvenanceSchema>;
-export type QualifiedRefKind = z.infer<typeof QualifiedRefKindSchema>;
-export type QualifiedRef = z.infer<typeof QualifiedRefSchema>;
-export type ScreenStateRef = z.infer<typeof ScreenStateRefSchema>;
-export type PortDirection = z.infer<typeof PortDirectionSchema>;
-export type Port = z.infer<typeof PortSchema>;
-export type ComponentKind = z.infer<typeof ComponentKindSchema>;
-export type Component = z.infer<typeof ComponentSchema>;
-export type Contract = z.infer<typeof ContractSchema>;
-export type RelationshipDirection = z.infer<typeof RelationshipDirectionSchema>;
-export type RelationshipCriticality = z.infer<typeof RelationshipCriticalitySchema>;
-export type Relationship = z.infer<typeof RelationshipSchema>;
-export type Exchange = z.infer<typeof ExchangeSchema>;
-export type Flow = z.infer<typeof FlowSchema>;
-export type SpecDependencyLocation = z.infer<typeof SpecDependencyLocationSchema>;
-export type SpecDependencyRelationship = z.infer<typeof SpecDependencyRelationshipSchema>;
-export type SpecDependency = z.infer<typeof SpecDependencySchema>;
-export type Architecture = z.infer<typeof ArchitectureSchema>;
+export type Provenance = v.Infer<typeof ProvenanceSchema>;
+export type QualifiedRefKind = v.Infer<typeof QualifiedRefKindSchema>;
+export type QualifiedRef = v.Infer<typeof QualifiedRefSchema>;
+export type ScreenStateRef = v.Infer<typeof ScreenStateRefSchema>;
+export type PortDirection = v.Infer<typeof PortDirectionSchema>;
+export type Port = v.Infer<typeof PortSchema>;
+export type ComponentKind = v.Infer<typeof ComponentKindSchema>;
+export type Component = v.Infer<typeof ComponentSchema>;
+export type Contract = v.Infer<typeof ContractSchema>;
+export type RelationshipDirection = v.Infer<typeof RelationshipDirectionSchema>;
+export type RelationshipCriticality = v.Infer<typeof RelationshipCriticalitySchema>;
+export type Relationship = v.Infer<typeof RelationshipSchema>;
+export type Exchange = v.Infer<typeof ExchangeSchema>;
+export type Flow = v.Infer<typeof FlowSchema>;
+export type SpecDependencyLocation = v.Infer<typeof SpecDependencyLocationSchema>;
+export type SpecDependencyRelationship = v.Infer<typeof SpecDependencyRelationshipSchema>;
+export type SpecDependency = v.Infer<typeof SpecDependencySchema>;
+export type Architecture = v.Infer<typeof ArchitectureSchema>;
 
 export type ArchitectureValidationIssueCode =
   | "duplicate_id"

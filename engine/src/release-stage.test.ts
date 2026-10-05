@@ -4,8 +4,26 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { buildSync } from "esbuild";
 // @ts-expect-error The release builder is a runtime JavaScript module.
 import { assertRegularReleaseInput, stageRelease } from "../../scripts/stage-release.mjs";
+
+test("engine bundle contains only owned source and Node built-ins", () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+  const result = buildSync({
+    absWorkingDir: root, entryPoints: ["engine/src/cli.ts"], outfile: "engine/dist/cli.js",
+    bundle: true, platform: "node", format: "esm", write: false, metafile: true,
+  });
+  const inputs = Object.keys(result.metafile!.inputs);
+  assert.ok(inputs.includes("engine/src/validation.ts"));
+  assert.ok(inputs.every((input) => input.startsWith("engine/src/")), "runtime library entered the bundle");
+  for (const output of Object.values(result.metafile!.outputs)) {
+    assert.ok(output.imports.every((item) => item.external && item.path.startsWith("node:")));
+  }
+  assert.equal(result.outputFiles![0].text, fs.readFileSync(path.join(root, "engine/dist/cli.js"), "utf8"), "committed bundle must match current source");
+  const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
+  assert.deepEqual(pkg.dependencies ?? {}, {});
+});
 
 test("release excludes local preference journals and captured dashboards", () => {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
