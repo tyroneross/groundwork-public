@@ -22,7 +22,7 @@ test("release excludes local preference journals and captured dashboards", () =>
     const names = manifest.files.map((file: {path: string}) => file.path);
     assert.equal(names.includes("designer/color/combos.jsonl"), false);
     assert.equal(names.includes("designer/references/dashboards/publication-private-test.html"), false);
-    for (const name of ["LICENSE", "NOTICE", "PUBLICATION-ATTESTATION.md"]) {
+    for (const name of ["LICENSE", "NOTICE", "THIRD-PARTY-NOTICES.md", "PUBLICATION-ATTESTATION.md"]) {
       assert.ok(names.includes(name));
     }
   } finally {

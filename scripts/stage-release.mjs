@@ -12,6 +12,7 @@ const RELEASE_POLICY = JSON.parse(fs.readFileSync(path.join(ROOT, "scripts", "re
 const INCLUDE_FILES = [
   "LICENSE",
   "NOTICE",
+  "THIRD-PARTY-NOTICES.md",
   "PUBLICATION-ATTESTATION.md",
   "package.json",
   "README.md",
