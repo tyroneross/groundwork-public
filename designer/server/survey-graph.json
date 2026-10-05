@@ -1,0 +1,237 @@
+{
+  "version": 1,
+  "note": "Executable question graph for Groundwork: Requirements (GW-P4). The host agent consumes this via /api/agent/contract; the server applies the skip rules below server-side so a drifting agent cannot ask a skipped node. Each node also declares `dynamic` (default false): STATIC nodes carry their own prompt + chips/cards content in this graph and the SERVER serves them directly on /api/answer WITHOUT an agent turn (auto-advance); DYNAMIC nodes need agent-composed, user-word-derived content and flip the turn to await_agent so the host agent composes them (optionally pre-posted via the prefetch queue). The graph tests (designer/tests/test_survey_graph.mjs) walk this JSON with the same skip evaluator + dynamic split the server uses (exported isNodeSkipped / isNodeDynamic in survey-server.mjs).",
+  "skipVocabulary": {
+    "platformTargetIn": "skip this node when the resolved platformTarget is one of the listed values",
+    "startingPointIn": "skip this node when the resolved startingPoint is one of the listed values",
+    "skipWhenObserved": "default true; when true, skip the node if its feedsField is already an OBSERVED fact (inspection pre-filled it). Set false for genuine preferences that cannot be observed (tradeoff allocation, feature priority)."
+  },
+  "dynamicVocabulary": {
+    "dynamic": "default false. false (STATIC) = the node's prompt + chips/cards are fixed in this graph; the server serves it directly on the next /api/answer with no agent round-trip. true (DYNAMIC) = the content is composed by the host agent from the user's own prior answers; the turn flips to await_agent (or is served instantly from the prefetch queue if the agent pre-posted it).",
+    "fallback": "REQUIRED on every dynamic node. A static { prompt, chips?, cards? } payload good enough to answer WITHOUT agent enrichment. When the walk reaches a dynamic node and NO host agent has polled /api/agent/contract within AGENT_ATTACH_WINDOW_MS (the agent stepped away, or the user is self-pacing with no agent attached), the server serves this fallback directly (like a static node) so the browser never hard-stalls. If an agent IS recently attached, the node still flips to await_agent so the agent can compose richer, user-word-derived content."
+  },
+  "observationContract": {
+    "contract": "groundwork.observation-batch/v1",
+    "requiredFields": [
+      "platformSurfaces",
+      "architecture.components",
+      "architecture.contracts",
+      "architecture.relationships",
+      "architecture.flows",
+      "architecture.specDependencies",
+      "governance.constraints",
+      "governance.decisions",
+      "governance.owners",
+      "changeSet.current",
+      "changeSet.proposed",
+      "changeSet.verified"
+    ],
+    "writers": {
+      "observed": "seed.platformSurfaces or seed.structuredObservations; source refs identify inspected repo artifacts",
+      "decided": "record.structuredObservations with sourceAnswerNodeIds that identify persisted DECIDED answers",
+      "assumed": "infer.observation; the server forces ASSUMED provenance"
+    },
+    "unresolvedPolicy": "A missing field remains in unresolved. The server and host must not synthesize architecture or promote an assumption to a decision."
+  },
+  "nodes": [
+    {
+      "id": "jtbd",
+      "prompt": "When someone succeeds with this, what did it let them do?",
+      "readbackLabel": "Job to be done",
+      "answerKind": "text",
+      "feedsField": "scenarios[0].goal",
+      "p0": true,
+      "dynamic": true,
+      "fallback": {
+        "prompt": "What does this product let someone do that they couldn't before? Describe the win in your own words.",
+        "examples": [
+          { "label": "Finish a complex task", "text": "Turn scattered inputs into a finished result that another person can understand and use." },
+          { "label": "Return without rebuilding context", "text": "Resume important work with its decisions, files, and progress intact." },
+          { "label": "Replace tool coordination", "text": "Complete the core job without manually coordinating several tools and handoffs." }
+        ]
+      }
+    },
+    {
+      "id": "primary-user-pain",
+      "prompt": "Who exactly is this for, and what are they suffering today?",
+      "readbackLabel": "Primary user & pain",
+      "answerKind": "text",
+      "feedsField": "personas[0]",
+      "p0": true,
+      "dynamic": true,
+      "fallback": {
+        "prompt": "Who is this for, and what is painful about how they do it today?",
+        "examples": [
+          { "label": "Context switching", "text": "People who lose time moving information and decisions between disconnected tools." },
+          { "label": "Hard-to-resume work", "text": "People whose projects become difficult to understand or restart after an interruption." },
+          { "label": "Expert-only workflow", "text": "People blocked by technical steps that are incidental to the result they need." }
+        ]
+      }
+    },
+    {
+      "id": "top-jobs",
+      "prompt": "The three things they'll do most — name them.",
+      "readbackLabel": "Top jobs",
+      "answerKind": "text",
+      "feedsField": "personas[0].jobs",
+      "p0": true,
+      "dynamic": true,
+      "fallback": {
+        "prompt": "List the three things these users will do most often with the product.",
+        "examples": [
+          { "label": "Create, review, share", "text": "Create a result, review it in context, and share the finished artifact." },
+          { "label": "Find, decide, act", "text": "Find the relevant information, make a decision, and carry the decision into action." },
+          { "label": "Start, resume, finish", "text": "Start a project, resume it after interruptions, and finish with a usable output." }
+        ]
+      }
+    },
+    {
+      "id": "critical-screens",
+      "prompt": "The 1–3 screens that make or break the product. Keep the ones that matter, cut the rest.",
+      "readbackLabel": "Screens",
+      "answerKind": "cards",
+      "feedsField": "screens",
+      "p0": true,
+      "dynamic": true,
+      "skipWhen": [{ "platformTargetIn": ["agent-system"] }],
+      "fallback": {
+        "prompt": "Which screens make or break this product? Keep the ones that matter, cut the rest, and add any we're missing.",
+        "cards": [
+          { "label": "Home / landing" },
+          { "label": "Main workspace" },
+          { "label": "Item detail" },
+          { "label": "Search / browse" },
+          { "label": "Settings" }
+        ]
+      }
+    },
+    {
+      "id": "platform",
+      "prompt": "What platform is this?",
+      "readbackLabel": "Platform",
+      "answerKind": "chips",
+      "chips": ["web", "vite-spa", "ios", "macos", "claude-plugin", "agent-system"],
+      "feedsField": "platformTarget",
+      "p0": true,
+      "dynamic": false
+    },
+    {
+      "id": "info-density",
+      "prompt": "How dense should the interface feel?",
+      "readbackLabel": "Information density",
+      "answerKind": "chips",
+      "chips": ["glanceable / sparse", "balanced", "dense / pro-tool"],
+      "feedsField": "uiPreferences.informationDensity",
+      "dynamic": false
+    },
+    {
+      "id": "workspace-layout-preference",
+      "prompt": "You reopen a busy project after a week away. Which workspace would you choose first?",
+      "readbackLabel": "Workspace preference",
+      "answerKind": "cards",
+      "cardMode": "single",
+      "elicitation": "revealed-preference",
+      "optional": true,
+      "feedsField": "uiPreferences.mustKeep",
+      "dynamic": false,
+      "skipWhenObserved": false,
+      "skipWhen": [{ "platformTargetIn": ["agent-system", "claude-plugin"] }],
+      "cards": [
+        {
+          "label": "Focused canvas",
+          "mockup": { "layout": "single-focus", "regions": ["Current result", "AI action"] }
+        },
+        {
+          "label": "Project sidebar + canvas",
+          "mockup": { "layout": "sidebar-canvas", "regions": ["Projects & files", "Current result", "AI action"] }
+        },
+        {
+          "label": "Three-pane workbench",
+          "mockup": { "layout": "three-pane", "regions": ["Files", "Workspace", "AI activity"] }
+        }
+      ]
+    },
+    {
+      "id": "progress-feedback-preference",
+      "prompt": "An AI task has been running for ten minutes. Which update would make you trust it most?",
+      "readbackLabel": "Progress feedback preference",
+      "answerKind": "chips",
+      "chips": ["Milestone timeline with evidence", "Live activity stream", "Concise status and next step", "Only alert me when action is needed"],
+      "feedsField": "uiPreferences.mayEvolve",
+      "elicitation": "revealed-preference",
+      "optional": true,
+      "dynamic": false,
+      "skipWhenObserved": false
+    },
+    {
+      "id": "brand-adjectives",
+      "prompt": "3–5 words the product should feel like.",
+      "readbackLabel": "Brand adjectives",
+      "answerKind": "chips",
+      "chips": ["minimal", "bold", "playful", "serious", "warm", "technical", "calm", "premium"],
+      "feedsField": "uiPreferences.brandAdjectives",
+      "dynamic": false
+    },
+    {
+      "id": "voice",
+      "prompt": "How should copy sound — and what words should it avoid?",
+      "readbackLabel": "Voice",
+      "answerKind": "text",
+      "feedsField": "voiceProfile",
+      "dynamic": false
+    },
+    {
+      "id": "a11y-floor",
+      "prompt": "What's the minimum accessibility bar?",
+      "readbackLabel": "Accessibility floor",
+      "answerKind": "chips",
+      "chips": ["4.5:1 contrast", "keyboard-complete", "dynamic type", "44px touch targets"],
+      "feedsField": "uiPreferences.accessibilityFloor",
+      "dynamic": false
+    },
+    {
+      "id": "responsive-range",
+      "prompt": "Which app-window sizes should work well?",
+      "help": "A viewport is the usable size of the app window. Choose every size where the layout should remain clear and usable.",
+      "readbackLabel": "Responsive range",
+      "answerKind": "chips",
+      "chips": ["Compact window", "Standard laptop or desktop", "Large desktop", "Full screen", "All of these"],
+      "chipsByPlatform": {
+        "macos": ["Compact Mac window (about 900×600)", "Standard laptop window (about 1200×800)", "Large desktop window (1440px+ wide)", "Full screen", "All of these"]
+      },
+      "feedsField": "uiPreferences.responsiveTargets",
+      "dynamic": false,
+      "skipWhen": [{ "platformTargetIn": ["agent-system", "claude-plugin"] }]
+    },
+    {
+      "id": "tradeoff-allocation",
+      "prompt": "Distribute 100 points across the six build tradeoffs, then name the one you would never sacrifice.",
+      "readbackLabel": "Tradeoffs",
+      "answerKind": "allocation",
+      "feedsField": "tradeoffWeights",
+      "p0": true,
+      "dynamic": false,
+      "skipWhenObserved": false
+    },
+    {
+      "id": "feature-priority",
+      "prompt": "Rank the proposed features — what is P0 vs. what can wait?",
+      "readbackLabel": "Features",
+      "answerKind": "cards",
+      "feedsField": "features",
+      "dynamic": true,
+      "skipWhenObserved": false,
+      "fallback": {
+        "prompt": "Rank these common product features — keep what's P0, cut or defer the rest, and add anything specific to your product.",
+        "cards": [
+          { "label": "Onboarding / sign-up", "priority": "P0" },
+          { "label": "Core workflow", "priority": "P0" },
+          { "label": "Search & navigation", "priority": "P1" },
+          { "label": "Settings & preferences", "priority": "P1" },
+          { "label": "Notifications", "priority": "P2" },
+          { "label": "Data export / sharing", "priority": "P2" }
+        ]
+      }
+    }
+  ]
+}

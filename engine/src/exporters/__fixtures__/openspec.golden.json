@@ -1,0 +1,34 @@
+[
+  {
+    "path": "openspec/changes/change-healthkit-review/.openspec.yaml",
+    "sha256": "85b53dd24fbe7d19c8b0f0ddccf5e82600c5c372c76b57a2a89dc34dfb0fc5b9"
+  },
+  {
+    "path": "openspec/changes/change-healthkit-review/design.md",
+    "sha256": "4a88b3762e6a969e9ee7c643c495d4295bdf0184faa8b07f92325db0e074ea06"
+  },
+  {
+    "path": "openspec/changes/change-healthkit-review/proposal.md",
+    "sha256": "9a10c7b750bc0aa934bcaa527217cde0767b954bc4aaa8b5dd5a478f023c7cba"
+  },
+  {
+    "path": "openspec/changes/change-healthkit-review/specs/pulse/spec.md",
+    "sha256": "48e52cc8263fccaa9bba89bb507ac97d02b6eecb034cfc51320c407fdc7ff7e8"
+  },
+  {
+    "path": "openspec/changes/change-healthkit-review/tasks.md",
+    "sha256": "fa2602f2e1067e8473d719bd56c431c600f62987b4ce364dc9c94cefde73c1b5"
+  },
+  {
+    "path": "openspec/config.yaml",
+    "sha256": "6750d71f04e19456c0f74cd0c9c078d4bea4eca22c33b47fe33ae58a27e0d8c9"
+  },
+  {
+    "path": "openspec/groundwork-source.json",
+    "sha256": "3357b7e3f9f774f8fdb33512871a7e6d1167c414bbb6ab596c07f88a6c4a6095"
+  },
+  {
+    "path": "openspec/specs/pulse/spec.md",
+    "sha256": "387631ece2425e7be6935e857e56d7a45a7f5367ba5850e227ff63cf11d51cd2"
+  }
+]

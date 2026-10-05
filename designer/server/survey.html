@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Groundwork: Requirements</title>
+  <link rel="stylesheet" href="/survey.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark"></span>
+      <span class="brand-text">Groundwork: Requirements</span>
+    </div>
+    <div class="ctx" id="ctx"></div>
+    <div class="mode-label">Groundwork planning mode</div>
+    <div class="progress" id="phase-label" aria-live="polite"></div>
+  </header>
+
+  <!-- Coverage bar: needs / features / screens / nonGoals + gaps remaining.
+       "—" means not yet known (never measured, and not derivable from the answers)
+       — never 0. A zero here would claim a measurement that has not happened. -->
+  <section class="coverage" id="coverage" aria-label="Coverage"
+           title="— means this count is not known yet: the host agent reports needs, non-goals and gaps when it assembles the Spec.">
+    <div class="cov-metric"><span class="cov-num" id="cov-needs">—</span><span class="cov-key">needs</span></div>
+    <div class="cov-metric"><span class="cov-num" id="cov-features">—</span><span class="cov-key">features</span></div>
+    <div class="cov-metric"><span class="cov-num" id="cov-screens">—</span><span class="cov-key">screens</span></div>
+    <div class="cov-metric"><span class="cov-num" id="cov-nongoals">—</span><span class="cov-key">non-goals</span></div>
+    <div class="cov-spacer"></div>
+    <div class="cov-metric cov-gaps"><span class="cov-num" id="cov-gaps">—</span><span class="cov-key">gaps remaining</span></div>
+  </section>
+
+  <section class="walk-progress" id="walk-progress" aria-label="Decision progress" hidden>
+    <div class="walk-progress-copy">
+      <strong id="walk-progress-title">0 decisions captured</strong>
+      <span id="walk-progress-note">Calculating the adaptive path…</span>
+    </div>
+    <div class="walk-progress-track" id="walk-progress-meter" role="progressbar"
+         aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <span class="walk-progress-bar" id="walk-progress-bar"></span>
+    </div>
+  </section>
+
+  <div class="workspace-shell">
+    <aside class="journey" aria-label="Groundwork workflow">
+      <p class="journey-eyebrow">Groundwork workflow</p>
+      <h2>From idea to build</h2>
+      <ol class="journey-list">
+        <li data-journey-step class="current"><button type="button" data-stage-id="requirements"><span class="journey-marker">1</span><span><strong>Define requirements</strong><small>Goals, users, priorities</small></span><span class="journey-status">Current</span></button></li>
+        <li data-journey-step><button type="button" data-stage-id="direction"><span class="journey-marker">2</span><span><strong>Confirm product direction</strong><small>Create the planning packet</small></span><span class="journey-status">Upcoming</span></button></li>
+        <li data-journey-step><button type="button" data-stage-id="interface"><span class="journey-marker">3</span><span><strong>Shape interface</strong><small>Flows and low-fi mockups</small></span><span class="journey-status">Upcoming</span></button></li>
+        <li data-journey-step><button type="button" data-stage-id="architecture"><span class="journey-marker">4</span><span><strong>Define architecture</strong><small>Data, contracts, failures</small></span><span class="journey-status">Upcoming</span></button></li>
+        <li data-journey-step><button type="button" data-stage-id="build"><span class="journey-marker">5</span><span><strong>Prepare the build</strong><small>Tasks and Build Loop handoff</small></span><span class="journey-status">Upcoming</span></button></li>
+      </ol>
+    </aside>
+
+    <main class="stage">
+    <nav class="breadcrumbs" id="breadcrumbs" aria-label="Breadcrumb"></nav>
+    <!-- Waiting state: the next question is being prepared (agent enriching, or the
+         server is about to serve the static fallback). Never a frozen dead-end. -->
+    <section id="waiting" class="waiting" aria-live="polite" aria-busy="true">
+      <span class="spinner" aria-hidden="true"></span>
+      <h1 class="q-prompt" id="waiting-title">Connecting…</h1>
+      <p class="q-note" id="waiting-note">Reading the survey contract.</p>
+    </section>
+
+    <!-- Live question. One of four renderers fills #answer. -->
+    <section id="question" hidden>
+      <div class="q-head">
+        <p class="q-feeds" id="q-feeds"></p>
+        <h1 class="q-prompt" id="q-prompt"></h1>
+        <p class="q-note" id="q-help" hidden></p>
+      </div>
+      <form id="answer-form" autocomplete="off">
+        <div id="answer"></div>
+
+        <!-- Persistent steering box: echoed to the agent with every answer. -->
+        <div class="steer">
+          <label class="steer-label" for="steer">Anything to steer the agent? (optional)</label>
+          <input type="text" id="steer" class="steer-input"
+                 placeholder="e.g. keep it minimal, this must work offline…" />
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn-primary" id="submit-btn">Submit answer</button>
+          <button type="button" class="btn-secondary" id="save-btn">Save progress</button>
+          <button type="button" class="btn-secondary" id="draft-btn">Draft from what we have</button>
+          <span class="err" id="err" role="alert"></span>
+        </div>
+        <p class="save-status" id="save-status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <!-- Done. Rendered by survey-view.js renderDone() from live state: a readback
+         of what was captured, the real --out directory, and either a working
+         indicator or the reported emitted files. Never claims files exist that
+         the host agent has not reported. -->
+    <section id="done" class="done" aria-live="polite" hidden></section>
+
+    <!-- Downstream stage overview. The shell keeps one stable URL and derives
+         this view from the same persisted answers, emitted files, and gaps. -->
+    <section id="workflow-stage" class="workflow-stage" aria-live="polite" hidden></section>
+    </main>
+  </div>
+
+  <script type="module" src="/survey.js"></script>
+</body>
+</html>

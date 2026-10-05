@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 2,
+  "id": "native-owned-files",
+  "productName": "Native Planner",
+  "productDescription": "Compact native ownership fixture.",
+  "platformTarget": "ios",
+  "projectContext": {
+    "startingPoint": "existing-definition",
+    "declaredNewFiles": [
+      { "path": "Sources/Views/PlannerView.swift", "because": "The planner screen is a new native surface." },
+      { "path": "Sources/Components/PlannerCard.swift", "because": "The planner card is a new native component." }
+    ]
+  },
+  "features": [
+    {
+      "id": "feature-plan",
+      "title": "Guided planning",
+      "surface": "ui",
+      "needIds": [],
+      "acceptanceCriteria": ["The user can review one guided plan."],
+      "ownedFiles": ["Sources/Features/GuidedPlanning.swift"]
+    }
+  ],
+  "screens": [
+    {
+      "id": "screen-plan",
+      "name": "Planner",
+      "purpose": "Review a guided plan.",
+      "featureIds": ["feature-plan"],
+      "ownedFiles": ["Sources/Views/PlannerView.swift"]
+    }
+  ],
+  "architecture": {
+    "components": [
+      {
+        "id": "component-planner-card",
+        "name": "Planner Card",
+        "kind": "ui",
+        "featureIds": ["feature-plan"],
+        "owner": "Sample Planner",
+        "ownedFiles": ["Sources/Components/PlannerCard.swift"]
+      },
+      {
+        "id": "component-planner-screen",
+        "name": "Planner Screen Adapter",
+        "kind": "ui",
+        "featureIds": ["feature-plan"],
+        "owner": "Sample Planner",
+        "ownedFiles": ["Sources/Views/PlannerView.swift"]
+      }
+    ],
+    "contracts": [
+      {
+        "id": "contract-planner-card",
+        "name": "Planner Card Contract",
+        "provider": { "specId": "native-owned-files", "kind": "component", "id": "component-planner-card" },
+        "consumers": [{ "specId": "native-owned-files", "kind": "component", "id": "component-planner-screen" }],
+        "ports": [{ "id": "port-plan", "name": "plan", "type": "Plan", "direction": "input" }],
+        "transport": "Swift value",
+        "failureModes": ["Plan is unavailable."],
+        "securityNotes": ["No private task content leaves the device."],
+        "ownedFiles": ["Sources/Contracts/PlannerCardContract.swift"]
+      }
+    ],
+    "relationships": [],
+    "flows": [],
+    "specDependencies": []
+  },
+  "tests": [
+    {
+      "id": "test-plan",
+      "description": "Planner ownership remains explicit.",
+      "featureIds": ["feature-plan"],
+      "screenIds": ["screen-plan"],
+      "ownedFiles": ["Tests/PlannerTests.swift"],
+      "testFramework": "XCTest"
+    }
+  ],
+  "uiPreferences": { "brandAdjectives": ["calm"] }
+}

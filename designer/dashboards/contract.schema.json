@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rosslabs.ai/schemas/dashboard-contract/1.0.0",
+  "title": "Dashboard contract v1 — archetype A1 (decision surface)",
+  "type": "object",
+  "required": ["schema_version", "id", "archetype", "decision", "options"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+    "archetype": {"enum": ["A1"]},
+    "title": {"type": "string"},
+    "decision": {"type": "string", "minLength": 1},
+    "context": {"type": "string"},
+    "status": {"enum": ["proposed", "accepted", "superseded", "deferred"]},
+    "recommendation": {"type": ["string", "null"]},
+    "options": {
+      "type": "array", "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["id", "label"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+          "label": {"type": "string"},
+          "detail": {"type": "string"},
+          "tradeoffs": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "sink": {
+      "type": "object",
+      "required": ["kind"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {"enum": ["http-jsonl"]},
+        "base": {"type": "string"},
+        "path": {"type": "string"}
+      }
+    }
+  }
+}

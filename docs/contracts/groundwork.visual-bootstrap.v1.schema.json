@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://groundwork.local/contracts/groundwork.visual-bootstrap.v1.schema.json",
+  "title": "groundwork.visual-bootstrap/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "stage", "drive", "entryBehavior", "product", "context", "knownFacts"],
+  "properties": {
+    "contract": { "const": "groundwork.visual-bootstrap/v1" },
+    "stage": { "enum": ["idea", "existing-app", "change"] },
+    "drive": { "enum": ["adaptive", "guided", "manual"] },
+    "entryBehavior": { "enum": ["review-baseline", "next-unresolved", "setup"] },
+    "product": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "repoPath", "outputPath"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "repoPath": { "type": "string", "minLength": 1 },
+        "outputPath": { "type": "string", "minLength": 1 },
+        "runningUrl": { "type": "string", "format": "uri" }
+      }
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["platformSurfaces"],
+      "properties": {
+        "platformSurfaces": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "groundwork.spec-v3-extension.schema.json#/$defs/platformSurface" }
+        },
+        "designBaseline": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "seed": { "type": "string", "minLength": 1 },
+            "tokenSetId": { "type": "string", "minLength": 1 },
+            "selectedMockupId": { "type": "string", "minLength": 1 },
+            "rationale": { "type": "string", "minLength": 1 }
+          },
+          "minProperties": 1
+        },
+        "requestedDelta": { "type": "string" },
+        "structuredContext": { "type": "object" }
+      }
+    },
+    "sourcePaths": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true,
+      "default": []
+    },
+    "knownFacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["categoryId", "optionId", "provenance"],
+        "properties": {
+          "categoryId": { "type": "string", "minLength": 1 },
+          "optionId": { "type": "string", "minLength": 1 },
+          "provenance": { "enum": ["observed", "decided"] },
+          "sourcePath": { "type": "string", "minLength": 1 },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "default": []
+    }
+  }
+}

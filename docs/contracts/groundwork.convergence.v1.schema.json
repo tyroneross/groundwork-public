@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://groundwork.local/contracts/groundwork.convergence.v1.schema.json",
+  "title": "groundwork.convergence/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "runId", "specDigest", "taskDigest", "buildRequestDigest", "implementationMapDigest", "calculatedBy", "summary", "items", "calculatedAt"],
+  "properties": {
+    "contract": { "const": "groundwork.convergence/v1" },
+    "runId": { "$ref": "#/$defs/id" },
+    "specDigest": { "$ref": "#/$defs/digest" },
+    "taskDigest": { "$ref": "#/$defs/digest" },
+    "buildRequestDigest": { "$ref": "#/$defs/digest" },
+    "implementationMapDigest": { "$ref": "#/$defs/digest" },
+    "calculatedBy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": { "name": { "const": "groundwork" }, "version": { "type": "string", "minLength": 1 } }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unverified", "implemented", "verified", "diverged", "blocked", "manual"],
+      "properties": {
+        "unverified": { "type": "integer", "minimum": 0 },
+        "implemented": { "type": "integer", "minimum": 0 },
+        "verified": { "type": "integer", "minimum": 0 },
+        "diverged": { "type": "integer", "minimum": 0 },
+        "blocked": { "type": "integer", "minimum": 0 },
+        "manual": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "targetId", "status", "mappingIds", "evidenceIds", "reason"],
+        "properties": {
+          "kind": { "enum": ["task", "component", "contract", "requirement"] },
+          "targetId": { "$ref": "#/$defs/id" },
+          "status": { "enum": ["unverified", "implemented", "verified", "diverged", "blocked", "manual"] },
+          "mappingIds": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+          "evidenceIds": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "calculatedAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "id": { "type": "string", "minLength": 1 },
+    "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://groundwork.local/contracts/build-loop.implementation-map.v1.schema.json",
+  "title": "build-loop.implementation-map/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "runId", "buildRequestDigest", "specDigest", "taskDigest", "producer", "mappings", "evidence", "deviations", "implementationMapDigest", "createdAt"],
+  "properties": {
+    "contract": { "const": "build-loop.implementation-map/v1" },
+    "runId": { "$ref": "#/$defs/id" },
+    "buildRequestDigest": { "$ref": "#/$defs/digest" },
+    "specDigest": { "$ref": "#/$defs/digest" },
+    "taskDigest": { "$ref": "#/$defs/digest" },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": { "name": { "const": "build-loop" }, "version": { "type": "string", "minLength": 1 }, "commit": { "type": "string", "minLength": 7 } }
+    },
+    "mappings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "targetId", "status", "fileRefs", "symbolRefs", "commitRefs", "testEvidenceIds", "runtimeEvidenceIds"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "kind": { "enum": ["task", "component", "contract", "requirement"] },
+          "targetId": { "$ref": "#/$defs/id" },
+          "status": { "enum": ["not-started", "implemented", "verified", "blocked", "manual", "diverged"] },
+          "fileRefs": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "symbolRefs": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "commitRefs": { "type": "array", "items": { "type": "string", "minLength": 7 } },
+          "testEvidenceIds": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+          "runtimeEvidenceIds": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+          "deviationIds": { "type": "array", "items": { "$ref": "#/$defs/id" } }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "command", "outcome", "recordedAt"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "kind": { "enum": ["test", "runtime", "inspection"] },
+          "command": { "type": "string", "minLength": 1 },
+          "outcome": { "enum": ["passed", "failed", "blocked", "manual"] },
+          "summary": { "type": "string" },
+          "artifactDigest": { "$ref": "#/$defs/digest" },
+          "recordedAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "deviations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "targetId", "summary", "impact"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "targetId": { "$ref": "#/$defs/id" },
+          "summary": { "type": "string", "minLength": 1 },
+          "impact": { "enum": ["none", "low", "medium", "high", "blocking"] }
+        }
+      }
+    },
+    "implementationMapDigest": { "$ref": "#/$defs/digest" },
+    "createdAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "id": { "type": "string", "minLength": 1 },
+    "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+  }
+}

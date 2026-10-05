@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://groundwork.dev/schemas/canvas-status-v1.json",
+  "title": "Groundwork canvas status.json",
+  "description": "Agent -> rail. The decision-engine status the rail renders (decide panel + convergence meter). Written by the agent to <dir>/.canvas/status.json; served verbatim at GET /__canvas/status. Forward-compatible: unknown fields MUST be ignored by shells.",
+  "type": "object",
+  "required": ["confidence", "info_gain", "ready", "round", "next_question", "decided"],
+  "additionalProperties": true,
+  "properties": {
+    "schema": { "const": "groundwork.canvas.status/v1", "description": "Optional in v1; absence MEANS v1. Additive per PROTOCOL.md §versioning." },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1, "description": "Gate overall_confidence; drives the meter %." },
+    "info_gain": { "type": "number", "minimum": 0, "description": "Max remaining uncertainty*importance across eligible dims." },
+    "ready": { "type": "boolean", "description": "STOP asking when true; rail shows the converged banner and suppresses the question." },
+    "converged": { "type": "boolean", "description": "ready AND last canvas rating >= 4." },
+    "round": { "type": "integer", "minimum": 0, "description": "Questions asked so far." },
+    "next_question": { "type": ["string", "null"], "description": "Dimension to ask next, or null when exhausted." },
+    "ranked": {
+      "type": "array",
+      "description": "Top dims by info gain, [dim, score] pairs, high first.",
+      "items": { "type": "array", "prefixItems": [ { "type": "string" }, { "type": "number" } ], "minItems": 2, "maxItems": 2 }
+    },
+    "decided": { "type": "object", "description": "{dim: pinned value} — meter renders these.", "additionalProperties": true },
+    "goal": { "type": "string", "description": "The VALUES answer, in the user's words." },
+    "decision_type": { "type": "string", "enum": ["descriptive", "diagnostic", "choice", "policy"] },
+    "fork": {
+      "type": "object",
+      "description": "OPTIONAL. Present when next_question is a genuine pairwise fork; renders the A/B on the canvas. A click POSTs {kind:'decide', dim:fork.dim, value:'a'|'b'}.",
+      "required": ["dim", "a", "b"],
+      "additionalProperties": true,
+      "properties": {
+        "dim": { "type": "string", "description": "REQUIRED — echoed back in the decide feedback row." },
+        "question": { "type": "string", "description": "Optional; rail falls back to 'Which direction?'" },
+        "a": { "$ref": "#/$defs/forkOption" },
+        "b": { "$ref": "#/$defs/forkOption" }
+      }
+    },
+    "ioAnnotations": {
+      "type": "object",
+      "description": "OPTIONAL. Map of data-component name -> its data contract, rendered as a display-only io-chip on the matching [data-component] element (PROTOCOL.md §5a). Non-destructive: absence renders zero chips, same as pre-feature DOM. Inline data-datain/data-dataout attributes on the element take precedence over this map when both are present.",
+      "additionalProperties": { "$ref": "#/$defs/ioAnnotation" }
+    },
+    "decisionMeta": {
+      "type": "object",
+      "description": "OPTIONAL display-only decision badges keyed by decision or dimension. Does not alter feedback payloads or decision-engine calls.",
+      "additionalProperties": { "$ref": "#/$defs/decisionMeta" }
+    }
+  },
+  "$defs": {
+    "ioAnnotation": {
+      "type": "object",
+      "description": "Mirrors the Spec's ScreenElement.dataIn.source / dataOut for one component, in the rail's chip text.",
+      "additionalProperties": true,
+      "properties": {
+        "in": { "type": "string", "description": "Rendered as 'in: <in>' on the chip." },
+        "out": { "type": "string", "description": "Rendered as 'out: <out>' on the chip." }
+      }
+    },
+    "decisionMeta": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "rigidity": { "enum": ["locked", "leaning", "open", "experimental", "superseded"] },
+        "label": { "type": "string" }, "scope": { "type": "string" }, "note": { "type": "string" }
+      }
+    },
+    "forkOption": {
+      "type": "object",
+      "required": ["label"],
+      "additionalProperties": true,
+      "properties": {
+        "label": { "type": "string" },
+        "sub": { "type": "string", "description": "One-line supporting detail." },
+        "preview": {
+          "type": "object",
+          "description": "OPTIONAL. Absent = no live preview (pre-existing behavior, unchanged). Present -> hovering/focusing this option in the rail POSTs {component,addClass,removeClass} to /__canvas/preview, which the server relays as an SSE 'preview' frame; the rail toggles the class(es) on the matching [data-component] element in the iframe until mouseleave/blur (or a real canvas reload) reverts it. Purely visual — never written to disk.",
+          "additionalProperties": false,
+          "required": ["component"],
+          "properties": {
+            "component": { "type": "string", "description": "Matches a [data-component=\"<name>\"] element already rendered in the canvas." },
+            "addClass": { "type": "string", "description": "CSS class to add on the previewed element while hovered/focused." },
+            "removeClass": { "type": "string", "description": "CSS class to remove on the previewed element while hovered/focused." }
+          }
+        }
+      }
+    }
+  }
+}

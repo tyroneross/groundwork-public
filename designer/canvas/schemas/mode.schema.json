@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://groundwork.dev/schemas/canvas-mode-v1.json",
+  "title": "Groundwork canvas mode.json",
+  "description": "Server-owned Live/Hold state. Initialized to {\"mode\":\"live\"} at boot if absent; rewritten by the server on each valid `toggle` feedback row. The agent and rail read it (GET /__canvas/mode); neither writes it. `hold` is advisory pacing — the agent keeps processing feedback but expects the user is studying the frame.",
+  "type": "object",
+  "required": ["mode"],
+  "additionalProperties": false,
+  "properties": {
+    "mode": { "type": "string", "enum": ["live", "hold"] }
+  }
+}

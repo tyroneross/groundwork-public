@@ -1,0 +1,21 @@
+{
+  "contract": "groundwork.convergence/v1",
+  "runId": "run-spectra-001",
+  "specDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "taskDigest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+  "buildRequestDigest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+  "implementationMapDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+  "calculatedBy": { "name": "groundwork", "version": "0.3.0" },
+  "summary": { "unverified": 0, "implemented": 0, "verified": 1, "diverged": 0, "blocked": 0, "manual": 0 },
+  "items": [
+    {
+      "kind": "task",
+      "targetId": "task-guidance",
+      "status": "verified",
+      "mappingIds": ["mapping-task-guidance"],
+      "evidenceIds": ["evidence-guidance-test"],
+      "reason": "The digest-matched mapping includes passing test evidence."
+    }
+  ],
+  "calculatedAt": "2026-08-05T00:12:00Z"
+}

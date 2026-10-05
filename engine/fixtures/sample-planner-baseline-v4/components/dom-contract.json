@@ -1,0 +1,9 @@
+{
+  "schema":"sample-planner.component-dom-contract/v2",
+  "rules": [
+    {"component":"component.planner.focus","container":"section[aria-labelledby=focus-heading]","item":"article.focus-row","combinedLabel":"title, duration, detail","action":"button.change is separate and follows each item"},
+    {"component":"component.planner.needsAttention","container":"aside[aria-labelledby=attention-heading]","role":"region","combinedLabel":"heading then evidence-backed message","actions":["#attention-add","#attention-replace"]},
+    {"component":"component.planner.schedulePreview","container":"section[aria-labelledby=schedule-heading]","disclosure":"#schedule-toggle","controlledRegion":"#timeline","defaultExpanded":false,"fixedBlock":".block.fixed with text Existing calendar event"},
+    {"component":"component.planner.actionBar","container":"footer.bar","childOrder":["#add-calendar","#save-plan"],"widthRatio":[1,1.15],"minimumTarget":48}
+  ]
+}

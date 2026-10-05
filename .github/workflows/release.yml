@@ -1,0 +1,56 @@
+name: Groundwork public source and provenance
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deterministic-release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: npm ci
+      - run: python3 -m pip install pytest
+      - run: python3 scripts/check_publication.py
+      - run: npm test
+        env:
+          CHROME_BIN: /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+      - name: Build the verified plugin bundle
+        run: |
+          node scripts/stage-release.mjs > "$RUNNER_TEMP/staged.json"
+          PLUGIN_ROOT=$(node --input-type=module -e 'import fs from "node:fs"; console.log(JSON.parse(fs.readFileSync(process.argv[1],"utf8")).artifactRoot)' "$RUNNER_TEMP/staged.json")
+          tar -czf groundwork-plugin.tar.gz -C "$PLUGIN_ROOT" .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: groundwork-plugin
+          path: groundwork-plugin.tar.gz
+          if-no-files-found: error
+
+  provenance:
+    if: github.event_name != 'pull_request'
+    needs: deterministic-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: groundwork-plugin
+      - uses: actions/attest@v4
+        with:
+          subject-path: groundwork-plugin.tar.gz

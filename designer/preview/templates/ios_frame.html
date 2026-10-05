@@ -1,0 +1,62 @@
+<!-- iOS phone frame. Placeholders: {slot} {bg} {border} {surface} {accent} {radius_card} -->
+<div style="
+    display:inline-block;
+    font-family:{font_family};
+    background:{bg};
+    border:2px solid {border};
+    border-radius:34px;
+    width:240px;
+    box-shadow:0 2px 12px rgba(0,0,0,0.12);
+    overflow:hidden;
+    position:relative;
+">
+  <!-- Status bar + notch -->
+  <div style="
+      background:{surface};
+      height:36px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
+  ">
+    <!-- Notch pill -->
+    <div style="
+        width:72px;height:18px;
+        background:{notch_bg};
+        border-radius:0 0 14px 14px;
+        position:absolute;top:0;left:50%;
+        transform:translateX(-50%);
+    "></div>
+    <!-- Status text -->
+    <span style="font-size:9px;color:{text_secondary};margin-top:18px;">9:41</span>
+  </div>
+  <!-- Navigation bar (large title area) -->
+  <div style="
+      background:{surface};
+      border-bottom:1px solid {border};
+      padding:6px 14px 6px;
+  ">
+    <div style="font-size:13px;font-weight:{heading_weight};color:{text_primary};">App Title</div>
+  </div>
+  <!-- Content area -->
+  <div style="padding:{content_padding};background:{bg};min-height:180px;">
+    {slot}
+  </div>
+  <!-- Tab bar -->
+  <div style="
+      background:{surface};
+      border-top:1px solid {border};
+      display:flex;
+      justify-content:space-around;
+      padding:8px 0 10px;
+  ">
+    {tab_items}
+  </div>
+  <!-- Home indicator -->
+  <div style="
+      height:16px;background:{bg};
+      display:flex;align-items:center;justify-content:center;
+  ">
+    <div style="width:80px;height:3px;background:{border};border-radius:2px;"></div>
+  </div>
+</div>

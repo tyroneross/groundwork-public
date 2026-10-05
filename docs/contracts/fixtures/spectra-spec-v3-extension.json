@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 3,
+  "id": "spec-spectra",
+  "productName": "Spectra",
+  "platformTarget": "macos",
+  "platformSurfaces": [
+    { "id": "surface-macos", "platform": "macos", "role": "primary", "name": "Spectra Studio", "interactionModes": ["pointer", "keyboard"], "featureIds": ["feature-editor"], "provenance": "observed" },
+    { "id": "surface-web", "platform": "web", "role": "companion", "name": "Spectra Review", "interactionModes": ["pointer", "touch"], "featureIds": ["feature-review"], "provenance": "observed" }
+  ],
+  "features": [
+    { "id": "feature-editor", "title": "Campaign editor" },
+    { "id": "feature-review", "title": "Companion review" }
+  ],
+  "screens": [
+    { "id": "screen-editor", "name": "Editor", "elements": [{ "id": "element-publish", "name": "Publish control" }] }
+  ],
+  "architecture": {
+    "components": [
+      { "id": "component-editor", "name": "Editor shell", "kind": "ui", "featureIds": ["feature-editor"], "owner": "desktop", "provenance": "observed" },
+      { "id": "component-review", "name": "Review companion", "kind": "ui", "featureIds": ["feature-review"], "owner": "web", "provenance": "observed" }
+    ],
+    "contracts": [
+      {
+        "id": "contract-review-publish",
+        "name": "Published campaign snapshot",
+        "provider": { "specId": "spec-spectra", "kind": "component", "id": "component-editor" },
+        "consumers": [{ "specId": "spec-spectra", "kind": "component", "id": "component-review" }],
+        "ports": [
+          { "id": "port-campaign-out", "name": "campaign", "type": "CampaignSnapshot", "direction": "output", "required": true },
+          { "id": "port-campaign-in", "name": "campaign", "type": "CampaignSnapshot", "direction": "input", "required": true }
+        ],
+        "transport": "versioned JSON over HTTPS",
+        "failureModes": ["snapshot unavailable", "unsupported snapshot version"],
+        "securityNotes": ["redact secrets before publication", "require authenticated review access"],
+        "provenance": "decided"
+      }
+    ],
+    "relationships": [
+      {
+        "id": "relationship-editor-review",
+        "from": { "specId": "spec-spectra", "kind": "component", "id": "component-editor" },
+        "to": { "specId": "spec-spectra", "kind": "component", "id": "component-review" },
+        "direction": "unidirectional",
+        "contractRef": { "specId": "spec-spectra", "kind": "contract", "id": "contract-review-publish" },
+        "criticality": "hard",
+        "optional": false,
+        "rationale": "Review requires a published editor snapshot.",
+        "provenance": "decided"
+      }
+    ],
+    "flows": [
+      {
+        "id": "flow-publish-review",
+        "name": "Publish for review",
+        "trigger": "A creator publishes a campaign snapshot.",
+        "exchanges": [
+          {
+            "id": "exchange-publish-review",
+            "order": 1,
+            "from": { "specId": "spec-spectra", "kind": "component", "id": "component-editor" },
+            "to": { "specId": "spec-spectra", "kind": "component", "id": "component-review" },
+            "contractRef": { "specId": "spec-spectra", "kind": "contract", "id": "contract-review-publish" },
+            "inputRefs": [{ "specId": "spec-spectra", "kind": "element", "id": "element-publish" }],
+            "outputRefs": [],
+            "failurePaths": ["Retain the last valid snapshot and show the publish failure."]
+          }
+        ],
+        "provenance": "decided"
+      }
+    ],
+    "specDependencies": []
+  },
+  "governance": {
+    "constraints": ["Keep the macOS editor primary and the web surface companion."],
+    "decisions": [],
+    "owners": ["product"]
+  },
+  "changeSet": {
+    "id": "change-spectra-guidance",
+    "current": [{ "id": "current-editor", "target": { "specId": "spec-spectra", "kind": "component", "id": "component-editor" }, "summary": "Existing compact editor shell.", "provenance": "observed", "evidenceRefs": [] }],
+    "proposed": [{ "id": "proposed-guidance", "target": { "specId": "spec-spectra", "kind": "screen", "id": "screen-editor" }, "summary": "Add contextual first-run guidance inside the existing shell.", "provenance": "decided", "evidenceRefs": [] }],
+    "verified": []
+  }
+}

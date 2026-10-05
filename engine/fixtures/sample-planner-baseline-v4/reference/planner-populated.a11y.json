@@ -1,0 +1,14 @@
+{
+  "schema": "sample-planner.accessibility-snapshot/v4",
+  "readingOrder": [
+    {
+      "id": "save-plan",
+      "role": "button",
+      "label": "Save plan",
+      "target": {
+        "width": 200,
+        "height": 48
+      }
+    }
+  ]
+}

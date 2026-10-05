@@ -1,0 +1,13 @@
+Groundwork
+Copyright 2026 Tyrone Ross
+
+Licensed under the Apache License, Version 2.0.
+
+Groundwork includes Calm Precision guidance authored by Tyrone Ross,
+vendored from RossLabs-AI-Toolkit (version 6.6.0). The original source
+provenance and bibliography are retained under skills/calm-precision/.
+External libraries retain their respective licenses; they are installed
+from the package lockfile and are not relicensed by this notice.
+
+Portions of Groundwork were developed with assistance from Anthropic Claude
+and OpenAI Codex. AI assistance does not imply provider endorsement.

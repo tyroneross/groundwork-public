@@ -1,0 +1,414 @@
+{
+  "schemaVersion": 2,
+  "id": "spec-stridestreak",
+  "productName": "StrideStreak",
+  "productDescription": "A habit tracker for runners that turns a running goal into a daily streak. It logs each run, shows the current and longest streak, and nudges the runner before a streak is about to break. The point is consistency, not pace analytics.",
+  "platformTarget": "ios",
+  "personas": [
+    {
+      "id": "persona-consistency-seeker",
+      "name": "The Consistency Seeker",
+      "trigger": "Has tried and abandoned a running routine at least twice and wants a habit that finally sticks.",
+      "exclusions": [
+        "Not a competitive racer chasing a PR",
+        "Not a data scientist who wants deep pace and cadence analytics"
+      ],
+      "jobs": [
+        "See at a glance whether today's run is done",
+        "Feel the pull of an unbroken streak",
+        "Get a reminder before the streak is at risk"
+      ]
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "scenario-log-morning-run",
+      "personaId": "persona-consistency-seeker",
+      "context": "Just finished a 5am run before work",
+      "goal": "Log the run in under ten seconds and watch the streak count go up",
+      "successSignal": "Median time from opening the app to a logged run is under 10 seconds"
+    },
+    {
+      "id": "scenario-rescue-streak",
+      "personaId": "persona-consistency-seeker",
+      "context": "It is 8pm and no run has been logged today",
+      "goal": "Get a nudge in time to either run or consciously use a rest day",
+      "successSignal": "At least 60 percent of at-risk streaks receive a same-day reminder that is acted on"
+    }
+  ],
+  "needs": [
+    {
+      "id": "need-one-tap-log",
+      "title": "Log a run with a single tap",
+      "description": "The core loop must be effortless or the habit never forms.",
+      "priority": "P0",
+      "source": "scenario-log-morning-run",
+      "ears": [
+        {
+          "id": "ears-log-tap",
+          "ears": "WHEN the runner taps the primary Log Run control on the Today screen, THE SYSTEM SHALL record a run for the current day and increment the streak within one second."
+        },
+        {
+          "id": "ears-log-idempotent",
+          "ears": "WHEN a run has already been logged for the current day, THE SYSTEM SHALL show the day as complete and SHALL NOT create a duplicate entry."
+        }
+      ]
+    },
+    {
+      "id": "need-streak-visibility",
+      "title": "Make the streak the emotional centerpiece",
+      "description": "The current and longest streak must be the first thing the runner sees.",
+      "priority": "P0",
+      "ears": [
+        {
+          "id": "ears-streak-display",
+          "ears": "WHEN the Today screen is opened, THE SYSTEM SHALL display the current streak length and the longest streak length above the fold."
+        }
+      ]
+    },
+    {
+      "id": "need-at-risk-reminder",
+      "title": "Warn before a streak breaks",
+      "description": "A missed day silently breaks the streak unless the runner is nudged.",
+      "priority": "P1",
+      "ears": [
+        {
+          "id": "ears-reminder-fire",
+          "ears": "WHEN no run has been logged and the runner's configured reminder time is reached, THE SYSTEM SHALL send a local notification warning that the streak is at risk."
+        }
+      ]
+    }
+  ],
+  "features": [
+    {
+      "id": "feat-today-log",
+      "title": "One-tap Today logging",
+      "description": "A single large primary action on the Today screen that logs the day's run.",
+      "surface": "ui",
+      "priority": "P0",
+      "needIds": ["need-one-tap-log", "need-streak-visibility"],
+      "acceptanceCriteria": [
+        "Primary action is reachable without scrolling",
+        "Logging is idempotent per calendar day"
+      ],
+      "ears": [
+        {
+          "id": "ears-feat-today-log",
+          "ears": "WHEN the runner logs a run, THE SYSTEM SHALL persist it locally so the streak survives an app restart with no network."
+        }
+      ]
+    },
+    {
+      "id": "feat-streak-engine",
+      "title": "Streak engine",
+      "description": "Computes current streak, longest streak, and at-risk status from the run log.",
+      "surface": "headless",
+      "priority": "P0",
+      "needIds": ["need-streak-visibility", "need-at-risk-reminder"],
+      "acceptanceCriteria": [
+        "A logged rest day does not break the streak",
+        "Longest streak never decreases"
+      ]
+    },
+    {
+      "id": "feat-risk-reminder",
+      "title": "At-risk local reminder",
+      "description": "Schedules a same-day local notification when the streak is unlogged near the reminder time.",
+      "surface": "event",
+      "priority": "P1",
+      "needIds": ["need-at-risk-reminder"],
+      "acceptanceCriteria": [
+        "Reminder is cancelled once the day is logged"
+      ]
+    }
+  ],
+  "uxFlows": [
+    {
+      "id": "flow-log-and-see-streak",
+      "name": "Log a run and see the streak grow",
+      "steps": [
+        "Open the app to the Today screen",
+        "Tap Log Run",
+        "See the streak counter animate upward",
+        "Optionally open the Streak History screen to see the calendar"
+      ],
+      "screenIds": ["screen-today", "screen-history"]
+    }
+  ],
+  "screens": [
+    {
+      "id": "screen-today",
+      "name": "Today",
+      "purpose": "The home base: shows today's status, the current streak, and the one-tap Log Run action.",
+      "featureIds": ["feat-today-log", "feat-streak-engine", "feat-risk-reminder"],
+      "primaryAction": "Log Run",
+      "states": ["not-logged", "logged", "rest-day", "at-risk"],
+      "elements": [
+        { "name": "Current streak counter", "role": "hero metric" },
+        { "name": "Longest streak badge", "role": "secondary metric" },
+        { "name": "Log Run button", "role": "primary action" },
+        { "name": "Rest day toggle", "role": "secondary action" }
+      ],
+      "data": [
+        { "field": "currentStreak", "source": "feat-streak-engine" },
+        { "field": "longestStreak", "source": "feat-streak-engine" },
+        { "field": "todayLogged", "source": "data-run-entry" }
+      ]
+    },
+    {
+      "id": "screen-history",
+      "name": "Streak History",
+      "purpose": "A month calendar showing logged, rest, and missed days plus the longest-streak marker.",
+      "featureIds": ["feat-streak-engine"],
+      "primaryAction": "Toggle month",
+      "states": ["loading", "loaded", "empty"],
+      "elements": [
+        { "name": "Month calendar grid", "role": "primary view" },
+        { "name": "Day cell", "role": "status indicator (logged / rest / missed)" },
+        { "name": "Longest-streak marker", "role": "annotation" },
+        { "name": "Month nav arrows", "role": "navigation" }
+      ],
+      "data": [
+        { "field": "entriesByDate", "source": "data-run-entry" },
+        { "field": "longestStreakRange", "source": "feat-streak-engine" }
+      ]
+    }
+  ],
+  "dataPoints": [
+    {
+      "id": "data-run-entry",
+      "name": "RunEntry",
+      "type": "record",
+      "description": "One logged run: the calendar date, whether it was a rest day, and the created timestamp.",
+      "pii": false
+    },
+    {
+      "id": "data-run-location",
+      "name": "RunStartLocation",
+      "type": "geo-coordinate",
+      "description": "Optional coarse start location attached to a run when the runner opts in to map view.",
+      "pii": true,
+      "handlingNote": "Stored on-device only, never synced to a server, and coarsened to city-block granularity. Deleted with the run entry."
+    }
+  ],
+  "integrations": [
+    {
+      "id": "int-healthkit",
+      "name": "Apple HealthKit",
+      "purpose": "Read workout samples so a run recorded by another app can auto-complete today's streak.",
+      "authMode": "HealthKit authorization prompt (read-only workouts)",
+      "docsUrl": "https://developer.apple.com/documentation/healthkit/authorizing-access-to-health-data",
+      "featureIds": ["feat-today-log"],
+      "requiredEnv": [],
+      "codeSetup": [
+        "Enable the HealthKit capability for the app target.",
+        "Add a user-facing NSHealthShareUsageDescription value for workout-read access."
+      ],
+      "externalManualActions": [
+        {
+          "id": "manual-healthkit-consent",
+          "surface": "iOS Health access permission prompt on a physical test device",
+          "action": "Grant the app read access to workout data when the system prompt appears.",
+          "requiredValue": "Workout read permission enabled",
+          "appDestination": "The app's HealthKit authorization state",
+          "verification": "Open Health Settings, confirm workout read access is enabled for StrideStreak, then import a sample workout."
+        }
+      ],
+      "verification": [
+        "With read access granted and a sample workout present, verify that the workout is detected and today's streak updates once.",
+        "With access denied, verify that manual run logging remains available and no workout data is read."
+      ]
+    }
+  ],
+  "apiContracts": [
+    {
+      "id": "api-sync-streak",
+      "method": "POST",
+      "path": "/v1/streak/sync",
+      "description": "Optional cloud backup of the local run log for a signed-in runner. Off by default.",
+      "requestSchema": "{ deviceId: string, entries: Array<{ date: string, restDay: boolean }> }",
+      "responseSchema": "{ currentStreak: number, longestStreak: number, syncedAt: string }",
+      "featureIds": ["feat-streak-engine"]
+    }
+  ],
+  "tests": [
+    {
+      "id": "test-idempotent-log",
+      "description": "Logging the same calendar day twice increments the streak only once and creates no duplicate RunEntry.",
+      "needIds": ["need-one-tap-log"],
+      "featureIds": ["feat-today-log", "feat-streak-engine"],
+      "screenIds": ["screen-today"],
+      "integrationIds": [],
+      "kind": "acceptance",
+      "testFramework": "XCTest"
+    },
+    {
+      "id": "test-healthkit-import",
+      "description": "A granted workout is imported exactly once, while denied HealthKit access preserves manual run logging.",
+      "needIds": ["need-one-tap-log"],
+      "featureIds": ["feat-today-log"],
+      "screenIds": ["screen-today"],
+      "integrationIds": ["int-healthkit"],
+      "kind": "acceptance",
+      "testFramework": "XCTest"
+    },
+    {
+      "id": "test-risk-reminder",
+      "description": "An at-risk reminder fires once at the configured time and is cancelled after the day is logged.",
+      "needIds": ["need-at-risk-reminder"],
+      "featureIds": ["feat-risk-reminder"],
+      "screenIds": ["screen-today"],
+      "integrationIds": [],
+      "kind": "acceptance",
+      "testFramework": "XCTest"
+    },
+    {
+      "id": "test-history-states",
+      "description": "The history screen renders empty, loaded, and month-navigation states from persisted run entries.",
+      "needIds": ["need-streak-visibility"],
+      "featureIds": ["feat-streak-engine"],
+      "screenIds": ["screen-history"],
+      "integrationIds": [],
+      "kind": "acceptance",
+      "testFramework": "XCTest"
+    }
+  ],
+  "adrs": [
+    {
+      "id": "adr-local-first",
+      "title": "Local-first storage with optional cloud sync",
+      "context": "Runners log daily, often offline mid-run, and are privacy-sensitive about location data.",
+      "decision": "Persist the run log on-device with SwiftData as the source of truth; cloud sync is opt-in and additive.",
+      "consequences": "Streaks work fully offline and no account is required. The tradeoff is that cross-device continuity requires the opt-in sync path, and conflict resolution logic is deferred until sync ships.",
+      "reversibility": "medium",
+      "cites": ["need-one-tap-log", "data-run-location"]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "assume-daily-cadence",
+      "text": "Runners think of a streak in whole calendar days, not rolling 24-hour windows.",
+      "confidence": "medium"
+    }
+  ],
+  "risks": [
+    {
+      "id": "risk-notification-fatigue",
+      "text": "Too-frequent at-risk reminders train runners to ignore all notifications",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigation": "Cap at one reminder per day and let the runner set the reminder time."
+    }
+  ],
+  "nonGoals": [
+    {
+      "id": "nongoal-pace-analytics",
+      "text": "No pace, cadence, heart-rate, or route analytics in v1",
+      "because": "The product's job is consistency, and analytics dashboards compete for attention with the single streak signal that drives the habit."
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-effortless-log",
+      "statement": "Make logging a run so fast it never becomes the reason a streak breaks.",
+      "metric": "Median open-to-logged time under 10 seconds"
+    },
+    {
+      "id": "goal-streak-is-the-hook",
+      "statement": "Make the streak the emotional centerpiece that pulls the runner back daily.",
+      "metric": "Day-7 retention above 40 percent for runners with an active streak"
+    },
+    {
+      "id": "goal-rescue-at-risk",
+      "statement": "Save at-risk streaks with a timely, non-nagging nudge before the day ends."
+    }
+  ],
+  "successMetrics": [
+    {
+      "id": "metric-log-speed",
+      "metric": "Median time from opening the app to a logged run",
+      "target": "Under 10 seconds"
+    },
+    {
+      "id": "metric-reminder-action-rate",
+      "metric": "Share of at-risk streaks that receive a same-day reminder acted on",
+      "target": "At least 60 percent"
+    },
+    {
+      "id": "metric-week-one-retention",
+      "metric": "Day-7 retention for runners who started a streak",
+      "target": "At least 40 percent"
+    }
+  ],
+  "observability": {
+    "slis": [
+      { "metric": "log-latency", "target": "Time from Log Run tap to persisted entry" },
+      { "metric": "reminder-delivery-rate", "target": "Share of at-risk days that fire a scheduled reminder" }
+    ],
+    "slos": [
+      { "metric": "log-latency-p95", "target": "under 1000ms at the 95th percentile" },
+      { "metric": "reminder-delivery-rate", "target": "at least 99 percent of scheduled reminders fire" }
+    ]
+  },
+  "boundaries": {
+    "always": [
+      "Keep the run log usable fully offline",
+      "Keep location data on-device unless the runner explicitly opts into sync"
+    ],
+    "askFirst": [
+      "Before enabling cloud sync of the run log",
+      "Before requesting HealthKit or location permissions"
+    ],
+    "never": [
+      "Never sell or share run or location data with third parties",
+      "Never break an existing streak due to a background sync error"
+    ]
+  },
+  "voiceProfile": {
+    "principles": [
+      "Encouraging, never guilt-tripping",
+      "Short and glanceable — the runner is often mid-stride",
+      "Celebrate consistency over speed"
+    ],
+    "doWords": ["streak", "today", "keep it going", "logged", "rest day"],
+    "dontWords": ["failure", "you missed", "lazy", "pace", "deficit"]
+  },
+  "projectContext": {
+    "startingPoint": "existing-app",
+    "sourceRepo": "/path/to/StrideStreak",
+    "sourceArtifacts": ["README.md", "project.pbxproj", "Sources/", "Tests/"],
+    "inspectedAt": "2026-07-10",
+    "evidence": [
+      {
+        "id": "evidence-local-first",
+        "status": "observed",
+        "statement": "The current app stores run entries locally and works without an account.",
+        "sourceRefs": ["Sources/", "Tests/"]
+      },
+      {
+        "id": "decision-streak-focus",
+        "status": "decided",
+        "statement": "The streak remains the visual and emotional centerpiece.",
+        "sourceRefs": ["user-confirmed"]
+      }
+    ]
+  },
+  "uiPreferences": {
+    "informationDensity": "glanceable and sparse",
+    "brandAdjectives": ["encouraging", "focused", "energetic"],
+    "accessibilityFloor": [
+      "Support Dynamic Type without clipping",
+      "Meet WCAG AA contrast",
+      "Use at least 44 by 44 point touch targets"
+    ],
+    "responsiveTargets": {
+      "minimum": "iPhone SE portrait",
+      "maximum": "iPad landscape",
+      "deviceClasses": ["iPhone", "iPad"]
+    },
+    "mustKeep": ["One-tap run logging", "Streak count above the fold"],
+    "mustAvoid": ["Guilt-based copy", "Dense pace analytics in the primary flow"],
+    "mayEvolve": ["History visualization", "Reminder settings layout"],
+    "visualReferences": []
+  }
+}

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decisions</title>
+<!-- No remote stylesheet. A surface that a person opens to rule on their own
+     project should not need the network to render, and a font that fails to
+     load must not change the layout it was measured in. A project supplies its
+     own face by setting --font-sans in its own token file. -->
+<link rel="stylesheet" href="./decisions.css">
+</head>
+<body data-view="open">
+
+<nav class="tabs" aria-label="Views">
+  <button type="button" class="tab" data-tab="compare" id="tab-compare" hidden>
+    Compare <span class="tab-count" data-count="compare"></span>
+  </button>
+  <button type="button" class="tab" data-tab="selected" id="tab-selected" hidden>
+    Selected <span class="tab-count" data-count="selected"></span>
+  </button>
+  <button type="button" class="tab" data-tab="open" aria-current="page">
+    Open <span class="tab-count" data-count="open"></span>
+  </button>
+  <button type="button" class="tab" data-tab="ruled">
+    Ruled <span class="tab-count" data-count="ruled"></span>
+  </button>
+  <button type="button" class="tab" data-tab="reference">Reference</button>
+</nav>
+
+<div class="shell" id="shell">
+  <main class="col-decide">
+    <!-- OPEN. Cards and nothing else. No record bar, no stamps, no counts and
+         no explanatory prose above the cards: that was the single loudest piece
+         of feedback on the surface this came from. -->
+    <section class="view view-open" id="view-open" aria-labelledby="open-h1">
+      <h1 class="open-h1" id="open-h1">Loading</h1>
+      <div class="open-stack" id="open-stack"></div>
+      <p class="quiet-foot" id="quiet-foot"></p>
+      <div class="save-row">
+        <button type="button" class="d-use" id="save-rulings" disabled>Save rulings</button>
+        <span class="status-line" id="status-line" role="status" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <!-- COMPARE. Variants sharing one baseline appear together. Their earlier
+         A/B feedback appears with each proposal. -->
+    <section class="view view-compare" id="view-compare" aria-labelledby="compare-h1">
+      <header class="c-intro" id="compare-top">
+        <h1 class="open-h1" id="compare-h1">Compare</h1>
+        <p class="c-lede">Compare versions and save a choice. Saved choices move to Selected.</p>
+        <p class="c-progress"><span><b id="c-done">0</b> of <span id="c-total">0</span> answered</span>
+          <span id="c-split"></span></p>
+      </header>
+      <nav class="c-jump" id="c-jump" aria-label="Jump to decision"></nav>
+      <div class="c-index" id="c-index"></div>
+      <div class="g-list" id="g-list" hidden></div>
+      <p class="work-empty" id="compare-empty" hidden>Every comparison has a saved choice. Review them in Selected.</p>
+      <details id="legacy-compare"><summary>Compare A and B</summary>
+        <div class="c-list" id="c-list"></div>
+      </details>
+    </section>
+
+    <section class="view view-selected" id="view-selected" aria-labelledby="selected-h1">
+      <header id="selected-top">
+        <h1 class="open-h1" id="selected-h1" tabindex="-1">Selected</h1>
+        <p class="c-lede">Saved choices and their implementation status. Open a card to review or change the choice.</p>
+      </header>
+      <div class="selected-list" id="selected-list"></div>
+    </section>
+
+    <!-- RULED. What was decided, when, and the receipt that says what came of
+         it. Separate view, because a ruled thing is no longer a question. -->
+    <section class="view view-ruled" id="view-ruled" aria-labelledby="ruled-h1">
+      <h1 class="open-h1" id="ruled-h1">Ruled</h1>
+      <ul class="ruled-list" id="ruled-list"></ul>
+    </section>
+
+    <!-- REFERENCE. Provenance: where the record lives, what it declares, and
+         the notes and pins with their dispositions. -->
+    <section class="view view-reference" id="view-reference" aria-labelledby="ref-h1">
+      <h1 class="open-h1" id="ref-h1">Reference</h1>
+      <div id="reference-body"></div>
+    </section>
+  </main>
+
+  <aside class="col-preview" id="col-preview" hidden aria-label="Preview">
+    <div class="pv-bar">
+      <span class="pv-source" role="group" aria-label="Preview source">
+        <button type="button" class="mini-btn" data-pv="live" aria-pressed="true">Live</button>
+        <button type="button" class="mini-btn" data-pv="mockup" aria-pressed="false">Mockup</button>
+      </span>
+      <span class="pv-sha" id="pv-sha"></span>
+      <button type="button" class="mini-btn" id="pv-refresh">Refresh</button>
+    </div>
+    <div class="pv-previewing" id="pv-previewing" hidden></div>
+    <div class="pv-wrap">
+      <iframe class="pv-frame" id="pv-frame" title="Preview of the page being decided"></iframe>
+    </div>
+  </aside>
+</div>
+
+<script src="./decisions.js"></script>
+</body>
+</html>

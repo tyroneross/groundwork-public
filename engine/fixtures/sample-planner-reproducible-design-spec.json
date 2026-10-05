@@ -1,0 +1,680 @@
+{
+  "schemaVersion": 3,
+  "id": "spec-sample-planner-reconstruction",
+  "productName": "Sample Planner",
+  "productDescription": "A guided daily planner with explicit local and calendar write boundaries.",
+  "platformTarget": "ios",
+  "platformSurfaces": [
+    {
+      "id": "surface-ios",
+      "platform": "ios",
+      "role": "primary",
+      "name": "iOS",
+      "interactionModes": [
+        "touch"
+      ],
+      "featureIds": [
+        "feature-plan"
+      ],
+      "provenance": "observed"
+    }
+  ],
+  "needs": [
+    {
+      "id": "need-plan",
+      "title": "Build a realistic day",
+      "priority": "P0"
+    }
+  ],
+  "features": [
+    {
+      "id": "feature-plan",
+      "title": "Guided day planning",
+      "surface": "ui",
+      "priority": "P0",
+      "needIds": [
+        "need-plan"
+      ]
+    }
+  ],
+  "screens": [
+    {
+      "id": "screen-planner",
+      "name": "Planner",
+      "purpose": "Build a realistic day.",
+      "featureIds": [
+        "feature-plan"
+      ],
+      "states": [
+        "preview"
+      ],
+      "elements": [
+        {
+          "id": "element-save",
+          "name": "Save plan",
+          "role": "primary action"
+        }
+      ]
+    }
+  ],
+  "tests": [
+    {
+      "id": "test-plan",
+      "description": "Planner preserves the reviewed schedule and write boundaries.",
+      "needIds": [
+        "need-plan"
+      ],
+      "featureIds": [
+        "feature-plan"
+      ],
+      "screenIds": [
+        "screen-planner"
+      ],
+      "platformSurfaceIds": [
+        "surface-ios"
+      ],
+      "kind": "acceptance",
+      "testFramework": "XCTest"
+    }
+  ],
+  "behaviorContracts": [
+    {
+      "id": "behavior-save-control",
+      "name": "Save control",
+      "scope": {
+        "kind": "element",
+        "refs": [
+          "element-save"
+        ]
+      },
+      "trigger": "User activates Save plan",
+      "states": [],
+      "actions": [],
+      "transitions": [],
+      "verificationRefs": [
+        "verify-target"
+      ]
+    },
+    {
+      "id": "behavior-planner",
+      "name": "Planner preview",
+      "scope": {
+        "kind": "screen",
+        "refs": [
+          "screen-planner"
+        ]
+      },
+      "trigger": "User reviews the plan",
+      "states": [
+        {
+          "id": "state-preview",
+          "name": "Preview"
+        }
+      ],
+      "actions": [
+        {
+          "id": "action-save",
+          "name": "Save plan",
+          "fromStateIds": [
+            "state-preview"
+          ],
+          "effects": [
+            {
+              "kind": "update",
+              "targetRef": "screen-planner"
+            }
+          ],
+          "writes": [
+            {
+              "storeRef": "local-plan",
+              "entity": "DailyPlan",
+              "fields": [
+                "blocks"
+              ],
+              "mode": "update"
+            }
+          ],
+          "prohibitedWrites": [
+            {
+              "storeRef": "calendar",
+              "entity": "Event",
+              "fields": [],
+              "mode": "create"
+            }
+          ],
+          "feedback": {
+            "channel": "toast",
+            "timing": "immediate",
+            "message": "Plan saved locally."
+          }
+        }
+      ],
+      "transitions": []
+    }
+  ],
+  "adrs": [
+    {
+      "id": "adr-save-control-style",
+      "title": "Save control style",
+      "context": "Planner action",
+      "decision": "Keep the save control in the action family.",
+      "reversibility": "high",
+      "rigidity": "leaning",
+      "scope": {
+        "kind": "element",
+        "refs": [
+          "element-save"
+        ]
+      }
+    },
+    {
+      "id": "adr-save-boundary",
+      "title": "Save stays local",
+      "context": "Planner writes",
+      "decision": "Calendar export remains separate.",
+      "reversibility": "medium",
+      "rigidity": "locked",
+      "scope": {
+        "kind": "screen",
+        "refs": [
+          "screen-planner"
+        ]
+      },
+      "constraintRefs": [
+        "constraint-save-boundary"
+      ]
+    },
+    {
+      "id": "adr-action-style",
+      "title": "Action family",
+      "context": "Planner style",
+      "decision": "Use related blue-indigo actions.",
+      "reversibility": "high",
+      "rigidity": "leaning",
+      "scope": {
+        "kind": "screen",
+        "refs": [
+          "screen-planner"
+        ]
+      },
+      "mustPreserve": [
+        "accessible contrast"
+      ],
+      "mayVary": [
+        "gradient intensity"
+      ]
+    }
+  ],
+  "designContract": {
+    "baseline": {
+      "disposition": "declared",
+      "id": "baseline-sample-planner-day-v4",
+      "version": "v4",
+      "artifacts": [
+        {
+          "id": "artifact-layout",
+          "path": "sample-planner-baseline-v4/reference/layout-contract.json",
+          "type": "geometry-contract",
+          "digest": "sha256:1926b5b801e54757241ca99376f46c675c4088a085a5c8f62a29fd427fcefa0b"
+        },
+        {
+          "id": "artifact-a11y",
+          "path": "sample-planner-baseline-v4/reference/planner-populated.a11y.json",
+          "type": "accessibility-snapshot",
+          "digest": "sha256:d3c1db110264d97fb12a1295ba0d47114c9d08827523b9768f7492a2f561969e"
+        },
+        {
+          "id": "artifact-html",
+          "path": "sample-planner-baseline-v4/reference/planner-populated.html",
+          "type": "executable-reference",
+          "digest": "sha256:de3d1d62ce9c843495625605f7f7efc7be446cb346c70c51e98ef91be65520ef"
+        },
+        {
+          "id": "artifact-screenshot",
+          "path": "sample-planner-baseline-v4/reference/ibr-initial.png",
+          "type": "screenshot",
+          "digest": "sha256:e5fab5274e79689fad8a84b6a6ec70d81dbaa6c84add63cc4adfe5d96b15f15c"
+        },
+        {
+          "id": "artifact-colors",
+          "path": "sample-planner-baseline-v4/system/reference-colors.json",
+          "type": "color-contract",
+          "digest": "sha256:56bfc897ae87b0c9f2cbf6ec2fb7650f3930358463ad8ef2b3af18a5619151f4"
+        },
+        {
+          "id": "artifact-tokens",
+          "path": "sample-planner-baseline-v4/system/tokens.json",
+          "type": "token-contract",
+          "digest": "sha256:cd8c5ace0265f7b929512c2ed140a91b43690fdd1354e87d1796b0acb9a01260"
+        },
+        {
+          "id": "artifact-dom",
+          "path": "sample-planner-baseline-v4/components/dom-contract.json",
+          "type": "dom-contract",
+          "digest": "sha256:189bbf06843b7f64f5a492df1ff14e1671e1220c83363f9554076b7a0bf27f2c"
+        },
+        {
+          "id": "artifact-verification",
+          "path": "sample-planner-baseline-v4/verification/contract.yaml",
+          "type": "verification-contract",
+          "digest": "sha256:5509b142d2c03fc8af2a210b20423578b5ea95dfea17b392c010e8cf0e08701d"
+        }
+      ],
+      "precedence": [
+        {
+          "rank": 1,
+          "artifactId": "artifact-dom"
+        },
+        {
+          "rank": 2,
+          "artifactId": "artifact-layout"
+        },
+        {
+          "rank": 3,
+          "artifactId": "artifact-tokens"
+        },
+        {
+          "rank": 4,
+          "artifactId": "artifact-colors"
+        },
+        {
+          "rank": 5,
+          "artifactId": "artifact-a11y"
+        },
+        {
+          "rank": 6,
+          "artifactId": "artifact-html"
+        },
+        {
+          "rank": 7,
+          "artifactId": "artifact-screenshot"
+        },
+        {
+          "rank": 8,
+          "artifactId": "artifact-verification"
+        }
+      ]
+    },
+    "constraints": [
+      {
+        "id": "constraint-save-boundary",
+        "kind": "behavioral",
+        "scope": {
+          "kind": "screen",
+          "refs": [
+            "screen-planner"
+          ]
+        },
+        "targetRef": "screen-planner",
+        "propertyPath": "save.prohibitedWrites",
+        "operator": "eq",
+        "value": "calendar/Event/create",
+        "sourceArtifactId": "artifact-dom",
+        "verificationRefs": [
+          "verify-save"
+        ]
+      },
+      {
+        "id": "constraint-confirm-calendar-write",
+        "kind": "architectural",
+        "scope": {
+          "kind": "product",
+          "refs": [
+            "spec-sample-planner-reconstruction"
+          ]
+        },
+        "targetRef": "screen-planner",
+        "propertyPath": "calendar.write.requiresConfirmation",
+        "operator": "eq",
+        "value": true,
+        "sourceArtifactId": "artifact-verification",
+        "verificationRefs": [
+          "verify-calendar-confirmation"
+        ]
+      },
+      {
+        "id": "constraint-action-target",
+        "kind": "exact",
+        "scope": {
+          "kind": "element",
+          "refs": [
+            "element-save"
+          ]
+        },
+        "targetRef": "element-save",
+        "propertyPath": "minimumTouchTarget",
+        "operator": "gte",
+        "value": 48,
+        "unit": "px",
+        "tolerance": 0,
+        "sourceArtifactId": "artifact-layout",
+        "verificationRefs": [
+          "verify-target"
+        ]
+      },
+      {
+        "id": "constraint-action-radius",
+        "kind": "exact",
+        "scope": {
+          "kind": "element",
+          "refs": [
+            "element-save"
+          ]
+        },
+        "targetRef": "element-save",
+        "propertyPath": "borderRadius",
+        "operator": "eq",
+        "value": 14,
+        "unit": "px",
+        "tolerance": 0,
+        "sourceArtifactId": "artifact-tokens",
+        "verificationRefs": [
+          "verify-target"
+        ]
+      },
+      {
+        "id": "constraint-action-color-start",
+        "kind": "exact",
+        "scope": {
+          "kind": "element",
+          "refs": [
+            "element-save"
+          ]
+        },
+        "targetRef": "element-save",
+        "propertyPath": "background.gradient.start",
+        "operator": "eq",
+        "value": "#3F96F2",
+        "sourceArtifactId": "artifact-tokens",
+        "verificationRefs": [
+          "verify-target"
+        ]
+      },
+      {
+        "id": "constraint-action-color-end",
+        "kind": "exact",
+        "scope": {
+          "kind": "element",
+          "refs": [
+            "element-save"
+          ]
+        },
+        "targetRef": "element-save",
+        "propertyPath": "background.gradient.end",
+        "operator": "eq",
+        "value": "#2563EB",
+        "sourceArtifactId": "artifact-tokens",
+        "verificationRefs": [
+          "verify-target"
+        ]
+      },
+      {
+        "id": "constraint-action-gradient-angle",
+        "kind": "exact",
+        "scope": {
+          "kind": "element",
+          "refs": [
+            "element-save"
+          ]
+        },
+        "targetRef": "element-save",
+        "propertyPath": "background.gradient.angle",
+        "operator": "eq",
+        "value": 135,
+        "unit": "deg",
+        "tolerance": 0,
+        "sourceArtifactId": "artifact-tokens",
+        "verificationRefs": [
+          "verify-target"
+        ]
+      },
+      {
+        "id": "constraint-action-order",
+        "kind": "exact",
+        "scope": {
+          "kind": "screen",
+          "refs": [
+            "screen-planner"
+          ]
+        },
+        "targetRef": "screen-planner",
+        "propertyPath": "actionBar.order",
+        "operator": "eq",
+        "value": [
+          "action.calendar.beginExport",
+          "action.plan.save"
+        ],
+        "sourceArtifactId": "artifact-layout",
+        "verificationRefs": [
+          "verify-target"
+        ]
+      },
+      {
+        "id": "constraint-schedule-collapsed",
+        "kind": "exact",
+        "scope": {
+          "kind": "screen",
+          "refs": [
+            "screen-planner"
+          ]
+        },
+        "targetRef": "screen-planner",
+        "propertyPath": "schedule.defaultExpanded",
+        "operator": "eq",
+        "value": false,
+        "sourceArtifactId": "artifact-dom",
+        "verificationRefs": [
+          "verify-target"
+        ]
+      },
+      {
+        "id": "constraint-viewport-width",
+        "kind": "exact",
+        "scope": {
+          "kind": "screen",
+          "refs": [
+            "screen-planner"
+          ]
+        },
+        "targetRef": "screen-planner",
+        "propertyPath": "viewport.width",
+        "operator": "eq",
+        "value": 430,
+        "unit": "px",
+        "tolerance": 0,
+        "sourceArtifactId": "artifact-screenshot",
+        "verificationRefs": [
+          "verify-target"
+        ]
+      },
+      {
+        "id": "constraint-viewport-height",
+        "kind": "exact",
+        "scope": {
+          "kind": "screen",
+          "refs": [
+            "screen-planner"
+          ]
+        },
+        "targetRef": "screen-planner",
+        "propertyPath": "viewport.height",
+        "operator": "eq",
+        "value": 932,
+        "unit": "px",
+        "tolerance": 0,
+        "sourceArtifactId": "artifact-screenshot",
+        "verificationRefs": [
+          "verify-target"
+        ]
+      },
+      {
+        "id": "constraint-action-gap",
+        "kind": "exact",
+        "scope": {
+          "kind": "screen",
+          "refs": [
+            "screen-planner"
+          ]
+        },
+        "targetRef": "screen-planner",
+        "propertyPath": "actionBar.gap",
+        "operator": "eq",
+        "value": 12,
+        "unit": "px",
+        "tolerance": 0,
+        "sourceArtifactId": "artifact-layout",
+        "verificationRefs": [
+          "verify-target"
+        ]
+      },
+      {
+        "id": "constraint-body-font-size",
+        "kind": "exact",
+        "scope": {
+          "kind": "screen",
+          "refs": [
+            "screen-planner"
+          ]
+        },
+        "targetRef": "screen-planner",
+        "propertyPath": "typography.body.fontSize",
+        "operator": "eq",
+        "value": 16,
+        "unit": "px",
+        "tolerance": 0,
+        "sourceArtifactId": "artifact-html",
+        "verificationRefs": [
+          "verify-target"
+        ]
+      },
+      {
+        "id": "constraint-save-label",
+        "kind": "exact",
+        "scope": {
+          "kind": "element",
+          "refs": [
+            "element-save"
+          ]
+        },
+        "targetRef": "element-save",
+        "propertyPath": "accessibility.label",
+        "operator": "eq",
+        "value": "Save plan",
+        "sourceArtifactId": "artifact-a11y",
+        "verificationRefs": [
+          "verify-target"
+        ]
+      }
+    ],
+    "direction": {
+      "summary": "Keep attention on the next realistic action.",
+      "mustPreserve": [
+        "compact hierarchy"
+      ],
+      "mayVary": [
+        "related palette"
+      ]
+    },
+    "deltas": [
+      {
+        "id": "delta-source-health",
+        "baselineId": "baseline-sample-planner-day-v4",
+        "targetRefs": [
+          "screen-planner"
+        ],
+        "operation": "remove",
+        "before": "source health",
+        "after": null,
+        "direction": "Remove irrelevant status."
+      }
+    ],
+    "verification": [
+      {
+        "id": "verify-save",
+        "kind": "assertion",
+        "targetRefs": [
+          "screen-planner"
+        ],
+        "method": "Evaluate save.prohibitedWrites against the DOM and verification contracts.",
+        "passCriteria": [
+          {
+            "subjectRef": "screen-planner",
+            "propertyPath": "save.prohibitedWrites",
+            "operator": "contains",
+            "value": "calendar/Event/create"
+          }
+        ]
+      },
+      {
+        "id": "verify-calendar-confirmation",
+        "kind": "assertion",
+        "targetRefs": [
+          "screen-planner"
+        ],
+        "method": "integration",
+        "passCriteria": [
+          {
+            "subjectRef": "screen-planner",
+            "propertyPath": "calendar.write.requiresConfirmation",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      },
+      {
+        "id": "verify-target",
+        "kind": "ibr",
+        "targetRefs": [
+          "element-save"
+        ],
+        "method": "IBR computed-style, DOM, screenshot, and accessibility comparison",
+        "passCriteria": [
+          {
+            "subjectRef": "element-save",
+            "propertyPath": "minimumTouchTarget",
+            "operator": "gte",
+            "value": 48
+          },
+          {
+            "subjectRef": "element-save",
+            "propertyPath": "background.gradient.start",
+            "operator": "in",
+            "value": [
+              "#3F96F2"
+            ]
+          },
+          {
+            "subjectRef": "screen-planner",
+            "propertyPath": "schedule.defaultExpanded",
+            "operator": "not-in",
+            "value": [
+              true
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "projectContext": {
+    "startingPoint": "existing-app"
+  },
+  "uiPreferences": {},
+  "architecture": {
+    "components": [],
+    "contracts": [],
+    "relationships": [],
+    "flows": [],
+    "specDependencies": []
+  },
+  "governance": {
+    "constraints": [],
+    "decisions": [],
+    "owners": []
+  },
+  "changeSet": {
+    "id": "changes-sample-planner",
+    "current": [],
+    "proposed": [],
+    "verified": []
+  }
+}

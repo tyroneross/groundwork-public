@@ -1,0 +1,1081 @@
+[
+  {
+    "id": "platform-target",
+    "category": "Scope",
+    "title": "Platform Target",
+    "description": "Which platform(s) are you designing for? This scopes the downstream decisions and previews.",
+    "cpNote": "Scope first: the platform constrains nav idioms, density, and which preview columns are relevant (Hick — prune the space before deciding details).",
+    "options": [
+      {
+        "id": "platform-web",
+        "label": "Web",
+        "tag": "Responsive",
+        "desc": "Desktop + responsive web app. Pointer-first, generous canvas, left-nav or top-nav idioms. e.g. Linear, Vercel, Notion web."
+      },
+      {
+        "id": "platform-ios",
+        "label": "Mobile (iOS)",
+        "tag": "Touch-first",
+        "desc": "iPhone-first native. Tab bar, sheets, 44px touch targets, SF Symbols. e.g. Things, Robinhood, Instagram."
+      },
+      {
+        "id": "platform-macos",
+        "label": "macOS",
+        "tag": "Desktop-native",
+        "desc": "Mac desktop app. Toolbar + sidebar, compact controls, menu bar, windowed. e.g. Things for Mac, Linear desktop."
+      },
+      {
+        "id": "platform-multi",
+        "label": "Multiple",
+        "tag": "Cross-platform",
+        "desc": "Design a shared system across web + iOS + macOS. Previews show all platforms; tokens carry per-platform layers."
+      }
+    ]
+  },
+  {
+    "id": "nav-structure",
+    "category": "Skeleton",
+    "title": "Primary Navigation Structure",
+    "description": "What is the top-level navigation / layout skeleton? This cascade-constrains every screen.",
+    "cpNote": "Nav structure is the skeleton every screen hangs on; choose it before color/type/density (general→specific cascade).",
+    "options": [
+      {
+        "id": "nav-structure-left",
+        "platforms": ["web", "macos"],
+        "label": "Left Sidebar Nav",
+        "tag": "Web/desktop",
+        "desc": "Persistent left rail of destinations. Dense apps, many top-level areas. e.g. Linear, Slack, Notion."
+      },
+      {
+        "id": "nav-structure-top",
+        "platforms": ["web", "macos"],
+        "label": "Top Nav Bar",
+        "tag": "Marketing/web",
+        "desc": "Horizontal top bar of primary links. Fewer destinations, content-forward. e.g. Vercel, Stripe docs."
+      },
+      {
+        "id": "nav-structure-tabbar",
+        "platforms": ["ios"],
+        "label": "Bottom Tab Bar",
+        "tag": "Mobile",
+        "desc": "3–5 bottom tabs, thumb-reachable. Mobile-native primary nav. e.g. Instagram, Robinhood."
+      },
+      {
+        "id": "nav-structure-none",
+        "label": "None / Single Surface",
+        "tag": "Focused",
+        "desc": "No persistent chrome — one focused surface or a flow. Onboarding, single-purpose tools, kiosks."
+      }
+    ]
+  },
+  {
+    "id": "nav-tabbar",
+    "platforms": ["ios"],
+    "category": "Navigation",
+    "title": "Tab Bar Style",
+    "description": "How should the primary navigation tabs look and behave?",
+    "cpNote": "CP 6.4.1 says: Nav states use text + bottom border (never background boxes). But real apps break this rule in nuanced ways.",
+    "options": [
+      {
+        "id": "tabbar-icon-label",
+        "label": "Icon + Label (Classic)",
+        "tag": "Apple Default",
+        "desc": "SF Symbols icon above a 10pt label. Active state uses tint color fill + colored label. Used by: Spotify, Robinhood, Instagram."
+      },
+      {
+        "id": "tabbar-icon-only",
+        "label": "Icon Only (Minimal)",
+        "tag": "Refined",
+        "desc": "No labels. Active icon gets filled or colored pill background. Saves vertical space, relies on icon clarity. Used by: Linear, Things 3."
+      },
+      {
+        "id": "tabbar-floating",
+        "label": "Floating Pill Bar",
+        "tag": "Expressive",
+        "desc": "Tab bar floats above the safe area, detached from screen edge. Rounded pill shape, glass-morphism or solid. Used by: some fintech apps."
+      },
+      {
+        "id": "tabbar-scroll-hide",
+        "label": "Auto-Hiding on Scroll",
+        "tag": "Content-First",
+        "desc": "Tab bar slides down and hides when user scrolls content, reappears on scroll-up. More content area. Used by: Medium, YouTube."
+      }
+    ]
+  },
+  {
+    "id": "nav-active-state",
+    "platforms": ["ios"],
+    "category": "Navigation",
+    "title": "Active Tab Indicator",
+    "description": "How should the selected/active tab be indicated?",
+    "cpNote": "CP 6.4.1 specifies text + 2px bottom border for selected nav state. But iOS apps use a variety of patterns.",
+    "options": [
+      {
+        "id": "active-fill-color",
+        "label": "Color Fill + Label Color",
+        "tag": "Apple Native",
+        "desc": "Active icon switches to filled variant + label turns accent color. Clean, systematic, what iOS expects natively."
+      },
+      {
+        "id": "active-pill-bg",
+        "label": "Pill Background",
+        "tag": "Modern",
+        "desc": "Active tab gets a rounded pill/capsule background behind the icon. Creates a contained, button-like active state."
+      },
+      {
+        "id": "active-dot",
+        "label": "Dot Indicator",
+        "tag": "Subtle",
+        "desc": "Small dot below active icon. Minimal visual weight. Icon stays outlined. Used by apps that prefer restraint."
+      },
+      {
+        "id": "active-top-line",
+        "label": "Top Border Line",
+        "tag": "Structural",
+        "desc": "Thin 2–3px line appears above the active tab icon (at top of tab bar). Architectural feel, references desktop tab conventions."
+      }
+    ]
+  },
+  {
+    "id": "nav-back",
+    "platforms": ["ios"],
+    "category": "Navigation",
+    "title": "Back Navigation Pattern",
+    "description": "How should users navigate back through hierarchy?",
+    "cpNote": "Swipe-right-from-left-edge is Apple standard. But the visual affordance and label treatment varies significantly.",
+    "options": [
+      {
+        "id": "back-label",
+        "label": "Back + Parent Title",
+        "tag": "Apple Standard",
+        "desc": "\"← Settings\" — back button shows parent screen name. Provides context on where you came from. HIG default."
+      },
+      {
+        "id": "back-icon-only",
+        "label": "Chevron Only",
+        "tag": "Minimal",
+        "desc": "Just the ← chevron, no label text. Clean. Loses contextual information. Used by apps with deep hierarchy or limited header space."
+      },
+      {
+        "id": "back-x-close",
+        "label": "X Close Button",
+        "tag": "Modal Context",
+        "desc": "× in top-right for modal/sheet contexts, ← for pushed navigation. Distinct affordance signals modality vs hierarchy."
+      }
+    ]
+  },
+  {
+    "id": "sheet-handle",
+    "platforms": ["ios"],
+    "category": "Drawers & Sheets",
+    "title": "Bottom Sheet Handle",
+    "description": "How is the drag handle styled on bottom sheets?",
+    "cpNote": "CP 6.4.1 recommends bottom sheets over modals for detail views. The handle treatment signals draggability.",
+    "options": [
+      {
+        "id": "handle-pill-gray",
+        "label": "Gray Pill (Standard)",
+        "tag": "Apple Native",
+        "desc": "36×5px rounded pill in gray-300 at top of sheet. Standard iOS 15+ native appearance. Universal recognition."
+      },
+      {
+        "id": "handle-pill-dark",
+        "label": "Dark Pill on Card",
+        "tag": "Dark Card",
+        "desc": "Same pill but on a dark/colored sheet background. The pill uses a lighter opacity. Popular in media and map apps."
+      },
+      {
+        "id": "handle-none-header",
+        "label": "No Handle, Drag Title",
+        "tag": "Minimal",
+        "desc": "No visible handle. Title area serves as drag zone. Cleaner, but lower discoverability. Must be taught or assumed."
+      },
+      {
+        "id": "handle-full-topbar",
+        "label": "Full Top Bar with Handle",
+        "tag": "Structured",
+        "desc": "Header row with title + close button, plus pill handle above header. Most affordance, most chrome."
+      }
+    ]
+  },
+  {
+    "id": "sheet-size",
+    "platforms": ["ios"],
+    "category": "Drawers & Sheets",
+    "title": "Sheet Detent Behavior",
+    "description": "How should bottom sheets size and snap?",
+    "cpNote": "CP 6.4.1 defines 3 sizes: 40vh small, 60vh medium, 85vh large. But detent-aware snapping has richer patterns.",
+    "options": [
+      {
+        "id": "detent-medium-only",
+        "label": "Fixed Half Sheet",
+        "tag": "Predictable",
+        "desc": "Sheet opens to exactly ~50% and stays. No drag resize. Context remains visible behind. Best for simple overlays."
+      },
+      {
+        "id": "detent-snap-two",
+        "label": "Two-Stop Snap",
+        "tag": "Flexible",
+        "desc": "Sheet snaps between compact (~30%) and expanded (~85%). Drag crosses midpoint to transition. Maps-style."
+      },
+      {
+        "id": "detent-continuous",
+        "label": "Continuous Drag (Free)",
+        "tag": "Expressive",
+        "desc": "Sheet can be dragged freely to any height without snapping. Gives full user control. Higher cognitive load."
+      }
+    ]
+  },
+  {
+    "id": "swipe-reveal",
+    "platforms": ["ios"],
+    "category": "Gestures",
+    "title": "Swipe-to-Reveal Actions",
+    "description": "How should hidden actions appear on list item swipe?",
+    "cpNote": "CP 6.4.1: right = positive (save), left = negative (delete). 80px threshold. The visual treatment varies widely.",
+    "options": [
+      {
+        "id": "swipe-icon-label",
+        "label": "Icon + Label Button",
+        "tag": "Clear Intent",
+        "desc": "Swiping reveals rectangular colored button(s) with icon + text label. Maximum clarity. Used by Apple Mail, Reminders."
+      },
+      {
+        "id": "swipe-icon-only",
+        "label": "Icon-Only Action",
+        "tag": "Compact",
+        "desc": "Actions appear as icon-only circles or squares. Saves space, requires icon recognition. Used by Telegram, Robinhood."
+      },
+      {
+        "id": "swipe-full-destructive",
+        "label": "Full-Width Destructive",
+        "tag": "Decisive",
+        "desc": "Swiping far left triggers red to fill the full row width — full swipe = immediate delete. Power-user pattern."
+      }
+    ]
+  },
+  {
+    "id": "press-feedback",
+    "category": "Touch Feedback",
+    "title": "Tap / Press Feedback",
+    "description": "How should interactive elements respond to a tap press?",
+    "cpNote": "CP 6.4.1: active:scale-[0.98] + 100ms ease-out. But the scale amount and animation curve choices create very different feels.",
+    "options": [
+      {
+        "id": "press-scale-down",
+        "label": "Scale Press-In",
+        "tag": "Apple Default",
+        "desc": "Element scales down to ~0.95–0.98 on press. Tactile feel. Clean spring return on release. Standard iOS behavior."
+      },
+      {
+        "id": "press-opacity-dim",
+        "label": "Opacity Dim",
+        "tag": "Subtle",
+        "desc": "Element fades to ~60% opacity on press, returns to 100% on release. No scale. Used for links and ghost buttons."
+      },
+      {
+        "id": "press-highlight-bg",
+        "label": "Background Highlight",
+        "tag": "List-Native",
+        "desc": "Row/cell background flashes to a gray or tinted highlight color on press. Native iOS table view behavior."
+      },
+      {
+        "id": "press-ripple",
+        "label": "Contained Ripple",
+        "tag": "Expressive",
+        "desc": "Circular ripple expands from tap point within the element bounds. More expressive, not native iOS but used in some polished apps."
+      }
+    ]
+  },
+  {
+    "id": "button-shadow",
+    "category": "Button Design",
+    "title": "Primary Button Shadow & Depth",
+    "description": "How should primary action buttons convey elevation and interactivity?",
+    "cpNote": "CP 6.4.1 emphasizes Affordance Theory — interactive elements must visually signal interactivity. Shadow is one tool.",
+    "options": [
+      {
+        "id": "btn-flat",
+        "label": "Flat (No Shadow)",
+        "tag": "Minimal",
+        "desc": "Solid fill color, no shadow. Clean, modern, system-aligned. Color contrast carries all the affordance weight."
+      },
+      {
+        "id": "btn-soft-shadow",
+        "label": "Soft Drop Shadow",
+        "tag": "Elevated",
+        "desc": "4–8px soft shadow in button color (colored shadow, not gray). Creates lift effect. Popular in fintech / productivity apps."
+      },
+      {
+        "id": "btn-inner-highlight",
+        "label": "Inner Highlight Rim",
+        "tag": "Tactile",
+        "desc": "Top edge of button has a subtle lighter stroke (1px), bottom edge darker. Simulates lighting angle. Skeuomorphic-lite."
+      },
+      {
+        "id": "btn-glass",
+        "label": "Glass / Frosted",
+        "tag": "iOS 17 Style",
+        "desc": "Semi-transparent background with blur. Adapts to content behind. Apple uses this in control center, Siri, now Liquid Glass."
+      }
+    ]
+  },
+  {
+    "id": "page-transition",
+    "category": "Motion",
+    "title": "Screen Transition Style",
+    "description": "How should screens animate when navigating between them?",
+    "cpNote": "CP 6.4.1: motion communicates meaning. Push transitions reinforce hierarchy. But the curve + distance matter.",
+    "options": [
+      {
+        "id": "transition-push-slide",
+        "label": "Slide Push (Standard)",
+        "tag": "Apple Native",
+        "desc": "New screen slides in from right, previous slides left. Depth implies hierarchy. Standard iOS push navigation."
+      },
+      {
+        "id": "transition-hero-expand",
+        "label": "Hero Expansion",
+        "tag": "Connected",
+        "desc": "Tapped card element expands and morphs into the new screen. Maintains visual continuity. Used by App Store, Photos."
+      },
+      {
+        "id": "transition-fade",
+        "label": "Cross-Fade",
+        "tag": "Neutral",
+        "desc": "Screens dissolve into each other. No directional implication. Works well for tab switches and non-hierarchical navigation."
+      },
+      {
+        "id": "transition-sheet-up",
+        "label": "Slide Up (Modal)",
+        "tag": "Modal Layer",
+        "desc": "Screen slides up from bottom. Implies a layer on top. Used for modal contexts. Swipe down to dismiss."
+      }
+    ]
+  },
+  {
+    "id": "pull-refresh",
+    "platforms": ["ios"],
+    "category": "Motion",
+    "title": "Pull-to-Refresh Animation",
+    "description": "What should the pull-to-refresh indicator look and feel like?",
+    "cpNote": "CP 6.4.1: 60px threshold, spinner during refresh. But the visual animation carries the feel of the app.",
+    "options": [
+      {
+        "id": "ptr-native-spinner",
+        "label": "Native iOS Spinner",
+        "tag": "System Default",
+        "desc": "Standard UIActivityIndicator in gray. Appears when threshold reached. Disappears on complete. Feels \"default app\"."
+      },
+      {
+        "id": "ptr-progress-arc",
+        "label": "Progress Arc",
+        "tag": "Progress-Aware",
+        "desc": "Arc/circle draws itself as user pulls, matching pull progress 1:1. Full circle = trigger. Tactile and satisfying."
+      },
+      {
+        "id": "ptr-logo-morph",
+        "label": "Logo / Brand Animation",
+        "tag": "Branded",
+        "desc": "Brand icon animates during pull. Progressive drawing or morph. High-identity but requires investment. Robinhood, Snapchat."
+      }
+    ]
+  },
+  {
+    "id": "list-separator",
+    "category": "List Design",
+    "title": "List Item Separator",
+    "description": "How should items in a list be visually separated?",
+    "cpNote": "CP 6.4.1 core: group borders + dividers, not individual borders. But iOS has strong native divider conventions.",
+    "options": [
+      {
+        "id": "sep-inset-line",
+        "label": "Inset Hairline",
+        "tag": "iOS Native",
+        "desc": "Thin 0.5pt hairline divider, inset from left by icon width (~16px). Standard iOS list. Implies grouped content."
+      },
+      {
+        "id": "sep-full-line",
+        "label": "Full-Width Line",
+        "tag": "Structural",
+        "desc": "Full-width hairline edge-to-edge. Stronger visual separation. Used when list rows are more distinct from each other."
+      },
+      {
+        "id": "sep-card-per-row",
+        "label": "Card Per Row",
+        "tag": "Modern",
+        "desc": "Each list item is its own card with rounded corners and shadow/border. No hairlines. Used by many modern apps."
+      },
+      {
+        "id": "sep-none-spacing",
+        "label": "Whitespace Only",
+        "tag": "Minimal",
+        "desc": "No lines. Items separated by consistent vertical whitespace (12–16px). Clean, requires good typography to work."
+      }
+    ]
+  },
+  {
+    "id": "search-bar",
+    "platforms": ["ios"],
+    "category": "Search & Input",
+    "title": "Search Bar Position & Style",
+    "description": "Where and how should the search bar live in a list or feed view?",
+    "cpNote": "Apple HIG: search can be in nav bar row 3, visible always, or hidden until pull-down. Each changes the interaction model.",
+    "options": [
+      {
+        "id": "search-nav-bar",
+        "label": "In Nav Bar (Scrolls Away)",
+        "tag": "Apple Standard",
+        "desc": "Search bar sits below large title, scrolls off screen with content. Users pull down to reveal. HIG default."
+      },
+      {
+        "id": "search-sticky-top",
+        "label": "Sticky Top Bar",
+        "tag": "Always Available",
+        "desc": "Search is fixed at top, always visible, never scrolls away. Sacrifices 44–56px of content space permanently."
+      },
+      {
+        "id": "search-tab-icon",
+        "label": "Dedicated Search Tab",
+        "tag": "Bottom Nav",
+        "desc": "Magnifying glass as a primary tab in the tab bar. Tapping opens a full search experience. Used by Twitter/X, Pinterest."
+      }
+    ]
+  },
+  {
+    "id": "loading-state",
+    "category": "Loading States",
+    "title": "Content Loading Skeleton",
+    "description": "How should content areas look while data is loading?",
+    "cpNote": "CP 6.4.1: skeleton screens for 1–3s waits. Shimmer 1.5s. Match three-line layout. But shimmer direction varies.",
+    "options": [
+      {
+        "id": "skeleton-shimmer-ltr",
+        "label": "Shimmer Left-to-Right",
+        "tag": "Facebook Standard",
+        "desc": "Gray placeholder blocks with light shimmer that sweeps left-to-right. The most recognized loading pattern."
+      },
+      {
+        "id": "skeleton-pulse",
+        "label": "Pulse Fade",
+        "tag": "Subtle",
+        "desc": "Placeholder blocks fade in and out (opacity pulse). No directional shimmer. Calmer, but less progress-suggestive."
+      },
+      {
+        "id": "skeleton-blur",
+        "label": "Blurred Content",
+        "tag": "Revealing",
+        "desc": "Actual content is shown but blurred, then sharpens when loaded. Shows real layout immediately. Used by some news apps."
+      }
+    ]
+  },
+  {
+    "id": "empty-state",
+    "category": "Empty & Error States",
+    "title": "Empty State Illustration Style",
+    "description": "How should an empty state communicate \"nothing here yet\"?",
+    "cpNote": "CP 6.4.1: first-time empty = value promise + setup CTA. Encouraging tone. But the visual language varies dramatically.",
+    "options": [
+      {
+        "id": "empty-icon-only",
+        "label": "System Icon + Text",
+        "tag": "Minimal",
+        "desc": "Large SF Symbol (64pt) in gray, followed by title and subtitle. Clean, fast, system-native. Used by Apple apps."
+      },
+      {
+        "id": "empty-illustration",
+        "label": "Custom Illustration",
+        "tag": "Expressive",
+        "desc": "On-brand illustration or scene image. More personality, higher visual engagement. Requires design investment."
+      },
+      {
+        "id": "empty-text-only",
+        "label": "Text Only (Ultra Minimal)",
+        "tag": "Editorial",
+        "desc": "No icon or illustration. Just a centered message and CTA button. Works well for task/productivity apps with clean aesthetic."
+      }
+    ]
+  },
+  {
+    "id": "notification-toast",
+    "category": "Feedback Patterns",
+    "title": "In-App Toast / Notification",
+    "description": "How should brief feedback messages appear after actions?",
+    "cpNote": "CP 6.4.1: confirmation must state what happened + what changed. Neutral to celebratory tone by context.",
+    "options": [
+      {
+        "id": "toast-top-banner",
+        "label": "Top Banner",
+        "tag": "High Visibility",
+        "desc": "Full-width banner drops from top (below status bar). High visibility, used for errors and important confirmations."
+      },
+      {
+        "id": "toast-bottom-pill",
+        "label": "Bottom Pill / Snackbar",
+        "tag": "Modern",
+        "desc": "Compact pill floats above tab bar at bottom center. Less disruptive, no content overlap. Used by Spotify, Linear."
+      },
+      {
+        "id": "toast-inline",
+        "label": "Inline Context Toast",
+        "tag": "Contextual",
+        "desc": "Toast appears near the element that triggered it, not at screen edges. Precise spatial feedback."
+      },
+      {
+        "id": "toast-center-hud",
+        "label": "Center HUD",
+        "tag": "iOS Classic",
+        "desc": "Square frosted HUD appears center-screen with icon + text. Classic iOS pattern (share sheets, AirDrop success, etc.)."
+      }
+    ]
+  },
+  {
+    "id": "color-gradient-style",
+    "category": "Color & Visual Depth",
+    "title": "Button & Surface Gradient Style",
+    "description": "How should color gradients be applied to buttons, cards, and key surfaces?",
+    "cpNote": "Flat fills are the CP 6.4.1 default. But gradient depth signals premium quality and adds tactile weight to CTAs.",
+    "options": [
+      {
+        "id": "gradient-linear",
+        "label": "Linear Gradient",
+        "tag": "Classic Depth",
+        "desc": "Top-to-bottom or angled linear gradient on buttons/cards. Slight lightening at top, darkening at bottom. Adds depth without complexity."
+      },
+      {
+        "id": "gradient-mesh",
+        "label": "Mesh / Aurora Gradient",
+        "tag": "iOS 18 Premium",
+        "desc": "Multi-point mesh gradient (iOS 18 MeshGradient API). Colors blend organically like northern lights. Used for hero surfaces and splash screens."
+      },
+      {
+        "id": "gradient-duotone",
+        "label": "Duotone Wash",
+        "tag": "Editorial",
+        "desc": "Two-color gradient overlaid on content or imagery. Strong brand identity. Works on cards, headers, and section backgrounds."
+      },
+      {
+        "id": "gradient-none",
+        "label": "Flat Solid Fill",
+        "tag": "Minimal",
+        "desc": "Pure flat color. No gradient. Maximum clarity and system-native feel. Color precision over depth."
+      }
+    ]
+  },
+  {
+    "id": "color-dark-mode",
+    "category": "Color & Visual Depth",
+    "title": "Dark Mode Surface Treatment",
+    "description": "How should surface layers be differentiated in dark mode?",
+    "cpNote": "True black vs near-black is the single biggest dark mode quality signal. Elevation must be perceptible without color.",
+    "options": [
+      {
+        "id": "dark-true-black",
+        "label": "True Black Base",
+        "tag": "OLED-Optimized",
+        "desc": "#000 background with #111-#1C1C1E surface cards. Maximum OLED battery savings. Stark, premium contrast. Twitter/X, Apollo."
+      },
+      {
+        "id": "dark-elevated-layers",
+        "label": "Layered Near-Black",
+        "tag": "Apple System",
+        "desc": "Base #111, cards #1C1C1E, overlays #2C2C2E. Subtle elevation via brightness steps. Apple system UI native pattern."
+      },
+      {
+        "id": "dark-deep-color",
+        "label": "Deep Chromatic Dark",
+        "tag": "Branded",
+        "desc": "Dark mode with a hue tint (deep navy, deep purple, dark forest). Not pure gray — color temperature carries brand identity."
+      },
+      {
+        "id": "dark-glass-layers",
+        "label": "Glass / Frosted Surfaces",
+        "tag": "Liquid Glass",
+        "desc": "Cards and surfaces use blur + transparency instead of solid fills. iOS 26 Liquid Glass direction. Content bleeds through layers."
+      }
+    ]
+  },
+  {
+    "id": "color-accent-system",
+    "category": "Color & Visual Depth",
+    "title": "Accent Color Application",
+    "description": "How liberally and where should the brand/accent color be applied?",
+    "cpNote": "CP 6.4.1: accent only on primary CTA and critical state. Best-in-class apps develop a more nuanced, systemic accent language.",
+    "options": [
+      {
+        "id": "accent-cta-only",
+        "label": "CTA-Only Restraint",
+        "tag": "CP Default",
+        "desc": "Accent appears only on the single primary CTA and key interactive states. Everything else neutral. Maximum signal strength per use."
+      },
+      {
+        "id": "accent-semantic",
+        "label": "Semantic Accent System",
+        "tag": "Systematic",
+        "desc": "Accent for CTAs, active states, progress bars, selection, highlights. Secondary accent for success/error. Linear, Notion pattern."
+      },
+      {
+        "id": "accent-expressive",
+        "label": "Expressive Accent Spread",
+        "tag": "Brand-Forward",
+        "desc": "Accent bleeds into section backgrounds, gradients, icon fills, and headers. Brand-immersive. Spotify, Robinhood, Duolingo."
+      }
+    ]
+  },
+  {
+    "id": "type-heading-style",
+    "category": "Typography",
+    "title": "Display & Heading Treatment",
+    "description": "How should headings be styled beyond just size — weight, tracking, case?",
+    "cpNote": "CP 6.4.1 defines three-line hierarchy. But weight contrast, tracking, and case treatment separate good from great type.",
+    "options": [
+      {
+        "id": "type-sf-system",
+        "label": "SF Pro System Native",
+        "tag": "Apple Default",
+        "desc": "Pure SF Pro at system-defined sizes. Large Title 34pt, Title 28pt, Headline 17pt semibold. Invisible, familiar, zero friction."
+      },
+      {
+        "id": "type-weight-contrast",
+        "label": "Extreme Weight Contrast",
+        "tag": "Editorial",
+        "desc": "Black/Heavy weight for display (700-900), Regular for body. The delta creates strong visual hierarchy without extreme size differences."
+      },
+      {
+        "id": "type-tight-tracking",
+        "label": "Tight Tracking on Headings",
+        "tag": "Premium Craft",
+        "desc": "Large headings use tight letter-spacing (-0.03em to -0.05em). Feels deliberately designed. Linear, Arc, Stripe signature."
+      },
+      {
+        "id": "type-custom-font",
+        "label": "Custom Brand Font",
+        "tag": "High Identity",
+        "desc": "Custom or licensed typeface for display text, SF Pro for body. Brand voice in every headline. High investment, high return."
+      }
+    ]
+  },
+  {
+    "id": "type-numbers",
+    "category": "Typography",
+    "title": "Numeric & Data Display Style",
+    "description": "How should numbers, stats, prices, and data values be typeset?",
+    "cpNote": "Numbers carry precision expectations. Tabular alignment, mono spacing, and weight hierarchy matter more than most designers realize.",
+    "options": [
+      {
+        "id": "num-hero-large",
+        "label": "Hero Number Display",
+        "tag": "Dashboard",
+        "desc": "Primary metric huge (48-64pt), thin or regular weight. Supporting label small and muted below. Apple Health, finance app pattern."
+      },
+      {
+        "id": "num-mono-tabular",
+        "label": "Monospaced Tabular",
+        "tag": "Precision",
+        "desc": "Numbers use tabular-nums or monospaced font. Columns align perfectly. Decimals never shift. Robinhood, trading app standard."
+      },
+      {
+        "id": "num-mixed-weight",
+        "label": "Mixed-Weight Numerics",
+        "tag": "Expressive",
+        "desc": "Integer part bold/heavy, decimal part regular/light. Visual weight on significant digits. Stripe, Monzo, Revolut signature."
+      }
+    ]
+  },
+  {
+    "id": "micro-icon-anim",
+    "platforms": ["ios"],
+    "category": "Micro-Interactions",
+    "title": "Tab Bar Icon Animation",
+    "description": "How do tab bar icons animate when tapped to switch tabs?",
+    "cpNote": "The tab tap is one of the most frequent interactions in any app. Its quality signals the craft level of the entire product.",
+    "options": [
+      {
+        "id": "icon-instant-swap",
+        "label": "Instant State Swap",
+        "tag": "System Default",
+        "desc": "Icon switches immediately from outlined to filled on tap. No animation. Native iOS default. Fast and unobtrusive."
+      },
+      {
+        "id": "icon-spring-bounce",
+        "label": "Spring Bounce",
+        "tag": "Playful",
+        "desc": "Icon scales up briefly (1.2x) with a spring bounce on tap, then settles to normal. Satisfying physical feedback. Instagram, Threads."
+      },
+      {
+        "id": "icon-morph-fill",
+        "label": "Outline to Fill Morph",
+        "tag": "Crafted",
+        "desc": "Icon smoothly morphs from outlined to filled variant. 200ms ease-out. Intentionally designed, not a default fallback."
+      },
+      {
+        "id": "icon-lottie-rive",
+        "label": "Lottie / Rive Animated Icon",
+        "tag": "Signature",
+        "desc": "Fully custom animated icon using Lottie or Rive. Each tab has a unique micro-animation on select. Duolingo, Spotify-level craft."
+      }
+    ]
+  },
+  {
+    "id": "micro-haptics",
+    "platforms": ["ios"],
+    "category": "Micro-Interactions",
+    "title": "Haptic Feedback Strategy",
+    "description": "How should haptic feedback be used and layered across the app?",
+    "cpNote": "Wrong haptics break trust faster than no haptics. Every vibration is a claim: \"something meaningful just happened.\"",
+    "options": [
+      {
+        "id": "haptic-minimal",
+        "label": "Key Moments Only",
+        "tag": "Restrained",
+        "desc": "Haptics only on: destructive confirm, success completion, and errors. Nothing else. Every haptic is meaningful and intentional."
+      },
+      {
+        "id": "haptic-standard-vocab",
+        "label": "Standard UIKit Vocabulary",
+        "tag": "Systematic",
+        "desc": "Light tick on selection changes. Medium thud on confirmations. Double-tap pattern for notifications. UIFeedbackGenerator system."
+      },
+      {
+        "id": "haptic-expressive",
+        "label": "Custom CHHaptic Patterns",
+        "tag": "Premium",
+        "desc": "Custom CHHapticEngine patterns: waveform on audio scrub, resistance on swipe threshold, multi-tap on milestone. Core Haptics API."
+      }
+    ]
+  },
+  {
+    "id": "micro-toggle",
+    "platforms": ["ios"],
+    "category": "Micro-Interactions",
+    "title": "Toggle & Switch Animation",
+    "description": "How should boolean toggles and segmented controls animate?",
+    "cpNote": "The humble toggle is one of the most frequent controls. Its animation quality is a proxy for the app's overall craft level.",
+    "options": [
+      {
+        "id": "toggle-native",
+        "label": "Native UISwitch",
+        "tag": "System",
+        "desc": "Standard iOS UISwitch. Thumb slides with spring. Immediate recognition. No customization — leverage the platform."
+      },
+      {
+        "id": "toggle-spring-stretch",
+        "label": "Spring Stretch Thumb",
+        "tag": "Crafted",
+        "desc": "Custom toggle: thumb stretches horizontally as it slides (rubber-band), then snaps to new position. Spring 0.5s, 0.6 damping."
+      },
+      {
+        "id": "toggle-segmented-pill",
+        "label": "Segmented Pill Slider",
+        "tag": "Multi-Option",
+        "desc": "Pill glides between 2-4 labeled segments with spring. Used for mode switching. Linear, Notion, Apple Maps pattern."
+      },
+      {
+        "id": "toggle-checkbox-morph",
+        "label": "Checkbox to Checkmark Morph",
+        "tag": "Expressive",
+        "desc": "Circle morphs into filled checkmark with a pop animation on select. Reverse on deselect. Reminders, Things, OmniFocus pattern."
+      }
+    ]
+  },
+  {
+    "id": "onboard-structure",
+    "category": "Onboarding",
+    "title": "Onboarding Flow Structure",
+    "description": "How should the first-run onboarding be structured overall?",
+    "cpNote": "Every extra onboarding screen costs ~10% of users. The goal: first value moment under 60 seconds.",
+    "options": [
+      {
+        "id": "onboard-value-first",
+        "label": "Value-First (Show Don't Tell)",
+        "tag": "Best Practice",
+        "desc": "Drop user straight into the app with a demo or pre-filled state. Explain features in context, not before. Linear, Arc pattern."
+      },
+      {
+        "id": "onboard-progressive-steps",
+        "label": "Progressive Disclosure Steps",
+        "tag": "Guided",
+        "desc": "3-5 screens, one key concept per screen. Progress indicator visible. Skip always available. Clear and educational without overwhelming."
+      },
+      {
+        "id": "onboard-interactive-tutorial",
+        "label": "Interactive Tutorial",
+        "tag": "Duolingo Pattern",
+        "desc": "First session IS the onboarding. Real actions, real rewards, first win in <2 min. Dopamine before account creation."
+      },
+      {
+        "id": "onboard-personalization-quiz",
+        "label": "Personalization Quiz",
+        "tag": "Tailored",
+        "desc": "3-7 questions that customize the experience before launch. Sets goals, context, and commitment. Calm, Headspace, Noom."
+      }
+    ]
+  },
+  {
+    "id": "onboard-progress",
+    "category": "Onboarding",
+    "title": "Onboarding Progress Indicator",
+    "description": "How should users know where they are in the onboarding flow?",
+    "cpNote": "Progress indicators reduce drop-off by signaling the end is near. Showing 8+ dots creates anxiety instead of relief.",
+    "options": [
+      {
+        "id": "onboard-dots",
+        "label": "Dot Pagination",
+        "tag": "Classic",
+        "desc": "Row of dots, active dot filled or enlarged. Best for 3-5 steps. Familiar from intro carousels and stories."
+      },
+      {
+        "id": "onboard-fill-bar",
+        "label": "Linear Progress Bar",
+        "tag": "Motivating",
+        "desc": "Thin horizontal bar fills left-to-right with each step. Strong completion pull. Duolingo, fitness app standard."
+      },
+      {
+        "id": "onboard-step-counter",
+        "label": "Step Counter Text",
+        "tag": "Explicit",
+        "desc": "\"Step 2 of 5\" text label. Honest and clear. Works for longer flows (5-10 steps) where dots look cluttered."
+      },
+      {
+        "id": "onboard-no-progress",
+        "label": "No Indicator",
+        "tag": "Streamlined",
+        "desc": "No progress shown. Each screen is self-contained. Best for very short (1-2 screen) or value-first onboarding."
+      }
+    ]
+  },
+  {
+    "id": "onboard-animation",
+    "category": "Onboarding",
+    "title": "Onboarding Animation Style",
+    "description": "How should onboarding screens animate to create delight and set tone?",
+    "cpNote": "Onboarding is the first and most-seen screen in your app. Animation quality here sets the bar for everything that follows.",
+    "options": [
+      {
+        "id": "onboard-slide-parallax",
+        "label": "Slide + Parallax",
+        "tag": "Polished Classic",
+        "desc": "Screens slide horizontally. Background moves slower than foreground (parallax layers). Creates depth without complexity."
+      },
+      {
+        "id": "onboard-lottie-scenes",
+        "label": "Lottie Scene Animations",
+        "tag": "Expressive",
+        "desc": "Each screen features a unique Lottie animation — character, object, or scene. Plays on enter, loops subtly. Maximum delight."
+      },
+      {
+        "id": "onboard-morph-shapes",
+        "label": "Morphing Shape Transitions",
+        "tag": "Avant-Garde",
+        "desc": "Central illustration morphs into next screen's illustration. Shape continuity across all steps. Magical and seamless. Arc, Pitch."
+      },
+      {
+        "id": "onboard-stagger-entry",
+        "label": "Staggered Element Entry",
+        "tag": "Choreographed",
+        "desc": "Elements enter sequentially: illustration -> headline -> subtitle -> CTA. 60-80ms stagger. Feels purposefully designed."
+      }
+    ]
+  },
+  {
+    "id": "profile-header",
+    "category": "User Profile",
+    "title": "Profile Header Layout",
+    "description": "How should the user profile header be structured and styled?",
+    "cpNote": "The profile header is identity real estate. Every pixel communicates user ownership and the app's design quality.",
+    "options": [
+      {
+        "id": "profile-cover-avatar",
+        "label": "Cover Photo + Overlapping Avatar",
+        "tag": "Social Standard",
+        "desc": "Full-width cover photo with circular avatar overlapping its bottom edge. Name + bio below. Twitter, GitHub, LinkedIn pattern."
+      },
+      {
+        "id": "profile-centered-avatar",
+        "label": "Large Centered Avatar",
+        "tag": "Identity-First",
+        "desc": "100-120pt centered circular avatar on plain/gradient background. Name + role prominent below. Clean and focused."
+      },
+      {
+        "id": "profile-compact-card",
+        "label": "Compact Card Header",
+        "tag": "App-Native",
+        "desc": "Small avatar left-aligned with name, role, and stats right-aligned. Card format, not full-bleed. Efficient for in-app settings/profile."
+      },
+      {
+        "id": "profile-gradient-bg",
+        "label": "Dynamic Gradient Background",
+        "tag": "Premium",
+        "desc": "Header background is an auto-generated gradient from avatar/brand colors. No photo required. Identity-driven design."
+      }
+    ]
+  },
+  {
+    "id": "profile-avatar-edit",
+    "platforms": ["ios"],
+    "category": "User Profile",
+    "title": "Avatar Style & Edit Pattern",
+    "description": "How is the user avatar displayed, and how do users update it?",
+    "cpNote": "Avatar editing is often a first-session action. Friction here signals app quality before a user has seen anything else.",
+    "options": [
+      {
+        "id": "avatar-camera-badge",
+        "label": "Tap to Edit (Camera Badge)",
+        "tag": "Standard",
+        "desc": "Small camera/pencil badge bottom-right of avatar. Tap opens photo picker with circular crop. Most recognized pattern."
+      },
+      {
+        "id": "avatar-long-press-sheet",
+        "label": "Long Press Action Sheet",
+        "tag": "Discoverable",
+        "desc": "Long press reveals action sheet: \"Take Photo\", \"Choose Library\", \"Remove\". No persistent badge — cleaner surface."
+      },
+      {
+        "id": "avatar-generated-default",
+        "label": "Generated Default Avatar",
+        "tag": "Delightful",
+        "desc": "No photo? Auto-generate: initials in brand color, abstract shape, or gradient pattern. Notion, GitHub Identicons, Apple Mail."
+      },
+      {
+        "id": "avatar-story-ring",
+        "label": "Animated Status Ring",
+        "tag": "Social Layer",
+        "desc": "Animated gradient ring around avatar signals content status (new post, active, premium). Instagram Stories, BeReal pattern."
+      }
+    ]
+  },
+  {
+    "id": "profile-stats",
+    "category": "User Profile",
+    "title": "Profile Stats & Activity Display",
+    "description": "How should user stats, streaks, and activity history be visualized?",
+    "cpNote": "Stats are behavioral UI. The right visualization turns a number into a habit driver. The wrong one makes it feel like reporting.",
+    "options": [
+      {
+        "id": "stats-number-row",
+        "label": "Stat Row (Number + Label)",
+        "tag": "Social Classic",
+        "desc": "Horizontal row of 2-4 stats: large number over small muted label. Followers / Posts / Following. Twitter, Instagram standard."
+      },
+      {
+        "id": "stats-heatmap",
+        "label": "Activity Heatmap Grid",
+        "tag": "Streak-Driven",
+        "desc": "GitHub-style contribution grid. Days as colored squares, density = activity. Streak highlights. Duolingo, Strava, GitHub."
+      },
+      {
+        "id": "stats-rings",
+        "label": "Progress Rings",
+        "tag": "Apple Watch Style",
+        "desc": "Circular progress rings (Apple Activity style). Each ring = a metric. Fill animates on screen load. Goal-oriented apps."
+      },
+      {
+        "id": "stats-rich-cards",
+        "label": "Rich Stat Cards",
+        "tag": "Analytics",
+        "desc": "Each stat has its own card with sparkline trend, delta from last period, and context label. Finance, health, productivity apps."
+      }
+    ]
+  },
+  {
+    "id": "delight-celebration",
+    "category": "Delight & Celebration",
+    "title": "Goal / Achievement Celebration",
+    "description": "How does the app celebrate completing a task, streak, or milestone?",
+    "cpNote": "CP 6.4.1: reward completion with appropriate motion. Intensity must match significance — confetti for a todo is noise.",
+    "options": [
+      {
+        "id": "celebrate-confetti",
+        "label": "Confetti Burst",
+        "tag": "Joyful",
+        "desc": "Confetti particles rain from top of screen. 1-2 second burst, brand-color matched. Duolingo, Robinhood milestone pattern."
+      },
+      {
+        "id": "celebrate-checkmark-ripple",
+        "label": "Checkmark Morph + Ripple",
+        "tag": "Satisfying",
+        "desc": "Circle draws into checkmark with spring animation. Ripple pulse radiates outward. Subtle but deeply satisfying. Things, Streaks."
+      },
+      {
+        "id": "celebrate-full-screen",
+        "label": "Full-Screen Takeover",
+        "tag": "Dramatic",
+        "desc": "Screen takes over with the celebration: animated trophy, mascot, or color flash. For rare major milestones only. Duolingo streak."
+      },
+      {
+        "id": "celebrate-score-glow",
+        "label": "Score Tick + Glow",
+        "tag": "Premium Subtle",
+        "desc": "Number ticks up with a satisfying count animation. Soft glow pulses around the element. Score +points popups. Linear, Notion."
+      }
+    ]
+  },
+  {
+    "id": "delight-splash",
+    "platforms": ["ios"],
+    "category": "Delight & Celebration",
+    "title": "App Launch / Splash Screen",
+    "description": "What happens in the first 0.5-1.5 seconds when the app opens?",
+    "cpNote": "The launch screen is mandatory on iOS. Its animation quality is a first impression that sets tone before a single tap.",
+    "options": [
+      {
+        "id": "splash-fade-in",
+        "label": "Logo Fade In/Out",
+        "tag": "Standard",
+        "desc": "Logo fades in on brand color background, then fades to first screen. Clean, fast, professional. Works for any brand."
+      },
+      {
+        "id": "splash-logo-build",
+        "label": "Logo Draw / Assemble",
+        "tag": "Crafted",
+        "desc": "Logo draws itself (SVG stroke animation) or assembles from parts. 600-900ms. Memorable and distinctive. High craft signal."
+      },
+      {
+        "id": "splash-morph-ui",
+        "label": "Splash Morphs Into UI",
+        "tag": "Seamless",
+        "desc": "Launch shape expands and morphs into the first screen UI elements. No cut — continuous transformation. Pitch, Linear approach."
+      },
+      {
+        "id": "splash-ambient-particle",
+        "label": "Ambient Particle / Mesh",
+        "tag": "Immersive",
+        "desc": "Background has ambient particle, wave, or mesh gradient animation during load. Logo static center. Premium, atmospheric."
+      }
+    ]
+  },
+  {
+    "id": "delight-scroll-physics",
+    "platforms": ["ios"],
+    "category": "Delight & Celebration",
+    "title": "Scroll Physics & Behavior",
+    "description": "How should scroll behavior feel at edges, during interaction, and between sections?",
+    "cpNote": "Apple scroll physics are famous for a reason. Top apps tune beyond defaults to create a signature tactile identity.",
+    "options": [
+      {
+        "id": "scroll-system",
+        "label": "iOS System Default",
+        "tag": "Reliable",
+        "desc": "Standard UIScrollView physics. Rubber-band at edges, momentum deceleration. The baseline every user knows. Never wrong."
+      },
+      {
+        "id": "scroll-sticky-headers",
+        "label": "Sticky Section Headers",
+        "tag": "Organized",
+        "desc": "Section headers stick to top as content scrolls beneath. Context always visible. Apple Contacts, Mail, App Store pattern."
+      },
+      {
+        "id": "scroll-parallax-bg",
+        "label": "Parallax Background",
+        "tag": "Depth",
+        "desc": "Background image or gradient scrolls at 40-60% of content speed. Creates depth and layering. Profile headers, hero sections."
+      },
+      {
+        "id": "scroll-snap-cards",
+        "label": "Snap-to-Card Paging",
+        "tag": "Focused",
+        "desc": "Scroll snaps to each card. One card fills view at a time. Prevents partial views. App Store, Apple TV, Tinder pattern."
+      }
+    ]
+  }
+]

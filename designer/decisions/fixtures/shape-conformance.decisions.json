@@ -1,0 +1,241 @@
+{
+  "schema": "groundwork.decision-set/v1",
+  "id": "shape-conformance",
+  "product": "Example Project",
+  "surface": "Settings screen",
+
+  "_comment": [
+    "SYNTHETIC. Every string here was written for this fixture.",
+    "It reproduces the STRUCTURE of a real Groundwork decision record -- including",
+    "the awkward parts -- so the contract is graded against what records actually",
+    "look like rather than against a tidy example. No real project record ships in",
+    "this repository: records hold unshipped strategy and private conversation, and",
+    "Groundwork is published. The real record's shape is carried, content-free, in",
+    "reference-fingerprint.json.",
+    "",
+    "The edge cases it deliberately exercises:",
+    "  - a prose `status` beginning 'open' on an item that is already ruled",
+    "  - a ruling of `false`, which is an answer and not an absence",
+    "  - a whitespace-only ruling, which is a CLEARED ruling and reopens the item",
+    "  - `ruledAt` with no ruling, which must not close the lane",
+    "  - an `addressed` axis, settled elsewhere and never ruled",
+    "  - a choice needing free text",
+    "  - a preview mapping for text, hide and page modes",
+    "  - unknown top-level keys a project invented",
+    "  - an archived annotation with a receipt, and a declined one with a reason"
+  ],
+
+  "framing": { "settled": "The screen ships this quarter.", "notOpen": "Whether to ship it." },
+  "vetoes": ["No dark patterns.", "No placeholder buttons."],
+  "measuredBaseline": { "lcpSeconds": 1.8, "capturedAt": "2026-09-01T00:00:00Z" },
+  "someProjectInventedThis": { "kept": true, "nested": [1, 2, 3] },
+
+  "axes": [
+    {
+      "id": "layout",
+      "num": 1,
+      "title": "How the settings list is grouped",
+      "decision": "Choose how related settings are visually grouped.",
+      "why": "Rows currently carry their own borders, so eight settings read as eight unrelated boxes rather than three groups. Grouping is the first thing a person uses to find a setting.",
+      "impact": "Changes every row on the settings screen.",
+      "evidence": ["Five of six testers scanned the whole list before acting."],
+      "recommendation": "grouped",
+      "options": [
+        { "key": "grouped", "letter": "A", "label": "One border per group, dividers between rows",
+          "body": "Related settings share a container.", "cost": "Needs a grouping decision for every new setting." },
+        { "key": "per-row", "letter": "B", "label": "A border on each row",
+          "body": "Every row is its own card.", "cost": "Reads as unrelated boxes." },
+        { "key": "flat", "letter": "C", "label": "No borders at all", "body": "Whitespace only." }
+      ]
+    },
+    {
+      "id": "save-model",
+      "num": 2,
+      "title": "When a change is written",
+      "decision": "Choose when an edit reaches the file.",
+      "why": "Autosaving a destructive setting and autosaving a note are not the same risk.",
+      "impact": "Changes the save affordance on every control.",
+      "selected": "mixed",
+      "note": "Notes should not need a button. Anything destructive should.",
+      "ruledAt": "2026-09-10T12:00:00Z",
+      "receipt": { "what": "Split the two scopes", "where": "the save path",
+                   "measured": "notes autosave, rulings do not", "yourRulingKept": "yes" },
+      "options": [
+        { "key": "autosave", "letter": "A", "label": "Everything autosaves" },
+        { "key": "manual", "letter": "B", "label": "Everything needs a button" },
+        { "key": "mixed", "letter": "C", "label": "Notes autosave, rulings are manual" }
+      ]
+    },
+    {
+      "id": "legacy-nav",
+      "num": 3,
+      "title": "The old navigation bar",
+      "decision": "Not open — removed before this record was written.",
+      "addressed": true,
+      "addressedInGeneration": 2,
+      "options": [
+        { "key": "keep", "label": "Keep it" },
+        { "key": "drop", "label": "Remove it" }
+      ]
+    }
+  ],
+
+  "openItems": [
+    {
+      "id": "item-heading-wording",
+      "kind": "copy",
+      "status": "open — pick the current text, the proposal, or write your own",
+      "capturedAt": "2026-09-11T09:00:00Z",
+      "source": "notes/settings-review.md",
+      "question": "What should the settings heading say?",
+      "why": "The current heading names the system, not the task.",
+      "target": { "surface": "Settings", "file": "src/settings.tsx", "section": "Heading" },
+      "before": "Preferences Configuration",
+      "after": "Settings",
+      "notActedOn": "Still showing the original.",
+      "preview": {
+        "selector": "[data-component='SettingsHeader'] h1",
+        "byChoice": {
+          "after": { "mode": "text", "value": "Settings" },
+          "own": { "mode": "text" }
+        }
+      },
+      "choices": [
+        { "key": "before", "label": "Keep what is there" },
+        { "key": "after", "label": "Use the proposal", "text": "Settings" },
+        { "key": "own", "label": "Write my own", "needsText": true }
+      ]
+    },
+    {
+      "id": "item-danger-zone",
+      "kind": "decision",
+      "status": "open — MERGE BLOCKER",
+      "capturedAt": "2026-09-11T10:00:00Z",
+      "source": "notes/settings-review.md",
+      "question": "Should deleting an account ask twice?",
+      "why": "One tap currently removes everything, with no way back.",
+      "whyItMatters": "The action is irreversible and the control sits next to a benign one.",
+      "target": { "surface": "Settings", "section": "Danger zone" },
+      "ruling": "own",
+      "rulingText": "Ask twice, and make the second one type the project name.",
+      "ruledAt": "2026-09-12T08:30:00Z",
+      "notActedOn": "Not built yet.",
+      "choices": [
+        { "key": "once", "label": "One confirmation" },
+        { "key": "twice", "label": "Two confirmations" },
+        { "key": "own", "label": "Write my own", "needsText": true }
+      ]
+    },
+    {
+      "id": "item-show-advanced",
+      "kind": "decision",
+      "status": "open",
+      "capturedAt": "2026-09-11T11:00:00Z",
+      "source": "notes/settings-review.md",
+      "question": "Keep the advanced options visible by default?",
+      "why": "Nine of eleven options are never touched.",
+      "target": { "surface": "Settings", "section": "Advanced" },
+      "ruling": false,
+      "ruledAt": "2026-09-12T09:00:00Z",
+      "notActedOn": "Still expanded.",
+      "preview": {
+        "selector": "[data-component='AdvancedOptions']",
+        "byChoice": { "hide": { "mode": "hide" } }
+      },
+      "choices": [
+        { "key": "keep", "label": "Keep them expanded" },
+        { "key": "hide", "label": "Collapse them behind a disclosure" }
+      ]
+    },
+    {
+      "id": "item-reset-copy",
+      "kind": "voice-string",
+      "status": "ruled",
+      "capturedAt": "2026-09-11T12:00:00Z",
+      "source": "notes/voice.md",
+      "question": "What does the reset button say?",
+      "why": "The label promises less than the action does.",
+      "target": { "surface": "Settings", "section": "Reset" },
+      "ruling": "   ",
+      "notActedOn": "Unchanged.",
+      "choices": [
+        { "key": "reset", "label": "Reset" },
+        { "key": "restore", "label": "Restore defaults" }
+      ]
+    },
+    {
+      "id": "item-layout-shape",
+      "kind": "architecture",
+      "status": "open — needs your answer",
+      "capturedAt": "2026-09-11T13:00:00Z",
+      "source": "notes/settings-review.md",
+      "question": "Should settings move to their own page?",
+      "why": "The modal cannot show the advanced group without scrolling twice.",
+      "target": { "surface": "Settings", "section": "The whole surface" },
+      "ruledAt": "2026-09-11T13:05:00Z",
+      "notActedOn": "Still a modal.",
+      "preview": {
+        "selector": "[data-component='SettingsModal']",
+        "byChoice": { "page": { "mode": "page", "url": "/settings" } }
+      },
+      "choices": [
+        { "key": "modal", "label": "Keep the modal" },
+        { "key": "page", "label": "Move it to its own page" }
+      ]
+    }
+  ],
+
+  "previewComments": [],
+
+  "annotations": [
+    {
+      "id": "ann-1",
+      "n": 1,
+      "x": 210, "y": 480, "xPct": 0.54, "yPct": 0.36,
+      "docWidth": 390, "docHeight": 1330,
+      "selector": "[data-component='SettingsHeader'] h1",
+      "elementText": "Preferences Configuration",
+      "viewport": "mobile",
+      "note": "This heading is doing two jobs at once.",
+      "createdAt": "2026-09-11T14:00:00Z"
+    },
+    {
+      "id": "ann-2",
+      "n": 2,
+      "x": 120, "y": 900, "xPct": 0.31, "yPct": 0.68,
+      "docWidth": 390, "docHeight": 1330,
+      "selector": "[data-component='DangerZone'] button",
+      "elementText": "Delete account",
+      "viewport": "mobile",
+      "note": "Make this red.",
+      "disposition": "declined",
+      "declinedReason": "Red on this background falls below the contrast floor; the surface uses weight and position instead.",
+      "createdAt": "2026-09-11T14:05:00Z"
+    }
+  ],
+
+  "history": [
+    {
+      "id": "ann-0",
+      "n": 0,
+      "selector": "[data-component='SettingsModal']",
+      "elementText": "Settings",
+      "note": "The groups are hard to tell apart.",
+      "disposition": "incorporated",
+      "receipt": {
+        "what": "Replaced per-row borders with one container and inset dividers",
+        "where": "the settings list",
+        "measured": "three groups now read as three",
+        "yourRulingKept": "yes"
+      },
+      "createdAt": "2026-09-09T10:00:00Z"
+    }
+  ],
+
+  "lifecycle": {
+    "generation": 3,
+    "generatedAt": "2026-09-09T09:00:00Z",
+    "savedAt": "2026-09-12T09:00:00Z",
+    "savedScope": "rulings"
+  }
+}

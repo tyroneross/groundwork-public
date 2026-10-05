@@ -1,0 +1,49 @@
+<!-- Web browser chrome frame. Placeholders: {slot} {bg} {border} {surface} {accent} {radius_card} {density_class} -->
+<div style="
+    display:inline-block;
+    font-family:{font_family};
+    background:{bg};
+    border:1.5px solid {border};
+    border-radius:10px;
+    width:320px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.08);
+    overflow:hidden;
+">
+  <!-- Browser chrome: address bar row -->
+  <div style="
+      background:{surface};
+      border-bottom:1px solid {border};
+      padding:7px 10px;
+      display:flex;
+      align-items:center;
+      gap:6px;
+  ">
+    <div style="width:8px;height:8px;border-radius:50%;background:#FF5F57;"></div>
+    <div style="width:8px;height:8px;border-radius:50%;background:#FEBC2E;"></div>
+    <div style="width:8px;height:8px;border-radius:50%;background:#28C840;"></div>
+    <div style="
+        flex:1;
+        height:18px;
+        background:{bg};
+        border:1px solid {border};
+        border-radius:4px;
+        margin-left:4px;
+    "></div>
+  </div>
+  <!-- Nav bar -->
+  <div style="
+      background:{surface};
+      border-bottom:1px solid {border};
+      padding:0 12px;
+      display:flex;
+      gap:16px;
+      height:32px;
+      align-items:center;
+  ">
+    {nav_items}
+  </div>
+  <!-- Page content -->
+  <div style="padding:{content_padding};background:{bg};">
+    {slot}
+  </div>
+</div>

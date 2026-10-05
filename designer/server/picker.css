@@ -1,0 +1,1204 @@
+/* Calm Precision picker — low chrome, content-first, single accent.
+   The picker chrome itself follows the floor tokens: neutral ink, 8pt grid,
+   one accent (#0A84FF), hairline borders, no background-fill status. */
+
+:root {
+  --bg: #FFFFFF;
+  --surface: #F5F5F7;
+  --sunken: #FAFAFA;
+  --border: #E5E5EA;
+  --ink: #1C1C1E;
+  /* Text inks are chosen by measured contrast, not by eye. Every ink below
+     clears WCAG AA 4.5:1 against the DARKEST surface it is used on
+     (--surface #F5F5F7), so a muted note never becomes unreadable:
+     --ink2 5.82:1, --ink3 4.87:1 on --surface. The previous --ink3 (#9A9AA0)
+     measured 2.80:1 and failed AA everywhere it appeared. */
+  --ink2: #5F5F66;
+  --ink3: #6B6B70;
+  /* --accent is the brand hue for NON-TEXT use: borders, hover edges, the rail
+     selection indicator. It measures 3.65:1 on white — enough for a non-text
+     boundary, not enough for text or for a filled button's label. */
+  --accent: #0A84FF;
+  /* --accentStrong is the same hue darkened until it clears AA as text on white
+     AND as a background under white text (5.04:1 both ways). Filled buttons and
+     accent-coloured text use this one. */
+  --accentStrong: #0A6ED1;
+  --accentText: #FFFFFF;
+  --error: #FF3B30;
+  --grid: 8px;
+  --radius: 10px;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); }
+
+/* The `hidden` attribute MUST win over any class-level `display` rule. A class
+   like `display:flex` otherwise overrides the UA [hidden]{display:none}, so a
+   JS `el.hidden = true` would silently fail to hide a flex container. */
+[hidden] { display: none !important; }
+
+/* ── top bar ── */
+.topbar {
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; background: var(--bg); z-index: 10;
+}
+.brand { display: flex; align-items: center; gap: 8px; }
+.brand-mark { width: 14px; height: 14px; border-radius: 4px; background: var(--accent); }
+.brand-text { font-weight: 600; font-size: 14px; }
+.ctx { color: var(--ink2); font-size: 13px; flex: 1; }
+.progress { color: var(--ink3); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+/* ── one panel: rail + stage ────────────────────────────────────────────────
+   A single grid. The rail lists every Groundwork component; the stage renders
+   whichever one is selected. Grouping is carried by ONE border on the rail
+   edge, never by a border per item. */
+.shell {
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  margin: 0 auto;
+  max-width: 1440px;
+}
+.rail {
+  align-self: start;
+  border-right: 1px solid var(--border);
+  padding: 24px 16px 48px;
+  position: sticky;
+  top: 57px;
+}
+.rail-group-label {
+  color: var(--ink3);
+  font-size: 11px;
+  letter-spacing: .05em;
+  margin: 0 0 8px;
+  padding-left: 12px;
+  text-transform: uppercase;
+}
+.rail-list { font-size: 14px; list-style: none; margin: 0 0 24px; padding: 0; }
+.rail-list:last-of-type { margin-bottom: 0; }
+.rail-item {
+  background: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  font-family: inherit;
+  font-size: 14px;
+  gap: 4px;
+  padding: 8px 8px 8px 12px;
+  text-align: left;
+  width: 100%;
+}
+button.rail-item { cursor: pointer; }
+.rail-item-label { color: var(--ink2); font-size: 14px; }
+.rail-item-note { color: var(--ink3); font-size: 12px; line-height: 1.35; }
+button.rail-item:hover .rail-item-label { color: var(--ink); }
+/* Selected state is weight plus a 2px indicator — never a background pill, and
+   never a per-item border: one container edge groups the list (Gestalt), so the
+   indicator is drawn inside the box instead of on it. */
+.rail-item[aria-current="page"] { box-shadow: inset 2px 0 0 var(--accent); }
+.rail-item[aria-current="page"] .rail-item-label { color: var(--ink); font-weight: 600; }
+/* A component with no surface in this panel is labelled, not clickable. */
+.rail-item--static { cursor: default; }
+
+.stage { max-width: 1180px; min-width: 0; padding: 32px 24px 64px; }
+
+@media (max-width: 880px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .rail {
+    border-bottom: 1px solid var(--border);
+    border-right: none;
+    padding: 12px 16px;
+    position: static;
+  }
+  .rail-list { display: flex; gap: 4px; margin-bottom: 12px; overflow-x: auto; }
+  .rail-item {
+    align-items: baseline;
+    flex-direction: row;
+    gap: 6px;
+    padding: 6px 8px;
+    white-space: nowrap;
+    width: auto;
+  }
+  .rail-item[aria-current="page"] { box-shadow: inset 0 -2px 0 var(--accent); }
+  .rail-list--static, #rail-group-chat { display: none; }
+  .rail-group-label { margin-bottom: 4px; }
+  .rail-item-note { display: none; }
+}
+
+.decision-head { margin-bottom: 24px; }
+.decision-title { font-size: 21px; font-weight: 600; margin: 0 0 8px; }
+.decision-desc { font-size: 15px; color: var(--ink2); margin: 0 0 8px; max-width: 60ch; }
+.decision-note { font-size: 13px; color: var(--ink3); margin: 0; max-width: 70ch; }
+
+/* ── options grid ── */
+.options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+.option {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  /* A <button> carries a UA padding of 1px 6px; the card's own padding lives on
+     its preview and meta rows, so clear it rather than inherit an off-grid box. */
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color .12s ease, box-shadow .12s ease;
+  display: flex; flex-direction: column;
+}
+.option:hover { border-color: var(--accent); }
+/* superseded by the shared focus-ring block below */
+
+.option-previews {
+  display: flex; gap: 8px; padding: 12px;
+  background: var(--sunken);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+.option-previews .pv { flex: 0 0 auto; }
+.option-previews .pv-label {
+  font-size: 10px; color: var(--ink3); text-transform: uppercase;
+  letter-spacing: .04em; margin-bottom: 4px;
+}
+/* high-fi tier signalled by text color only (no badge), per Calm Precision */
+.option-previews .pv.pv-high-fi .pv-label { color: var(--accentStrong); font-weight: 600; }
+
+.option-meta { padding: 12px 14px 14px; }
+.option-label { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.option-tag {
+  font-size: 11px; color: var(--accentStrong); font-weight: 600;
+}
+.option-desc { font-size: 13px; color: var(--ink2); margin: 6px 0 0; line-height: 1.45; }
+
+/* ── primary button (action weight = intent) ── */
+.btn-primary {
+  background: var(--accentStrong); color: var(--accentText);
+  border: none; border-radius: 8px;
+  font-size: 15px; font-weight: 600; padding: 12px 20px;
+  cursor: pointer;
+}
+.btn-primary:hover { filter: brightness(1.05); }
+.btn-primary[disabled] { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+
+/* ── done pane ── */
+.done-actions { display: flex; align-items: center; gap: 12px; margin: 16px 0 12px; flex-wrap: wrap; }
+.emit-status { font-size: 13px; color: var(--ink2); }
+.design-md {
+  background: var(--sunken); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px; font-size: 12px; line-height: 1.5; overflow-x: auto;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace; color: var(--ink);
+  max-height: 60vh;
+}
+
+/* Draft / promote status row — text-only, no badge (Calm Precision signal rule) */
+.draft-promote-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  min-height: 20px;
+}
+.draft-status {
+  font-size: 13px;
+  color: var(--ink2);
+}
+.promote-status {
+  font-size: 13px;
+  color: var(--ink2);
+}
+
+/* ── mode picker ── */
+.mode-group {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin: 8px 0 20px;
+}
+.mode-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  cursor: pointer;
+}
+.mode-option + .mode-option { border-top: 1px solid var(--border); }
+.mode-recommended { font-size: 12px; color: var(--ink3); }
+
+/* ── repo/context fields ── */
+.field-label { font-size: 13px; font-weight: 600; color: var(--ink); margin: 0 0 4px; display: block; }
+.field-input {
+  font-size: 14px; color: var(--ink);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 12px; width: 100%;
+  background: var(--bg); font-family: inherit;
+}
+.field-input:focus { border-color: var(--accent); outline: none; }
+/* Removing the UA outline is only safe if a ring comes back for keyboard use. */
+.field-input:focus-visible {
+  outline-width: 2px;
+  outline-style: solid;
+  outline-color: var(--accentStrong);
+  outline-offset: 1px;
+}
+.repo-validation { font-size: 13px; margin-top: 4px; min-height: 18px; }
+#repo-section { margin: 4px 0 20px; max-width: 560px; }
+.field-row { margin-bottom: 14px; }
+
+/* ── tier label (topbar) ── */
+.tier-label { font-size: 12px; color: var(--ink3); margin-right: 8px; }
+
+/* ── extract step ── */
+.field-note { font-size: 12px; color: var(--ink3); margin-top: 4px; }
+
+/* Summary card — single border around group, rows divided by hairlines (Gestalt) */
+.extract-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  max-width: 480px;
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+.extract-card-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+}
+.extract-card-row + .extract-card-row {
+  border-top: 1px solid var(--border);
+}
+.exr-label {
+  font-size: 12px;
+  color: var(--ink2);
+  min-width: 110px;
+  flex-shrink: 0;
+}
+.exr-value {
+  font-size: 14px;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* Accent color swatch — small 14px rounded square */
+.exr-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(0,0,0,0.08);
+  flex-shrink: 0;
+}
+/* Muted "not detected" placeholder — text only, no badge */
+.exr-muted { color: var(--ink3); }
+
+/* Warning text — muted amber via text color only, no fill */
+.extract-warning {
+  font-size: 13px;
+  color: #B45309;
+  margin-bottom: 16px;
+  max-width: 480px;
+}
+
+/* Extract action row */
+.extract-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+/* Quiet/ghost button — low intent weight per Fitts (no fill, muted ink) */
+.btn-quiet {
+  background: none;
+  border: none;
+  color: var(--ink2);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 12px 4px;
+  cursor: pointer;
+}
+.btn-quiet:hover { color: var(--ink); }
+.btn-quiet[disabled] { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+
+/* ── import DESIGN.md region (PART D) ── */
+
+/* Hairline top separator above the import option — progressive grouping */
+.import-region {
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+  margin: 20px 0 16px;
+  max-width: 480px;
+}
+
+.import-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink2);
+  margin: 0 0 8px;
+}
+
+/* Grouped input + button on one row */
+.import-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.import-path-input {
+  flex: 1;
+  font-size: 13px;
+}
+
+/* Compact import button — secondary conversion, not as prominent as main CTA */
+.import-region .btn-primary {
+  font-size: 14px;
+  padding: 8px 16px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Skipped tokens note — metadata tier, no badge */
+.import-skipped {
+  font-size: 12px;
+  color: var(--ink3);
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+/* ── review screen (confirm/evolve extracted dims) ── */
+
+/* One card per extracted dimension — single border around each group (Gestalt). */
+.review-dim-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  max-width: 640px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.review-dim-header {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.review-dim-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+}
+.review-dim-desc {
+  font-size: 12px;
+  color: var(--ink2);
+  margin: 2px 0 0;
+}
+
+/* Option rows inside the review card — dividers between, no individual borders */
+.review-opt-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 16px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+}
+.review-opt-row + .review-opt-row {
+  border-top: 1px solid var(--border);
+}
+.review-opt-row:hover {
+  background: var(--sunken);
+}
+
+/* Current state: text weight + accent color only — no background pill (Calm Precision signal rule) */
+.review-opt-label {
+  font-size: 14px;
+  color: var(--ink2);
+  flex: 1;
+}
+.review-opt-row[data-current="true"] .review-opt-label {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* "current" marker — text color only, no badge */
+.review-current-mark {
+  font-size: 11px;
+  color: var(--accentStrong);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.review-opt-row:not([data-current="true"]) .review-current-mark {
+  display: none;
+}
+
+/* ── drive mode toggle (intro screen) ─────────────────────────────────────── */
+
+/* One hairline border around the whole group (Gestalt: group belongs together). */
+.drive-group {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0 20px 12px;
+  margin: 20px 0 24px;
+  max-width: 480px;
+  /* Reset fieldset chrome */
+  min-inline-size: 0;
+}
+
+.drive-legend {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink2);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  padding: 0 4px;
+}
+
+.drive-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  cursor: pointer;
+}
+
+/* Divider between options (single group border + hairline divider — Gestalt),
+   never an individual border per item. Matches the .mode-option pattern. */
+.drive-option + .drive-option {
+  border-top: 1px solid var(--border);
+}
+
+.drive-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.drive-sublabel {
+  font-size: 14px;
+  color: var(--ink2);
+}
+
+/* Helper text — metadata tier, muted, no badge */
+.drive-hint {
+  font-size: 12px;
+  color: var(--ink3);
+  margin: 4px 0 0;
+  line-height: 1.5;
+}
+
+/* ── resume drafts (intro screen, progressive disclosure) ─────────────────── */
+
+/* The <details> wrapper — minimal chrome, hairline top margin from Start button */
+.resume-region {
+  margin-top: 24px;
+  max-width: 560px;
+}
+
+/* Summary row — same pattern as .decision-explainer-summary (metadata tier) */
+.resume-summary {
+  font-size: 13px;
+  color: var(--ink2);
+  font-weight: 500;
+  cursor: pointer;
+  list-style: disclosure-closed;
+  user-select: none;
+}
+.resume-summary:hover { color: var(--ink); }
+
+/* Draft list — single border around the group, hairline dividers between rows */
+.resume-list {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+/* Each draft is a full-width button row (Fitts: full width for click target) */
+.resume-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 14px;
+  width: 100%;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+.resume-row + .resume-row {
+  border-top: 1px solid var(--border);
+}
+.resume-row:hover { background: var(--sunken); }
+
+.resume-product {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+}
+.resume-meta {
+  font-size: 12px;
+  color: var(--ink3);
+}
+
+/* ── agent strip (decision pane, adaptive mode only) ───────────────────────── */
+
+/* Low-chrome horizontal strip — text color only, no background fill (Calm Precision). */
+.agent-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  min-height: 22px;
+}
+
+/* Pulsing accent dot — CSS-only motion, no spinner gif */
+.agent-strip-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+  animation: agent-pulse 1.4s ease-in-out infinite;
+}
+
+/* When the strip is showing a reason (not waiting), stop the pulse */
+.agent-strip.is-reason .agent-strip-dot {
+  animation: none;
+  opacity: 0.6;
+}
+
+@keyframes agent-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+/* Strip text: waiting = ink3; reason = ink2 italic */
+#agent-strip-text {
+  font-size: 13px;
+  color: var(--ink3);
+}
+
+.agent-strip.is-reason #agent-strip-text {
+  color: var(--ink2);
+  font-style: italic;
+}
+
+/* ── adaptive wait pane ─────────────────────────────────────────────────────── */
+
+.await-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 40px 0;
+}
+
+/* Large pulsing dot for the full-pane wait state */
+.await-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: agent-pulse 1.4s ease-in-out infinite;
+}
+
+.await-msg {
+  font-size: 15px;
+  color: var(--ink2);
+  margin: 0;
+}
+
+/* ── per-option suggested highlight (adaptive, agent-hinted) ─────────────────── */
+
+/* Subtle left-border accent — emphasis without hiding others (Calm Precision). */
+.option--suggested {
+  border-left: 3px solid var(--accent);
+}
+
+/* Annotate line inside option-meta — quiet "why this fits" at metadata tier */
+.option-annotate {
+  font-size: 12px;
+  color: var(--ink2);
+  font-style: italic;
+  margin: 6px 0 0;
+}
+
+/* ── decision explainer (progressive disclosure, Hick's Law) ── */
+
+/* Single border around the whole group — no individual content borders (Gestalt). */
+.decision-explainer {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin: 12px 0 0;
+  max-width: 60ch;
+  overflow: hidden;
+}
+
+/* Summary row: muted until hovered or opened — matches signal:text-only rule */
+.decision-explainer-summary {
+  font-size: 13px;
+  color: var(--ink2);
+  font-weight: 500;
+  padding: 10px 14px;
+  cursor: pointer;
+  list-style: disclosure-closed;
+  user-select: none;
+}
+.decision-explainer-summary:hover,
+details[open] .decision-explainer-summary {
+  color: var(--ink);
+}
+
+/* Divider between summary and body — one border inside the group (Gestalt) */
+.decision-explainer-body {
+  border-top: 1px solid var(--border);
+  padding: 12px 14px;
+}
+
+/* Typography ladder: description size → muted, strong = primary ink */
+.dex-what,
+.dex-does {
+  font-size: 13px;
+  color: var(--ink2);
+  margin: 0 0 8px;
+  line-height: 1.5;
+}
+.dex-what strong,
+.dex-does strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* Considerations list: 12px metadata tier, muted */
+.dex-considerations {
+  font-size: 12px;
+  color: var(--ink2);
+  margin: 0;
+  padding-left: 16px;
+  line-height: 1.5;
+}
+.dex-considerations li + li {
+  margin-top: 4px;
+}
+
+/* ── version history disclosure (done pane, PART C) ── */
+
+/* Re-uses .decision-explainer — same single-border group pattern. */
+/* Max-width wider than the explainer since it's the done pane summary. */
+#version-history {
+  max-width: 480px;
+  margin: 0 0 24px;
+}
+
+/* ── generated mockup panel (PART A) ── */
+
+/* Single-border card above the options — content-first, minimal chrome */
+.generated-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+/* Agent reason — quiet italic, metadata tier (mirrors agent-strip.is-reason style) */
+.generated-reason {
+  font-size: 13px;
+  color: var(--ink2);
+  font-style: italic;
+  padding: 10px 14px 0;
+  margin: 0;
+}
+
+/* Mockup frame container — sunken background, hairline bottom border */
+.generated-frame-wrap {
+  background: var(--sunken);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 14px;
+  margin-top: 8px;
+}
+
+/* The frame itself — the server-relayed html renders inline */
+.generated-frame {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+  overflow-x: auto;
+}
+
+.generated-mockup-frame {
+  display: block;
+  width: 100%;
+  min-height: 360px;
+  border: 0;
+  background: #fff;
+}
+
+/* Device-frame label — 10px uppercase, metadata tier */
+.generated-frame-label {
+  font-size: 10px;
+  color: var(--ink3);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin: 6px 0 0;
+}
+
+/* Token delta summary list — single-column, compact */
+.generated-deltas {
+  padding: 10px 14px 0;
+}
+
+.generated-delta-list {
+  font-size: 12px;
+  color: var(--ink2);
+  margin: 0;
+  padding-left: 16px;
+  line-height: 1.6;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+}
+.generated-delta-list li + li {
+  margin-top: 2px;
+}
+
+/* Action row — Apply (primary) + Keep exploring (quiet) + ref label */
+.generated-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  flex-wrap: wrap;
+}
+
+/* "reference — explored direction" — metadata tier, no badge */
+.generated-ref-label {
+  font-size: 12px;
+  color: var(--ink3);
+  font-style: italic;
+}
+
+/* Apply confirmation message — quiet inline confirmation */
+.generated-confirm {
+  font-size: 13px;
+  color: var(--ink2);
+  padding: 0 14px 10px;
+  margin: 0;
+}
+
+/* ── chat region (decision pane, PART A) ── */
+
+/* Persistent container — hairline top separator from the options above */
+.chat-region {
+  border-top: 1px solid var(--border);
+  margin-top: 24px;
+  padding-top: 14px;
+}
+
+/* A class-level `display` rule overrides the UA [hidden]{display:none}; restore it
+   so toggling the `hidden` attribute in JS actually hides these flex containers. */
+.chat-standard-note[hidden],
+.chat-input-wrap[hidden] { display: none; }
+
+/* Standard-mode note — quiet inline note, no fake input */
+.chat-standard-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chat-note-text {
+  font-size: 13px;
+  color: var(--ink3);
+}
+
+/* Enable Adaptive — inline quiet button, smaller than a CTA */
+.chat-enable-btn {
+  font-size: 13px;
+  padding: 4px 2px;
+}
+
+/* Adaptive mode: grouped input + send button */
+.chat-input-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.chat-input {
+  flex: 1;
+  font-size: 14px;
+}
+
+/* Send button — same weight as primary, compact */
+.chat-send-btn {
+  font-size: 14px;
+  padding: 9px 18px;
+  flex-shrink: 0;
+}
+
+/* ── invoked app baseline ── */
+.baseline-kicker {
+  color: var(--accentStrong);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  margin: 0 0 8px;
+}
+
+.baseline-topology {
+  color: var(--ink2);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 72ch;
+}
+.baseline-label {
+  color: var(--ink);
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.baseline-summary {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-top: 16px;
+  max-width: 720px;
+  overflow: hidden;
+}
+
+.baseline-row {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  min-height: 54px;
+  padding: 10px 16px;
+}
+
+.baseline-row + .baseline-row { border-top: 1px solid var(--border); }
+.baseline-row-copy { display: grid; gap: 2px; min-width: 0; }
+.baseline-row-label { color: var(--ink2); font-size: 12px; }
+.baseline-row-value { color: var(--ink); font-size: 14px; overflow-wrap: anywhere; }
+.baseline-status { color: var(--ink3); flex: 0 0 auto; font-size: 12px; }
+
+.baseline-rationale,
+.baseline-error-detail {
+  color: var(--ink2);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 12px 0 0;
+  max-width: 72ch;
+}
+
+.baseline-next-label {
+  color: var(--ink3);
+  font-size: 12px;
+  margin: -14px 0 20px;
+}
+
+.baseline-context {
+  border-top: 1px solid var(--border);
+  margin-top: 20px;
+  max-width: 720px;
+  padding-top: 12px;
+}
+
+.baseline-context-summary,
+.baseline-comment-summary {
+  color: var(--ink2);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.baseline-context-body {
+  display: grid;
+  gap: 16px;
+  padding: 16px 0 4px;
+}
+
+.baseline-context-section { display: grid; gap: 6px; }
+.baseline-context-copy {
+  color: var(--ink2);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.baseline-snapshot {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-top: 16px;
+  max-width: 960px;
+  overflow: hidden;
+}
+
+.baseline-snapshot-summary {
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 12px 14px;
+}
+
+.baseline-snapshot-frame {
+  background: var(--sunken);
+  border-top: 1px solid var(--border);
+  padding: 12px;
+}
+
+.baseline-snapshot-frame .generated-mockup-frame {
+  min-height: 440px;
+}
+
+.baseline-snapshot-label {
+  color: var(--ink3);
+  font-size: 12px;
+  margin: 8px 14px 12px;
+}
+
+.baseline-warnings {
+  border-left: 2px solid var(--ink3);
+  margin-top: 16px;
+  max-width: 720px;
+  padding-left: 12px;
+}
+
+.baseline-warning-title { color: var(--ink); font-size: 13px; font-weight: 600; margin: 0 0 4px; }
+.baseline-warning { color: var(--ink2); font-size: 13px; margin: 2px 0; }
+
+.baseline-evidence {
+  border-top: 0;
+  margin-top: 0;
+  max-width: 720px;
+  padding-top: 0;
+}
+
+.baseline-evidence-summary { color: var(--ink2); cursor: pointer; font-size: 13px; }
+.baseline-evidence-body { display: grid; gap: 8px; padding: 12px 0 4px; }
+.baseline-evidence-item { display: grid; gap: 2px; }
+.baseline-evidence-name { color: var(--ink); font-size: 13px; }
+.baseline-evidence-meta { color: var(--ink3); font-size: 12px; overflow-wrap: anywhere; }
+
+.baseline-comment {
+  border-top: 1px solid var(--border);
+  margin-top: 12px;
+  max-width: 720px;
+  padding-top: 12px;
+}
+
+.baseline-comment-body { padding-top: 12px; }
+.baseline-comment-input { display: block; min-height: 86px; resize: vertical; }
+.baseline-comment-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+.baseline-comment-send { font-size: 14px; padding: 8px 16px; }
+.baseline-comment-status { color: var(--ink2); font-size: 13px; }
+
+/* The real next action sits directly under the headline. It is the only
+   primary-weight control on this screen; everything else is quiet. */
+.baseline-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0 0 24px;
+}
+.baseline-actions .btn-primary { min-width: 128px; }
+
+/* Observed source text stays readable inside the loaded-context disclosure. */
+.baseline-seed { margin: 0; max-width: 720px; }
+.baseline-seed-text {
+  color: var(--ink2);
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  max-height: 40vh;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
+/* Pending decision, rendered in place so accepting the baseline and choosing
+   the next option is one click, not two. */
+.baseline-pending {
+  border-top: 1px solid var(--border);
+  margin-top: 24px;
+  padding-top: 16px;
+}
+.baseline-pending-title { font-size: 16px; font-weight: 600; margin: 0 0 4px; }
+.baseline-pending-desc { color: var(--ink2); font-size: 13px; margin: 0 0 16px; max-width: 70ch; }
+
+.baseline-change-confirm {
+  border-top: 1px solid var(--border);
+  margin-top: 16px;
+  max-width: 720px;
+  padding-top: 12px;
+}
+
+.baseline-change-confirm .btn-quiet { margin-top: 8px; }
+
+/* ── focus ring ─────────────────────────────────────────────────────────────
+   One relational declaration, applied to every interactive base.
+
+   Two things are deliberate here.
+
+   1. LONGHAND, not the `outline:` shorthand. A shorthand whose value contains
+      `var()` cannot be expanded to its longhands at parse time, so a scanner
+      reading declarations sees only `outline-offset` and reports the ring as
+      missing. Longhands are always readable.
+   2. The selector list names tags, classes AND ids. IBR's interaction-state
+      sensor keys a finding off each element's OWN generated selector (`#id`,
+      its tag, its classes) rather than by matching CSS, so a rule on `button`
+      alone still leaves `#start-btn` reported as unstyled. Add an element's id
+      here when you add an interactive element. */
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible,
+.rail-item:focus-visible,
+.btn-primary:focus-visible,
+.btn-quiet:focus-visible,
+.chat-enable-btn:focus-visible,
+.chat-send-btn:focus-visible,
+.option:focus-visible,
+.resume-row:focus-visible,
+.resume-summary:focus-visible,
+.decision-explainer-summary:focus-visible,
+.baseline-comment-send:focus-visible,
+.baseline-comment-summary:focus-visible,
+.baseline-context-summary:focus-visible,
+.baseline-evidence-summary:focus-visible,
+.baseline-snapshot-summary:focus-visible,
+#rail-designer:focus-visible,
+#rail-saved:focus-visible,
+#rail-output:focus-visible,
+#baseline-continue:focus-visible,
+#baseline-change-setup:focus-visible,
+#baseline-open-setup:focus-visible,
+#baseline-comment-send:focus-visible,
+#start-btn:focus-visible,
+#continue-btn:focus-visible,
+#extract-btn:focus-visible,
+#import-btn:focus-visible,
+#confirm-extract-btn:focus-visible,
+#skip-extract-btn:focus-visible,
+#review-continue-btn:focus-visible,
+#apply-deltas-btn:focus-visible,
+#keep-exploring-btn:focus-visible,
+#enable-adaptive-btn:focus-visible,
+#chat-send:focus-visible,
+#switch-standard-btn:focus-visible,
+#workspace-refresh:focus-visible,
+#workspace-refine:focus-visible,
+#workspace-source-save:focus-visible,
+#workspace-export:focus-visible,
+#emit-btn:focus-visible,
+#promote-btn:focus-visible,
+#save-draft-btn:focus-visible,
+#walk-complete-output:focus-visible,
+.review-opt-row:focus-visible,
+#option-0:focus-visible,
+#option-1:focus-visible,
+#option-2:focus-visible,
+#option-3:focus-visible,
+#option-4:focus-visible,
+#option-5:focus-visible,
+#option-6:focus-visible,
+#option-7:focus-visible,
+#pending-option-0:focus-visible,
+#pending-option-1:focus-visible,
+#pending-option-2:focus-visible,
+#pending-option-3:focus-visible,
+#pending-option-4:focus-visible,
+#pending-option-5:focus-visible,
+#pending-option-6:focus-visible,
+#pending-option-7:focus-visible {
+  outline-width: 2px;
+  outline-style: solid;
+  outline-color: var(--accentStrong);
+  outline-offset: 2px;
+}
+
+/* A disclosure row is a real target: ≥24px tall, not a 16px line of text. */
+summary {
+  cursor: pointer;
+  min-height: 24px;
+  padding-bottom: 4px;
+  padding-top: 4px;
+}
+
+@media (max-width: 640px) {
+  /* Touch targets are 44px on a phone, 24px with a pointer. Every control the
+     panel ships gets the larger box here, including disclosure rows. */
+  button,
+  .rail-item,
+  .btn-primary,
+  .btn-quiet { min-height: 44px; }
+  summary { min-height: 44px; padding-bottom: 12px; padding-top: 12px; }
+
+  .topbar { align-items: flex-start; flex-wrap: wrap; padding: 12px 16px; }
+  .stage { padding: 24px 16px 48px; }
+  .baseline-row { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .baseline-actions { align-items: stretch; flex-direction: column; }
+  .baseline-comment-actions { align-items: stretch; flex-direction: column; }
+  .baseline-comment-send { width: 100%; }
+  .baseline-snapshot-frame { padding: 8px; }
+  .baseline-snapshot-frame .generated-mockup-frame { min-height: 360px; }
+}
+
+/* Saved work is its own rail destination, so it no longer needs a wrapper
+   border or a disclosure summary of its own. Its supporting copy is typed like
+   the rest of the panel — status and metadata sit below body size, so a section
+   heading is never the same size as the text it introduces. */
+.workspace label { color: var(--ink2); display: block; font-size: 13px; margin-top: 16px; }
+.workspace p:not(.decision-desc) { color: var(--ink2); font-size: 13px; margin: 8px 0; }
+.workspace #workspace-ledger { color: var(--ink2); font-size: 13px; margin: 8px 0 0; padding-left: 20px; }
+.workspace button { margin-top: 8px; min-height: 44px; }
+.workspace-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.workspace-card { min-width: 0; border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+.workspace-card h3 { font-size: 16px; }
+.workspace-card iframe { height: 420px; }
+.workspace-card button[aria-pressed="true"] { border: 2px solid var(--accent); }
+@media (max-width: 760px) { .workspace-grid { grid-template-columns: 1fr; } }
+
+.review-controls {
+  align-items: end;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin: 24px 0 0;
+  padding: 12px 16px 16px;
+}
+.review-controls legend { color: var(--ink); font-size: 13px; font-weight: 600; padding: 0 4px; }
+.review-controls label { margin: 0; }
+.review-toggle { align-items: center; display: flex !important; gap: 8px; min-height: 36px; }
+.review-select { margin-top: 4px; min-width: 128px; width: auto; }
+.workspace .review-help { margin-top: 6px; }
+.workspace-context { margin-top: 24px; }
+.suggestion-list { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.suggestion-row { display: grid; gap: 8px; grid-template-columns: 72px minmax(0, 1fr) auto; padding: 10px 12px; }
+.suggestion-row + .suggestion-row { border-top: 1px solid var(--border); }
+.suggestion-kind { color: var(--ink3); font-size: 11px; font-weight: 600; letter-spacing: .04em; padding-top: 9px; text-transform: uppercase; }
+.suggestion-copy { min-width: 0; }
+.suggestion-copy .field-input { padding: 7px 9px; }
+.suggestion-provenance { color: var(--ink3); display: block; font-size: 11px; margin-top: 3px; }
+.suggestion-actions { align-items: center; display: flex; gap: 8px; }
+.suggestion-actions .btn-quiet { margin: 0; min-height: 36px; padding: 6px 4px; }
+@media (max-width: 640px) {
+  .review-controls { align-items: stretch; flex-direction: column; }
+  .review-select { width: 100%; }
+  .suggestion-row { grid-template-columns: 1fr; }
+  .suggestion-kind { padding-top: 0; }
+  .suggestion-actions { justify-content: flex-start; }
+}

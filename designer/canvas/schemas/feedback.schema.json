@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://groundwork.dev/schemas/canvas-feedback-row-v1.json",
+  "title": "Groundwork canvas feedback.jsonl row",
+  "description": "Rail -> agent, one JSON object per line. The server appends exactly one row per accepted POST /__canvas/feedback, stamping `ts` and `id`; all other fields originate in the browser. The agent reads new rows each turn (cursor-tracked, dedup by `id`) and routes them into the decision engine.",
+  "type": "object",
+  "required": ["ts", "id", "kind"],
+  "additionalProperties": true,
+  "properties": {
+    "ts": { "type": "string", "format": "date-time", "description": "SERVER-stamped ISO-8601." },
+    "id": { "type": "string", "description": "SERVER-stamped, unique per row: fb-<epoch-ms>-<seq>. The agent's dedup key. NOTE: <seq> resets on server restart, so dedup MUST key on the full id string (which embeds the ms), not the seq alone." },
+    "kind": {
+      "type": "string",
+      "enum": ["comment", "lock", "lean", "never", "decide", "toggle"],
+      "description": "comment=Send; lock/lean/never=chips; decide=A/B; toggle=Live/Hold. v1 servers do NOT reject unknown kinds (agent ignores them); consumers MUST tolerate unknown kinds."
+    },
+    "text": { "type": "string", "description": "comment (required non-empty at the rail) / lock / lean / never. May be '' for chips." },
+    "component": { "type": ["string", "null"], "description": "data-component pin name if a pin was active, else null." },
+    "dim": { "type": "string", "description": "decide only — echoed from status.json fork.dim." },
+    "value": { "type": "string", "description": "decide only — the OPTION KEY 'a'|'b' (NOT the token value). The agent maps a/b to the real value via status.json fork." },
+    "mode": { "type": "string", "enum": ["live", "hold"], "description": "toggle only." }
+  },
+  "allOf": [
+    { "if": { "properties": { "kind": { "const": "decide" } } }, "then": { "required": ["dim", "value"] } },
+    { "if": { "properties": { "kind": { "const": "toggle" } } }, "then": { "required": ["mode"] } }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "contract": "build-loop.implementation-map/v1",
+  "runId": "run-spectra-001",
+  "buildRequestDigest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+  "specDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "taskDigest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+  "producer": { "name": "build-loop", "version": "0.36.8", "commit": "abcdef1" },
+  "mappings": [
+    {
+      "id": "mapping-task-guidance",
+      "kind": "task",
+      "targetId": "task-guidance",
+      "status": "verified",
+      "fileRefs": ["src/EditorGuidance.tsx"],
+      "symbolRefs": ["EditorGuidance"],
+      "commitRefs": ["abcdef1"],
+      "testEvidenceIds": ["evidence-guidance-test"],
+      "runtimeEvidenceIds": [],
+      "deviationIds": []
+    }
+  ],
+  "evidence": [
+    {
+      "id": "evidence-guidance-test",
+      "kind": "test",
+      "command": "npm test -- EditorGuidance",
+      "outcome": "passed",
+      "summary": "The existing editor shell remains visible with first-run guidance.",
+      "recordedAt": "2026-08-05T00:10:00Z"
+    }
+  ],
+  "deviations": [],
+  "implementationMapDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+  "createdAt": "2026-08-05T00:11:00Z"
+}

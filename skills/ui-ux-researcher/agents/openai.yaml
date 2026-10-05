@@ -1,0 +1,4 @@
+interface:
+  display_name: "UI/UX Researcher"
+  short_description: "Plan and synthesize decision-ready UX research"
+  default_prompt: "Use $ui-ux-researcher to identify the evidence needed for this design decision and plan the smallest reliable study."

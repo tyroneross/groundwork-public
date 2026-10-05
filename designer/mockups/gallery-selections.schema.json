@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://groundwork.local/schemas/gallery-selections.schema.json",
+  "title": "Groundwork gallery selections and annotations",
+  "type": "object",
+  "required": ["schema", "ratings", "picks", "notes", "annotations"],
+  "properties": {
+    "schema": { "const": "groundwork.gallery-selections/v2" },
+    "ratings": {
+      "type": "object",
+      "additionalProperties": { "enum": ["yay", "ok", "nay"] }
+    },
+    "picks": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "notes": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "annotations": {
+      "type": "object",
+      "description": "Element-level feedback keyed by mockup HTML path.",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "$ref": "#/$defs/annotation" }
+      }
+    },
+    "reviewArchive": {
+      "type": "object",
+      "description": "Completed review-queue state keyed by mockup HTML path. Feedback remains in ratings, notes, and annotations.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["archivedAt"],
+        "properties": {
+          "archivedAt": { "type": "string", "format": "date-time" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "reviewReopen": {
+      "type": "object",
+      "description": "Active-review overrides keyed by mockup HTML path. Review again or a proven HTML revision sets the override; new meaningful feedback clears it.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["reopenedAt"],
+        "properties": {
+          "reopenedAt": { "type": "string", "format": "date-time" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "annotation": {
+      "type": "object",
+      "required": [
+        "id", "marker", "x", "y", "target", "viewport", "document",
+        "comment", "status", "createdAt", "updatedAt"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "marker": {
+          "enum": ["dot", "box", "square"],
+          "description": "square is retained for backward compatibility; new content outlines use box."
+        },
+        "x": { "type": "number", "minimum": 0, "maximum": 1 },
+        "y": { "type": "number", "minimum": 0, "maximum": 1 },
+        "bounds": { "$ref": "#/$defs/bounds" },
+        "target": {
+          "type": "object",
+          "required": ["selector", "component", "tag", "role", "label", "text"],
+          "properties": {
+            "selector": { "type": "string", "maxLength": 500 },
+            "component": { "type": "string", "maxLength": 160 },
+            "tag": { "type": "string", "maxLength": 80 },
+            "role": { "type": "string", "maxLength": 120 },
+            "label": { "type": "string", "maxLength": 240 },
+            "text": { "type": "string", "maxLength": 500 }
+          },
+          "additionalProperties": false
+        },
+        "viewport": { "$ref": "#/$defs/size" },
+        "document": { "$ref": "#/$defs/size" },
+        "comment": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "status": {
+          "enum": ["open", "resolved", "archived"],
+          "description": "open = live, unaddressed feedback on the CURRENT content. resolved = the user dealt with it. archived = the mockup was rewritten and this annotation belongs to the version it replaced (see archivedFrom). Readers MUST test status === \"open\" positively: a negative test (status !== \"resolved\") counts archived critique as live work and re-surfaces feedback on markup that no longer exists."
+        },
+        "archivedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When this annotation was archived. Present only when status is archived."
+        },
+        "archivedFrom": {
+          "type": "string",
+          "pattern": "^\\d{8}T\\d{6}Z-[0-9a-f]{8}$",
+          "description": "The archive version id holding this annotation and (where it could be captured) the HTML it was written against, under .canvas/archive/<slot>/<version>/. Present only when status is archived; readable via GET /__gallery/archive."
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    },
+    "size": {
+      "type": "object",
+      "required": ["width", "height"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 0 },
+        "height": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "bounds": {
+      "type": "object",
+      "description": "Normalized element bounds used to draw a content box.",
+      "required": ["x", "y", "width", "height"],
+      "properties": {
+        "x": { "type": "number", "minimum": 0, "maximum": 1 },
+        "y": { "type": "number", "minimum": 0, "maximum": 1 },
+        "width": { "type": "number", "minimum": 0, "maximum": 1 },
+        "height": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

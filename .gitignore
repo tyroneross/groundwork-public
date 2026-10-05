@@ -1,0 +1,44 @@
+node_modules/
+/dist/
+
+# tool artifacts
+.rally/
+.build-loop/
+.designer-*.json
+.ibr/
+.navgator/
+.mockup-gallery/
+__pycache__/
+*.pyc
+.designer/
+
+# committed engine bundle (runtime, no node_modules needed)
+!/engine/dist/
+
+# local project registry: per-builder pointers to where project data really lives.
+# Project folders are machine-local and must never be committed, merged, or pushed
+# by anyone building with Groundwork. The explainer, template, and validator DO ship.
+/projects/*
+!/projects/README.md
+!/projects/_TEMPLATE/
+!/projects/index.py
+
+# Private, project-local design history
+.groundwork-workspace/
+
+# Private project data and maintainer evidence
+.designdoc/
+.bookmark/
+.procedural/
+.claude-code-debugger/
+docs/reviews/
+docs/plans/
+docs/hosted-app/
+references/design-library/snapshots/
+designer/references/dashboards/**/*.html
+designer/color/combos.jsonl
+.env
+.env.*
+*.pem
+*.key
+groundwork-plugin.tar.gz

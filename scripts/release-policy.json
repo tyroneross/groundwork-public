@@ -1,0 +1,11 @@
+{
+  "schema": "groundwork.release-policy/v1",
+  "compatibility": {
+    "buildLoop": {
+      "version": "0.39.0",
+      "commit": "a62a3571ad971df49e483dbbd7d00f158ec40deb",
+      "adapterDigest": "f020ee8ee787c1ced7e4961cdcffba6831a06c852bd4cdeabe0d495227c15732",
+      "distributionTestDigest": "95d4d1748c0ba1f2c4a6f701c78543c56ecb32dc7fa64ace46634eb838e8f85c"
+    }
+  }
+}

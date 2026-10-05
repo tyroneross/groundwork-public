@@ -1,0 +1,41 @@
+{
+  "contract": "groundwork.build-request/v1",
+  "runId": "run-spectra-001",
+  "specId": "spec-spectra",
+  "specDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "taskDigest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+  "platformSurfaces": [
+    { "id": "surface-macos", "platform": "macos", "role": "primary", "name": "Spectra Studio", "interactionModes": ["pointer", "keyboard"], "featureIds": ["feature-editor"], "provenance": "observed" },
+    { "id": "surface-web", "platform": "web", "role": "companion", "name": "Spectra Review", "interactionModes": ["pointer", "touch"], "featureIds": ["feature-review"], "provenance": "observed" }
+  ],
+  "architecture": {
+    "components": [
+      { "id": "component-editor", "name": "Editor shell", "kind": "ui", "featureIds": ["feature-editor"], "owner": "desktop", "provenance": "observed" }
+    ],
+    "contracts": [],
+    "relationships": [],
+    "flows": [],
+    "specDependencies": []
+  },
+  "tasks": [
+    {
+      "id": "task-guidance",
+      "title": "Add contextual editor guidance",
+      "componentRefs": [{ "specId": "spec-spectra", "kind": "component", "id": "component-editor" }],
+      "contractRefs": [],
+      "requirementIds": ["requirement-guidance"],
+      "dependsOn": [],
+      "acceptanceCriterionIds": ["acceptance-guidance-visible"]
+    }
+  ],
+  "acceptanceCriteria": [
+    { "id": "acceptance-guidance-visible", "statement": "WHEN a new user opens the editor, THE SYSTEM SHALL show contextual guidance without replacing the editor shell.", "testHint": "Desktop UI journey" }
+  ],
+  "manualActions": [],
+  "returnVersions": {
+    "implementationMap": ["build-loop.implementation-map/v1"],
+    "convergence": ["groundwork.convergence/v1"]
+  },
+  "requestDigest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+  "createdAt": "2026-08-05T00:00:00Z"
+}

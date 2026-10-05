@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://groundwork.local/contracts/groundwork.build-request.v1.schema.json",
+  "title": "groundwork.build-request/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "runId", "specId", "specDigest", "taskDigest", "platformSurfaces", "architecture", "tasks", "acceptanceCriteria", "manualActions", "returnVersions", "requestDigest", "createdAt"],
+  "properties": {
+    "contract": { "const": "groundwork.build-request/v1" },
+    "runId": { "$ref": "#/$defs/id" },
+    "specId": { "$ref": "#/$defs/id" },
+    "specDigest": { "$ref": "#/$defs/digest" },
+    "taskDigest": { "$ref": "#/$defs/digest" },
+    "platformSurfaces": { "type": "array", "minItems": 1, "items": { "$ref": "groundwork.spec-v3-extension.schema.json#/$defs/platformSurface" } },
+    "architecture": { "$ref": "groundwork.spec-v3-extension.schema.json#/$defs/architecture" },
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "componentRefs", "contractRefs", "requirementIds", "dependsOn", "acceptanceCriterionIds"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "title": { "type": "string", "minLength": 1 },
+          "componentRefs": { "type": "array", "items": { "$ref": "groundwork.spec-v3-extension.schema.json#/$defs/qualifiedRef" } },
+          "contractRefs": { "type": "array", "items": { "$ref": "groundwork.spec-v3-extension.schema.json#/$defs/qualifiedRef" } },
+          "requirementIds": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+          "dependsOn": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+          "acceptanceCriterionIds": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+          "ownedFiles": { "$ref": "#/$defs/ownedFiles" }
+        }
+      }
+    },
+    "acceptanceCriteria": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "statement"],
+        "properties": { "id": { "$ref": "#/$defs/id" }, "statement": { "type": "string", "minLength": 1 }, "testHint": { "type": "string" } }
+      }
+    },
+    "manualActions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "location", "action", "requiredValueName", "destination", "verification"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "location": { "type": "string", "minLength": 1 },
+          "action": { "type": "string", "minLength": 1 },
+          "requiredValueName": { "type": "string", "minLength": 1 },
+          "destination": { "type": "string", "minLength": 1 },
+          "verification": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "returnVersions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["implementationMap", "convergence"],
+      "properties": {
+        "implementationMap": { "type": "array", "minItems": 1, "items": { "const": "build-loop.implementation-map/v1" } },
+        "convergence": { "type": "array", "minItems": 1, "items": { "const": "groundwork.convergence/v1" } }
+      }
+    },
+    "requestDigest": { "$ref": "#/$defs/digest" },
+    "createdAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "id": { "type": "string", "minLength": 1 },
+    "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "ownedFile": { "type": "string", "minLength": 1, "format": "groundwork-owned-file", "pattern": "^(?!/|~)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*[\\\\\\\\\\u0000])(?!.*%(?![0-9A-Fa-f]{2}))(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*(?:^|/)(?:\\.[gG][iI][tT]|\\.[sS][sS][hH]|\\.[aA][wW][sS]|\\.[gG][nN][uU][pP][gG]|\\.[eE][nN][vV](?:\\.(?![eE][xX][aA][mM][pP][lL][eE](?:/|$))[^/]+)?|[sS][eE][cC][rR][eE][tT][sS]?|[cC][rR][eE][dD][eE][nN][tT][iI][aA][lL][sS](?:\\.[^./]+)?|[iI][dD]_(?:[rR][sS][aA]|[dD][sS][aA]|[eE][cC][dD][sS][aA]|[eE][dD]25519))(?=/|$)).+$" },
+    "ownedFiles": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/ownedFile" } }
+  }
+}

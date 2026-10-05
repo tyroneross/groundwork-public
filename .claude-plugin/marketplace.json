@@ -1,0 +1,18 @@
+{
+  "name": "groundwork",
+  "description": "Whole-app UI/UX planning for AI builders. Groundwork codifies the product schema, requirements, flows, screens, states, design patterns, architecture, implementation plan, and acceptance criteria into one traceable builder packet. Start with /groundwork:run.",
+  "owner": {
+    "name": "Tyrone Ross"
+  },
+  "metadata": {
+    "version": "0.5.0"
+  },
+  "plugins": [
+    {
+      "name": "groundwork",
+      "source": "./",
+      "description": "Whole-app UI/UX planning for AI builders. Groundwork codifies the product schema, requirements, flows, screens, states, design patterns, architecture, implementation plan, and acceptance criteria into one traceable builder packet. Start with /groundwork:run.",
+      "version": "0.5.0"
+    }
+  ]
+}

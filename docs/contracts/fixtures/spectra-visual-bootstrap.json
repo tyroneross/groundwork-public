@@ -1,0 +1,63 @@
+{
+  "contract": "groundwork.visual-bootstrap/v1",
+  "stage": "existing-app",
+  "drive": "adaptive",
+  "entryBehavior": "review-baseline",
+  "product": {
+    "name": "Spectra",
+    "repoPath": "/workspace/Spectra",
+    "outputPath": "/workspace/Spectra/.designdoc",
+    "runningUrl": "http://127.0.0.1:4173"
+  },
+  "context": {
+    "platformSurfaces": [
+      {
+        "id": "surface-macos",
+        "platform": "macos",
+        "role": "primary",
+        "name": "Spectra Studio",
+        "interactionModes": ["pointer", "keyboard", "menu-bar"],
+        "featureIds": ["feature-editor"],
+        "provenance": "observed"
+      },
+      {
+        "id": "surface-web",
+        "platform": "web",
+        "role": "companion",
+        "name": "Spectra Companion",
+        "interactionModes": ["pointer", "touch"],
+        "featureIds": ["feature-review"],
+        "provenance": "observed"
+      }
+    ],
+    "designBaseline": {
+      "seed": "compact desktop-native workbench with restrained blue accents",
+      "tokenSetId": "tokens-spectra-observed",
+      "selectedMockupId": "mockup-studio-v2",
+      "rationale": "Preserve the observed editor hierarchy and review it before requesting changes."
+    },
+    "requestedDelta": "Refine the first-run guidance without replacing the editor shell.",
+    "structuredContext": {
+      "productType": "native editor",
+      "workflow": "campaign authoring and review"
+    }
+  },
+  "sourcePaths": ["package.json", "src/App.tsx", ".designdoc/design.md"],
+  "knownFacts": [
+    {
+      "categoryId": "platform-target",
+      "optionId": "platform-macos",
+      "provenance": "observed",
+      "sourcePath": "src/App.tsx",
+      "confidence": 0.98
+    },
+    {
+      "categoryId": "nav-structure",
+      "optionId": "nav-structure-left",
+      "provenance": "observed",
+      "sourcePath": ".designdoc/design.md",
+      "confidence": 0.9
+    }
+  ],
+  "warnings": []
+}

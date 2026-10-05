@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://groundwork.dev/schemas/mockups-manifest-v1.json",
+  "title": "Groundwork mockup gallery manifest",
+  "description": "Index of full-screen mockup candidate slots (screen x design-mode) scaffolded by designer/mockups/scaffold.py and filled by /groundwork:mockups. Lives at <design-dir>/mockups/manifest.json.",
+  "type": "object",
+  "required": ["schema", "slug", "productName", "modes", "screens", "slots"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "groundwork.mockups/v1" },
+    "slug": { "type": "string", "description": "Kebab-case design slug; folder name under ~/dev/designs/." },
+    "productName": { "type": "string" },
+    "platformTarget": {
+      "type": "string",
+      "enum": ["web", "vite-spa", "ios", "macos", "claude-plugin", "agent-system"]
+    },
+    "spec": { "type": "string", "description": "Relative path (from the design dir) to the Spec JSON." },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "selection": {
+      "type": "string",
+      "description": "Relative path to selection.json, written after gallery review (step e)."
+    },
+    "modes": {
+      "type": "array",
+      "description": "The design-mode briefs that seed one candidate per screen.",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "brief"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": ["atmospheric-immersion", "glass-workspace", "warm-craft", "data-narrative"]
+          },
+          "name": { "type": "string" },
+          "brief": { "type": "string", "description": "Path (from plugin root) to the mode brief md." },
+          "hint": { "type": "string", "description": "One-line palette/type cue; brief is authoritative." }
+        }
+      }
+    },
+    "screens": {
+      "type": "array",
+      "description": "Critical screens carried from the Spec's screens[].",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "slug"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "purpose": { "type": "string" },
+          "primaryAction": { "type": ["string", "null"] },
+          "states": { "type": "array", "items": { "type": "string" } },
+          "slug": { "type": "string", "description": "Kebab slug used as the HTML filename prefix." }
+        }
+      }
+    },
+    "slots": {
+      "type": "array",
+      "description": "One slot per (screen x mode). The host agent authors HTML into each html_path.",
+      "items": {
+        "type": "object",
+        "required": ["screen_id", "mode", "html_path", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "screen_id": { "type": "string" },
+          "screen_name": { "type": "string" },
+          "mode": {
+            "type": "string",
+            "enum": ["atmospheric-immersion", "glass-workspace", "warm-craft", "data-narrative"]
+          },
+          "html_path": {
+            "type": "string",
+            "description": "Flat filename relative to the mockups dir (e.g. today-atmospheric-immersion.html). Flat, non-recursive; Groundwork's own gallery groups slots by screen_id."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "authored"],
+            "description": "pending = placeholder only; authored = host agent has written a real mockup."
+          },
+          "delta": {
+            "type": "object",
+            "description": "Optional review metadata that names this option's material difference and, for a small change, identifies the same-origin element the gallery should outline.",
+            "required": ["summary"],
+            "additionalProperties": false,
+            "properties": {
+              "summary": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240,
+                "description": "Plain-language answer to: What changes in this option?"
+              },
+              "selector": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500,
+                "description": "Optional CSS selector for one small changed region. The gallery outlines the first match in expanded review."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

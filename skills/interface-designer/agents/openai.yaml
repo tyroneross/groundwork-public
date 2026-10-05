@@ -1,0 +1,4 @@
+interface:
+  display_name: "Interface Designer"
+  short_description: "Design complete, coherent interface systems"
+  default_prompt: "Use $interface-designer to turn this product intent into a complete interface direction with states and responsive behavior."

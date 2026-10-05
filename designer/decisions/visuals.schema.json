@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://groundwork.rosslabs.ai/schemas/decision-visuals/1.0.0",
+  "title": "Per-decision visuals manifest v1",
+  "description": "Maps a ruleable id to a cropped screenshot of the thing it is deciding. The surface reads this to answer 'where is it in the UI and what does it look like' before it asks its question. An entry with file:null is an explicit statement that no picture exists and why -- which the card renders honestly rather than leaving a blank.",
+  "type": "object",
+  "required": [
+    "items"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "capturedWith": {
+      "type": "string",
+      "description": "The tool and version that produced these, for provenance."
+    },
+    "baseUrl": {
+      "type": "string",
+      "description": "The origin the captures were taken from."
+    },
+    "device": {
+      "type": "string",
+      "description": "The device profile captured at. The surface's cards are measured at 390px wide, so iphone-14 is the default.",
+      "default": "iphone-14"
+    },
+    "items": {
+      "type": "object",
+      "description": "Keyed by ruleable id -- the id of an entry in the record's axes[] or openItems[]. For a compares[] item, key each option as '<id>#a' or '<id>#b'; an option's own `visual` field wins over its manifest entry.",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "file": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Leaf file name inside the visuals/ directory, or null when no capture exists. A compare option may name a static .html wireframe; the server sends it with a sandbox CSP and the page frames it with sandbox=\"\"."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Required in spirit when file is null: why there is no picture. 'No picture by design' is a valid reason; silence is not."
+          },
+          "selector": {
+            "type": "string",
+            "description": "The CSS selector the capture was resolved from. Kept so a stale capture can be re-taken without guessing."
+          },
+          "renderedText": {
+            "type": "string",
+            "description": "The text the element actually showed when captured. This is what lets a reader tell a stale screenshot from a current one."
+          },
+          "capturedAt": {
+            "type": "string"
+          },
+          "sourceUrl": {
+            "type": "string"
+          },
+          "width": {
+            "type": "integer"
+          },
+          "height": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+}

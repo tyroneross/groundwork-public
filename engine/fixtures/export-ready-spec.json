@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 3,
+  "id": "spec-export-smoke",
+  "productName": "Export Smoke",
+  "productDescription": "Verify that packaged Groundwork can publish both derived adapter formats.",
+  "platformTarget": "web",
+  "platformSurfaces": [
+    {
+      "id": "surface-web",
+      "platform": "web",
+      "role": "primary",
+      "name": "Web",
+      "interactionModes": ["pointer"],
+      "featureIds": ["feature-export"],
+      "provenance": "decided"
+    }
+  ],
+  "features": [
+    {
+      "id": "feature-export",
+      "title": "Export derived artifacts",
+      "surface": "tool",
+      "needIds": [],
+      "acceptanceCriteria": ["Both adapters publish deterministic managed trees."]
+    }
+  ],
+  "architecture": {
+    "components": [
+      {
+        "id": "component-exporter",
+        "name": "Derived exporter",
+        "kind": "library",
+        "featureIds": ["feature-export"],
+        "owner": "groundwork",
+        "provenance": "decided"
+      }
+    ],
+    "contracts": [],
+    "relationships": [],
+    "flows": [],
+    "specDependencies": []
+  },
+  "governance": {
+    "constraints": ["Groundwork remains canonical."],
+    "decisions": [],
+    "owners": ["groundwork"]
+  },
+  "changeSet": {
+    "id": "change-export-smoke",
+    "current": [],
+    "proposed": [
+      {
+        "id": "proposed-export",
+        "target": {
+          "specId": "spec-export-smoke",
+          "kind": "component",
+          "id": "component-exporter"
+        },
+        "summary": "Publish deterministic, overwrite-safe derived artifacts.",
+        "provenance": "decided",
+        "evidenceRefs": []
+      }
+    ],
+    "verified": []
+  }
+}

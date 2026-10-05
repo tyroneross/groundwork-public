@@ -1,0 +1,1059 @@
+{
+  "url": "https://example.com/sample",
+  "route": "/projects/showcase/",
+  "sensors": {
+    "visualPatterns": [
+      {
+        "category": "button",
+        "totalElements": 1,
+        "distinctPatterns": 1,
+        "groups": [
+          {
+            "patternKey": "backgroundColor=rgba(0, 0, 0, 0)|color=oklch(0.705 0.015 286.067)|borderRadius=|",
+            "count": 1,
+            "elements": [
+              {
+                "selector": "#theme-toggle-button",
+                "text": ""
+              }
+            ],
+            "styleFingerprint": {
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "oklch(0.705 0.015 286.067)",
+              "borderRadius": "",
+              "padding": "",
+              "fontSize": "",
+              "fontWeight": "",
+              "borderWidth": "",
+              "borderColor": ""
+            }
+          }
+        ],
+        "dominant": {
+          "patternKey": "backgroundColor=rgba(0, 0, 0, 0)|color=oklch(0.705 0.015 286.067)|borderRadius=|",
+          "count": 1,
+          "elements": [
+            {
+              "selector": "#theme-toggle-button",
+              "text": ""
+            }
+          ],
+          "styleFingerprint": {
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "oklch(0.705 0.015 286.067)",
+            "borderRadius": "",
+            "padding": "",
+            "fontSize": "",
+            "fontWeight": "",
+            "borderWidth": "",
+            "borderColor": ""
+          }
+        }
+      },
+      {
+        "category": "link",
+        "totalElements": 17,
+        "distinctPatterns": 2,
+        "groups": [
+          {
+            "patternKey": "backgroundColor=rgba(0, 0, 0, 0)|color=oklch(0.705 0.015 286.067)|borderRadius=|",
+            "count": 15,
+            "elements": [
+              {
+                "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-500:nth-of-type(1)",
+                "text": "Sample content"
+              },
+              {
+                "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-500:nth-of-type(3)",
+                "text": "Sample content"
+              },
+              {
+                "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-500:nth-of-type(4)",
+                "text": "Sample content"
+              },
+              {
+                "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-500:nth-of-type(5)",
+                "text": "Sample content"
+              },
+              {
+                "selector": "main.max-w-6xl > div.max-w-6xl > a.flex",
+                "text": "Sample content"
+              }
+            ],
+            "styleFingerprint": {
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "oklch(0.705 0.015 286.067)",
+              "borderRadius": "",
+              "padding": "",
+              "fontSize": "",
+              "fontWeight": "",
+              "borderWidth": "",
+              "borderColor": ""
+            }
+          },
+          {
+            "patternKey": "backgroundColor=rgba(0, 0, 0, 0)|color=oklch(0.967 0.001 286.375)|borderRadius=|",
+            "count": 2,
+            "elements": [
+              {
+                "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(1) > a.flex",
+                "text": "Sample content"
+              },
+              {
+                "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-900:nth-of-type(2)",
+                "text": "Sample content"
+              }
+            ],
+            "styleFingerprint": {
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "oklch(0.967 0.001 286.375)",
+              "borderRadius": "",
+              "padding": "",
+              "fontSize": "",
+              "fontWeight": "",
+              "borderWidth": "",
+              "borderColor": ""
+            }
+          }
+        ],
+        "dominant": {
+          "patternKey": "backgroundColor=rgba(0, 0, 0, 0)|color=oklch(0.705 0.015 286.067)|borderRadius=|",
+          "count": 15,
+          "elements": [
+            {
+              "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-500:nth-of-type(1)",
+              "text": "Sample content"
+            },
+            {
+              "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-500:nth-of-type(3)",
+              "text": "Sample content"
+            },
+            {
+              "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-500:nth-of-type(4)",
+              "text": "Sample content"
+            },
+            {
+              "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-500:nth-of-type(5)",
+              "text": "Sample content"
+            },
+            {
+              "selector": "main.max-w-6xl > div.max-w-6xl > a.flex",
+              "text": "Sample content"
+            }
+          ],
+          "styleFingerprint": {
+            "backgroundColor": "rgba(0, 0, 0, 0)",
+            "color": "oklch(0.705 0.015 286.067)",
+            "borderRadius": "",
+            "padding": "",
+            "fontSize": "",
+            "fontWeight": "",
+            "borderWidth": "",
+            "borderColor": ""
+          }
+        }
+      },
+      {
+        "category": "heading",
+        "totalElements": 7,
+        "distinctPatterns": 3,
+        "groups": [
+          {
+            "patternKey": "backgroundColor=rgba(0, 0, 0, 0)|color=rgb(255, 255, 255)|borderRadius=|padding=",
+            "count": 5,
+            "elements": [
+              {
+                "selector": "#status",
+                "text": "Sample content"
+              },
+              {
+                "selector": "#the-problem",
+                "text": "Sample content"
+              },
+              {
+                "selector": "#what-i-built",
+                "text": "Sample content"
+              },
+              {
+                "selector": "#impact",
+                "text": "Sample content"
+              },
+              {
+                "selector": "#how-it-works",
+                "text": "Sample content"
+              }
+            ],
+            "styleFingerprint": {
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "rgb(255, 255, 255)",
+              "borderRadius": "",
+              "padding": "",
+              "fontSize": "24",
+              "fontWeight": "700",
+              "borderWidth": "",
+              "borderColor": ""
+            }
+          },
+          {
+            "patternKey": "backgroundColor=rgba(0, 0, 0, 0)|color=oklch(0.967 0.001 286.375)|borderRadius=|",
+            "count": 1,
+            "elements": [
+              {
+                "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > article.flex-1 > header.mb-10 > h1.text-3xl",
+                "text": "Sample content"
+              }
+            ],
+            "styleFingerprint": {
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "oklch(0.967 0.001 286.375)",
+              "borderRadius": "",
+              "padding": "",
+              "fontSize": "36",
+              "fontWeight": "700",
+              "borderWidth": "",
+              "borderColor": ""
+            }
+          },
+          {
+            "patternKey": "backgroundColor=rgba(0, 0, 0, 0)|color=oklch(0.705 0.015 286.067)|borderRadius=|",
+            "count": 1,
+            "elements": [
+              {
+                "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > aside.hidden > div.sticky > h4.text-sm",
+                "text": "Sample content"
+              }
+            ],
+            "styleFingerprint": {
+              "backgroundColor": "rgba(0, 0, 0, 0)",
+              "color": "oklch(0.705 0.015 286.067)",
+              "borderRadius": "",
+              "padding": "",
+              "fontSize": "14",
+              "fontWeight": "600",
+              "borderWidth": "",
+              "borderColor": ""
+            }
+          }
+        ]
+      }
+    ],
+    "navigation": {
+      "navs": [
+        {
+          "rootSelector": "nav.bg-white",
+          "roots": [
+            {
+              "label": "Sample content",
+              "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(1) > a.flex",
+              "depth": 4,
+              "children": []
+            },
+            {
+              "label": "Sample content",
+              "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-500:nth-of-type(1)",
+              "depth": 4,
+              "children": []
+            },
+            {
+              "label": "Sample content",
+              "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-900:nth-of-type(2)",
+              "depth": 4,
+              "children": []
+            },
+            {
+              "label": "Sample content",
+              "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-500:nth-of-type(3)",
+              "depth": 4,
+              "children": []
+            },
+            {
+              "label": "Sample content",
+              "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-500:nth-of-type(4)",
+              "depth": 4,
+              "children": []
+            },
+            {
+              "label": "Sample content",
+              "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-500:nth-of-type(5)",
+              "depth": 4,
+              "children": []
+            }
+          ],
+          "depth": 2
+        },
+        {
+          "rootSelector": "main.max-w-6xl > div.max-w-6xl > div.flex > aside.hidden > div.sticky > nav.toc-nav",
+          "roots": [
+            {
+              "label": "Sample content",
+              "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > aside.hidden > div.sticky > nav.toc-nav > div.toc-section:nth-of-type(1) > a.toc-h2",
+              "depth": 2,
+              "children": []
+            },
+            {
+              "label": "Sample content",
+              "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > aside.hidden > div.sticky > nav.toc-nav > div.toc-section:nth-of-type(2) > a.toc-h2",
+              "depth": 2,
+              "children": []
+            },
+            {
+              "label": "Sample content",
+              "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > aside.hidden > div.sticky > nav.toc-nav > div.toc-section:nth-of-type(3) > a.toc-h2",
+              "depth": 2,
+              "children": []
+            },
+            {
+              "label": "Sample content",
+              "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > aside.hidden > div.sticky > nav.toc-nav > div.toc-section:nth-of-type(4) > a.toc-h2",
+              "depth": 2,
+              "children": []
+            },
+            {
+              "label": "Sample content",
+              "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > aside.hidden > div.sticky > nav.toc-nav > div.toc-section:nth-of-type(5) > a.toc-h2",
+              "depth": 2,
+              "children": []
+            }
+          ],
+          "depth": 2
+        },
+        {
+          "rootSelector": "footer.mt-16 > div.flex > nav.flex",
+          "roots": [
+            {
+              "label": "Sample content",
+              "selector": "footer.mt-16 > div.flex > nav.flex > a.text-zinc-600:nth-of-type(1)",
+              "depth": 1,
+              "children": []
+            },
+            {
+              "label": "Sample content",
+              "selector": "footer.mt-16 > div.flex > nav.flex > a.text-zinc-600:nth-of-type(2)",
+              "depth": 1,
+              "children": []
+            },
+            {
+              "label": "Sample content",
+              "selector": "footer.mt-16 > div.flex > nav.flex > a.text-zinc-600:nth-of-type(3)",
+              "depth": 1,
+              "children": []
+            },
+            {
+              "label": "Sample content",
+              "selector": "footer.mt-16 > div.flex > nav.flex > a.text-zinc-600:nth-of-type(4)",
+              "depth": 1,
+              "children": []
+            }
+          ],
+          "depth": 2
+        }
+      ],
+      "roots": [
+        {
+          "label": "Sample content",
+          "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(1) > a.flex",
+          "depth": 4,
+          "children": []
+        },
+        {
+          "label": "Sample content",
+          "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-500:nth-of-type(1)",
+          "depth": 4,
+          "children": []
+        },
+        {
+          "label": "Sample content",
+          "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-900:nth-of-type(2)",
+          "depth": 4,
+          "children": []
+        },
+        {
+          "label": "Sample content",
+          "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-500:nth-of-type(3)",
+          "depth": 4,
+          "children": []
+        },
+        {
+          "label": "Sample content",
+          "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-500:nth-of-type(4)",
+          "depth": 4,
+          "children": []
+        },
+        {
+          "label": "Sample content",
+          "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-500:nth-of-type(5)",
+          "depth": 4,
+          "children": []
+        },
+        {
+          "label": "Sample content",
+          "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > aside.hidden > div.sticky > nav.toc-nav > div.toc-section:nth-of-type(1) > a.toc-h2",
+          "depth": 2,
+          "children": []
+        },
+        {
+          "label": "Sample content",
+          "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > aside.hidden > div.sticky > nav.toc-nav > div.toc-section:nth-of-type(2) > a.toc-h2",
+          "depth": 2,
+          "children": []
+        },
+        {
+          "label": "Sample content",
+          "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > aside.hidden > div.sticky > nav.toc-nav > div.toc-section:nth-of-type(3) > a.toc-h2",
+          "depth": 2,
+          "children": []
+        },
+        {
+          "label": "Sample content",
+          "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > aside.hidden > div.sticky > nav.toc-nav > div.toc-section:nth-of-type(4) > a.toc-h2",
+          "depth": 2,
+          "children": []
+        },
+        {
+          "label": "Sample content",
+          "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > aside.hidden > div.sticky > nav.toc-nav > div.toc-section:nth-of-type(5) > a.toc-h2",
+          "depth": 2,
+          "children": []
+        },
+        {
+          "label": "Sample content",
+          "selector": "footer.mt-16 > div.flex > nav.flex > a.text-zinc-600:nth-of-type(1)",
+          "depth": 1,
+          "children": []
+        },
+        {
+          "label": "Sample content",
+          "selector": "footer.mt-16 > div.flex > nav.flex > a.text-zinc-600:nth-of-type(2)",
+          "depth": 1,
+          "children": []
+        },
+        {
+          "label": "Sample content",
+          "selector": "footer.mt-16 > div.flex > nav.flex > a.text-zinc-600:nth-of-type(3)",
+          "depth": 1,
+          "children": []
+        },
+        {
+          "label": "Sample content",
+          "selector": "footer.mt-16 > div.flex > nav.flex > a.text-zinc-600:nth-of-type(4)",
+          "depth": 1,
+          "children": []
+        }
+      ],
+      "depth": 2,
+      "totalLinks": 17,
+      "byDepth": [
+        15
+      ]
+    },
+    "componentCensus": {
+      "byTag": {
+        "button": 1,
+        "a": 17,
+        "pre": 1,
+        "h1": 1,
+        "h2": 5,
+        "h4": 1,
+        "header": 1,
+        "nav": 3,
+        "main": 1,
+        "aside": 1,
+        "footer": 1,
+        "p": 7,
+        "span": 34
+      },
+      "byRole": {},
+      "withHandlers": 18,
+      "withoutHandlers": 56,
+      "orphanInteractive": [],
+      "byComponent": {
+        "button": 1,
+        "a": 17,
+        "pre": 1,
+        "h1": 1,
+        "h2": 5,
+        "h4": 1,
+        "header": 1,
+        "nav": 3,
+        "main": 1,
+        "aside": 1,
+        "footer": 1,
+        "p": 7,
+        "span": 34
+      },
+      "topComponents": [
+        {
+          "name": "Sample content",
+          "count": 34,
+          "selectors": [
+            "nav.bg-white > div.max-w-6xl > div.flex > div.flex > a.flex > span.font-semibold",
+            "nav.bg-white > div.max-w-6xl > div.flex > div.flex > a.flex > span.font-semibold > span.text-zinc-900",
+            "nav.bg-white > div.max-w-6xl > div.flex > div.flex > a.flex > span.font-semibold > span.text-indigo-500",
+            "nav.bg-white > div.max-w-6xl > div.flex > div.flex > a.flex > span.font-semibold > span.text-zinc-900",
+            "main.max-w-6xl > div.max-w-6xl > div.flex > aside.hidden > div.sticky > nav.toc-nav > div.toc-section > a.toc-h2 > span.text-zinc-400"
+          ]
+        },
+        {
+          "name": "Sample content",
+          "count": 17,
+          "selectors": [
+            "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(1) > a.flex",
+            "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-500:nth-of-type(1)",
+            "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-900:nth-of-type(2)",
+            "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-500:nth-of-type(3)",
+            "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-500:nth-of-type(4)"
+          ]
+        },
+        {
+          "name": "Sample content",
+          "count": 7,
+          "selectors": [
+            "main.max-w-6xl > div.max-w-6xl > div.flex > article.flex-1 > header.mb-10 > p.text-xl",
+            "main.max-w-6xl > div.max-w-6xl > div.flex > article.flex-1 > div.prose > p",
+            "main.max-w-6xl > div.max-w-6xl > div.flex > article.flex-1 > div.prose > p",
+            "main.max-w-6xl > div.max-w-6xl > div.flex > article.flex-1 > div.prose > p",
+            "main.max-w-6xl > div.max-w-6xl > div.flex > article.flex-1 > div.prose > p"
+          ]
+        },
+        {
+          "name": "Sample content",
+          "count": 5,
+          "selectors": [
+            "#status",
+            "#the-problem",
+            "#what-i-built",
+            "#impact",
+            "#how-it-works"
+          ]
+        },
+        {
+          "name": "Sample content",
+          "count": 3,
+          "selectors": [
+            "nav.bg-white",
+            "main.max-w-6xl > div.max-w-6xl > div.flex > aside.hidden > div.sticky > nav.toc-nav",
+            "footer.mt-16 > div.flex > nav.flex"
+          ]
+        },
+        {
+          "name": "Sample content",
+          "count": 1,
+          "selectors": [
+            "#theme-toggle-button"
+          ]
+        },
+        {
+          "name": "Sample content",
+          "count": 1,
+          "selectors": [
+            "main.max-w-6xl > div.max-w-6xl > div.flex > article.flex-1 > div.prose > pre.astro-code"
+          ]
+        },
+        {
+          "name": "Sample content",
+          "count": 1,
+          "selectors": [
+            "main.max-w-6xl > div.max-w-6xl > div.flex > article.flex-1 > header.mb-10 > h1.text-3xl"
+          ]
+        },
+        {
+          "name": "Sample content",
+          "count": 1,
+          "selectors": [
+            "main.max-w-6xl > div.max-w-6xl > div.flex > aside.hidden > div.sticky > h4.text-sm"
+          ]
+        },
+        {
+          "name": "Sample content",
+          "count": 1,
+          "selectors": [
+            "main.max-w-6xl > div.max-w-6xl > div.flex > article.flex-1 > header.mb-10"
+          ]
+        },
+        {
+          "name": "Sample content",
+          "count": 1,
+          "selectors": [
+            "main.max-w-6xl"
+          ]
+        },
+        {
+          "name": "Sample content",
+          "count": 1,
+          "selectors": [
+            "main.max-w-6xl > div.max-w-6xl > div.flex > aside.hidden"
+          ]
+        },
+        {
+          "name": "Sample content",
+          "count": 1,
+          "selectors": [
+            "footer.mt-16"
+          ]
+        }
+      ]
+    },
+    "interactionMap": {
+      "total": 18,
+      "withHandlers": 18,
+      "withoutHandlers": 0,
+      "missingHandlers": [],
+      "disabled": 0,
+      "formCount": 0
+    },
+    "contrast": {
+      "totalChecked": 1,
+      "pass": 1,
+      "fail": 0,
+      "passAAA": 1,
+      "failing": [],
+      "minRatio": {
+        "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > article.flex-1 > div.prose > pre.astro-code",
+        "text": "Sample content",
+        "ratio": 11.5,
+        "pass": "AAA",
+        "fontSize": 16,
+        "largeText": false
+      },
+      "byTone": {
+        "lightOnDark": 1,
+        "darkOnLight": 0
+      }
+    },
+    "typography": {
+      "rows": [
+        {
+          "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(1) > a.flex",
+          "family": "<unspecified>",
+          "size_px": 16,
+          "weight": 400,
+          "line_height": "normal",
+          "count": 25
+        },
+        {
+          "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > article.flex-1 > div.prose > pre.astro-code > code > span.line",
+          "family": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace",
+          "size_px": 14,
+          "weight": 400,
+          "line_height": 1.71,
+          "count": 14
+        },
+        {
+          "selector": "footer.mt-16 > div.flex > p",
+          "family": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+          "size_px": 14,
+          "weight": 400,
+          "line_height": 1.43,
+          "count": 10
+        },
+        {
+          "selector": "#status",
+          "family": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+          "size_px": 24,
+          "weight": 700,
+          "line_height": 1.33,
+          "count": 5
+        },
+        {
+          "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > article.flex-1 > div.prose > p",
+          "family": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+          "size_px": 16,
+          "weight": 400,
+          "line_height": 1.75,
+          "count": 5
+        },
+        {
+          "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > aside.hidden > div.sticky > nav.toc-nav > div.toc-section > a.toc-h2 > span.text-zinc-400",
+          "family": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+          "size_px": 12,
+          "weight": 400,
+          "line_height": 1.33,
+          "count": 5
+        },
+        {
+          "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex > a.flex > span.font-semibold",
+          "family": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+          "size_px": 16,
+          "weight": 600,
+          "line_height": 1.5,
+          "count": 4
+        },
+        {
+          "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > article.flex-1 > header.mb-10 > h1.text-3xl",
+          "family": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+          "size_px": 36,
+          "weight": 700,
+          "line_height": 1.11,
+          "count": 1
+        },
+        {
+          "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > aside.hidden > div.sticky > h4.text-sm",
+          "family": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+          "size_px": 14,
+          "weight": 600,
+          "line_height": 1.43,
+          "count": 1
+        },
+        {
+          "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > article.flex-1 > header.mb-10 > p.text-xl",
+          "family": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+          "size_px": 20,
+          "weight": 400,
+          "line_height": 1.4,
+          "count": 1
+        },
+        {
+          "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > article.flex-1 > header.mb-10 > div.flex > span.text-xs",
+          "family": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+          "size_px": 12,
+          "weight": 500,
+          "line_height": 1.33,
+          "count": 1
+        }
+      ],
+      "font_loading_pending": false
+    },
+    "breakpoints": [
+      {
+        "type": "other",
+        "rule_count": 3,
+        "raw_condition": "(prefers-reduced-motion: reduce)"
+      }
+    ],
+    "motion": {
+      "transitions": [],
+      "keyframes": [
+        {
+          "name": "Sample content",
+          "step_count": 1,
+          "used_by_selectors": []
+        }
+      ],
+      "reduced_motion_overrides": [
+        {
+          "selector": ".card-hover",
+          "overrides": [
+            "transition-behavior: normal",
+            "transition-duration: 0s",
+            "transition-timing-function: ease",
+            "transition-delay: 0s",
+            "transition-property: none"
+          ]
+        },
+        {
+          "selector": ".tag",
+          "overrides": [
+            "transition-behavior: normal",
+            "transition-duration: 0s",
+            "transition-timing-function: ease",
+            "transition-property: none",
+            "transition-delay: 0s"
+          ]
+        }
+      ]
+    },
+    "hierarchy": {
+      "h1": {
+        "count": 1,
+        "all_texts": [
+          "Showcase"
+        ],
+        "first_text": "Showcase"
+      },
+      "h2": {
+        "count": 5,
+        "all_texts": [
+          "Status",
+          "The Problem",
+          "What I Built",
+          "Impact",
+          "How It Works"
+        ],
+        "first_text": "Status"
+      },
+      "h3": {
+        "count": 0,
+        "all_texts": []
+      },
+      "h4": {
+        "count": 1,
+        "all_texts": [
+          "On this page"
+        ],
+        "first_text": "On this page"
+      },
+      "h5": {
+        "count": 0,
+        "all_texts": []
+      },
+      "h6": {
+        "count": 0,
+        "all_texts": []
+      },
+      "landmarks": {
+        "nav": 3,
+        "main": 1,
+        "aside": 1,
+        "header": 1,
+        "footer": 1,
+        "section": 0,
+        "form": 0
+      },
+      "aria_headings": [],
+      "level_skips": [
+        {
+          "from": "h2",
+          "to": "h4",
+          "at_position": 6
+        }
+      ]
+    },
+    "interactionStates": {
+      "states": [
+        {
+          "selector": ".card-hover",
+          "state": "hover",
+          "properties": {
+            "border-top-color": "rgba(59, 130, 246, 0.2)",
+            "border-right-color": "rgba(59, 130, 246, 0.2)",
+            "border-bottom-color": "rgba(59, 130, 246, 0.2)",
+            "border-left-color": "rgba(59, 130, 246, 0.2)",
+            "transform": "translateY(-1px)",
+            "box-shadow": "rgba(59, 130, 246, 0.2) 0px 6px 24px -6px, rgba(0, 0, 0, 0.04) 0px 2px 8px -2px"
+          }
+        },
+        {
+          "selector": ".card-hover",
+          "state": "active",
+          "properties": {
+            "transform": "scale(0.99)"
+          }
+        },
+        {
+          "selector": ".dark .card-hover",
+          "state": "hover",
+          "properties": {
+            "border-top-color": "rgba(96, 165, 250, 0.3)",
+            "border-right-color": "rgba(96, 165, 250, 0.3)",
+            "border-bottom-color": "rgba(96, 165, 250, 0.3)",
+            "border-left-color": "rgba(96, 165, 250, 0.3)",
+            "box-shadow": "rgba(96, 165, 250, 0.25) 0px 6px 24px -6px, rgba(0, 0, 0, 0.2) 0px 2px 8px -2px"
+          }
+        },
+        {
+          "selector": ".card-hover",
+          "state": "hover",
+          "properties": {
+            "background-color": "rgba(59, 130, 246, 0.06)",
+            "border-top-color": "rgba(59, 130, 246, 0.15)",
+            "border-right-color": "rgba(59, 130, 246, 0.15)",
+            "border-bottom-color": "rgba(59, 130, 246, 0.15)",
+            "border-left-color": "rgba(59, 130, 246, 0.15)"
+          }
+        },
+        {
+          "selector": ".dark .card-hover",
+          "state": "hover",
+          "properties": {
+            "background-color": "rgba(96, 165, 250, 0.12)",
+            "border-top-color": "rgba(96, 165, 250, 0.25)",
+            "border-right-color": "rgba(96, 165, 250, 0.25)",
+            "border-bottom-color": "rgba(96, 165, 250, 0.25)",
+            "border-left-color": "rgba(96, 165, 250, 0.25)"
+          }
+        },
+        {
+          "selector": ".card-hover",
+          "state": "focus-visible",
+          "properties": {
+            "outline-offset": "2px",
+            "outline-color": "rgb(59, 130, 246)",
+            "outline-style": "solid",
+            "outline-width": "2px"
+          }
+        },
+        {
+          "selector": "a",
+          "state": "focus-visible",
+          "properties": {
+            "outline-offset": "2px",
+            "outline-color": "rgb(59, 130, 246)",
+            "outline-style": "solid",
+            "outline-width": "2px"
+          }
+        },
+        {
+          "selector": "button",
+          "state": "focus-visible",
+          "properties": {
+            "outline-offset": "2px",
+            "outline-color": "rgb(59, 130, 246)",
+            "outline-style": "solid",
+            "outline-width": "2px"
+          }
+        },
+        {
+          "selector": ".dark .card-hover",
+          "state": "focus-visible",
+          "properties": {
+            "outline-color": "rgb(96, 165, 250)"
+          }
+        },
+        {
+          "selector": ".dark a",
+          "state": "focus-visible",
+          "properties": {
+            "outline-color": "rgb(96, 165, 250)"
+          }
+        },
+        {
+          "selector": ".dark button",
+          "state": "focus-visible",
+          "properties": {
+            "outline-color": "rgb(96, 165, 250)"
+          }
+        },
+        {
+          "selector": ".card-hover",
+          "state": "hover",
+          "properties": {
+            "transform": "none"
+          }
+        },
+        {
+          "selector": ".card-hover",
+          "state": "active",
+          "properties": {
+            "transform": "none"
+          }
+        },
+        {
+          "selector": ".filter-pill:not(.active)",
+          "state": "hover",
+          "properties": {
+            "background-color": "rgb(228, 228, 231)",
+            "border-top-color": "rgb(212, 212, 216)",
+            "border-right-color": "rgb(212, 212, 216)",
+            "border-bottom-color": "rgb(212, 212, 216)",
+            "border-left-color": "rgb(212, 212, 216)"
+          }
+        },
+        {
+          "selector": ".dark .filter-pill:not(.active)",
+          "state": "hover",
+          "properties": {
+            "background-color": "rgb(63, 63, 70)",
+            "border-top-color": "rgb(82, 82, 91)",
+            "border-right-color": "rgb(82, 82, 91)",
+            "border-bottom-color": "rgb(82, 82, 91)",
+            "border-left-color": "rgb(82, 82, 91)"
+          }
+        },
+        {
+          "selector": ".prose[data-astro-cid-ovxcmftc] a[data-astro-cid-ovxcmftc]",
+          "state": "hover",
+          "properties": {
+            "color": "rgb(29, 78, 216)"
+          }
+        },
+        {
+          "selector": ".dark .prose[data-astro-cid-ovxcmftc] a[data-astro-cid-ovxcmftc]",
+          "state": "hover",
+          "properties": {
+            "color": "rgb(147, 197, 253)"
+          }
+        }
+      ],
+      "findings": [
+        {
+          "selector": "#theme-toggle-button",
+          "missing": "focus_indicator"
+        },
+        {
+          "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(1) > a.flex",
+          "missing": "focus_indicator"
+        },
+        {
+          "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-500:nth-of-type(1)",
+          "missing": "focus_indicator"
+        },
+        {
+          "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-900:nth-of-type(2)",
+          "missing": "focus_indicator"
+        },
+        {
+          "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-500:nth-of-type(3)",
+          "missing": "focus_indicator"
+        },
+        {
+          "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-500:nth-of-type(4)",
+          "missing": "focus_indicator"
+        },
+        {
+          "selector": "nav.bg-white > div.max-w-6xl > div.flex > div.flex:nth-of-type(2) > a.text-zinc-500:nth-of-type(5)",
+          "missing": "focus_indicator"
+        },
+        {
+          "selector": "main.max-w-6xl > div.max-w-6xl > a.flex",
+          "missing": "focus_indicator"
+        },
+        {
+          "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > aside.hidden > div.sticky > nav.toc-nav > div.toc-section:nth-of-type(1) > a.toc-h2",
+          "missing": "focus_indicator"
+        },
+        {
+          "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > aside.hidden > div.sticky > nav.toc-nav > div.toc-section:nth-of-type(2) > a.toc-h2",
+          "missing": "focus_indicator"
+        },
+        {
+          "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > aside.hidden > div.sticky > nav.toc-nav > div.toc-section:nth-of-type(3) > a.toc-h2",
+          "missing": "focus_indicator"
+        },
+        {
+          "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > aside.hidden > div.sticky > nav.toc-nav > div.toc-section:nth-of-type(4) > a.toc-h2",
+          "missing": "focus_indicator"
+        },
+        {
+          "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > aside.hidden > div.sticky > nav.toc-nav > div.toc-section:nth-of-type(5) > a.toc-h2",
+          "missing": "focus_indicator"
+        },
+        {
+          "selector": "main.max-w-6xl > div.max-w-6xl > div.flex > article.flex-1 > header.mb-10 > div.flex:nth-of-type(2) > a.flex",
+          "missing": "focus_indicator"
+        },
+        {
+          "selector": "footer.mt-16 > div.flex > nav.flex > a.text-zinc-600:nth-of-type(1)",
+          "missing": "focus_indicator"
+        },
+        {
+          "selector": "footer.mt-16 > div.flex > nav.flex > a.text-zinc-600:nth-of-type(2)",
+          "missing": "focus_indicator"
+        },
+        {
+          "selector": "footer.mt-16 > div.flex > nav.flex > a.text-zinc-600:nth-of-type(3)",
+          "missing": "focus_indicator"
+        },
+        {
+          "selector": "footer.mt-16 > div.flex > nav.flex > a.text-zinc-600:nth-of-type(4)",
+          "missing": "focus_indicator"
+        }
+      ]
+    },
+    "oneLiners": [
+      "link: 17 total, 2 distinct patterns (15/17 share dominant pattern)",
+      "heading: 7 total, 3 distinct patterns",
+      "Nav: 3 nav region(s), max depth 2, 17 total links",
+      "Typography: 11 distinct fingerprints, dominant 16px/400 (25 elements)",
+      "Motion: 0 transition(s), 1 keyframe(s), 2 reduced-motion override(s)",
+      "Hierarchy: h1\u00d71, h2\u00d75, h3\u00d70, 1 level skip(s)",
+      "Interaction states: 17 declared (18 missing focus indicator)"
+    ],
+    "semanticState": {
+      "pageIntent": "error",
+      "states": [],
+      "availableActions": [
+        "back"
+      ]
+    }
+  }
+}

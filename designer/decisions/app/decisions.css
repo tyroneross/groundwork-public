@@ -1,0 +1,555 @@
+/* Groundwork guided-decision surface.
+ *
+ * Every rule below answers a specific piece of feedback measured on the surface
+ * this was ported from. The two that shaped it most:
+ *
+ *   "too much unnecessary info and no clear visual distinction for open
+ *    decisions"  -> the open view carries cards and nothing else. No record bar,
+ *    no stamps, no counts, no explanatory prose above the cards. One quiet line
+ *    at the foot is the only thing that reports save state in this view.
+ *
+ *   "I don't know what this refers to, where it is in the UI or what it looks
+ *    like"  -> every card shows the thing being decided before it asks about it.
+ *
+ * GROUPING (Gestalt): one border around a group, dividers BETWEEN the rows.
+ * A border per row reads as a list of unrelated boxes. And the divider is an
+ * inset shadow on the BUTTON, never a border on the <li> -- the row's own
+ * background (picked, ruled) paints over an <li> border and the divider
+ * disappears exactly where the eye is looking.
+ *
+ * CONTRAST: every text pair below is >= 4.5:1 in BOTH themes and every
+ * meaning-carrying non-text pair >= 3:1, verified by
+ * designer/tests/test_decisions_contrast.py, which parses THIS file and
+ * computes the ratios. It never asserts a hex literal, so a re-theme is graded
+ * rather than broken.
+ */
+
+:root {
+  --bg:#F5F6F8; --surface:#FFFFFF; --surface-2:#FAFBFC;
+  --border:#E0E4EA; --border-strong:#858D9B;
+  --text:#171B21; --text-muted:#5B6472;
+  --accent:#2F52D6; --accent-soft:#EAEEFC; --accent-strong:#1E3AAE;
+  --good:#26694A; --good-soft:#E7F3ED;
+  --danger:#A5393B; --danger-soft:#F7E9E9;
+  --warn:#8A5710; --warn-soft:#FBF0DF;
+  --shadow:rgba(20,24,30,.10);
+
+  /* A project supplies its own face by setting --font-sans on :root; the stack
+   * always ends in a generic family, so an absent font degrades instead of
+   * silently resolving to something unintended. */
+  --font-sans:ui-sans-serif,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --font-mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+
+/* Dark is the system default when the user asks for it, and [data-theme] is the
+ * explicit override. Both are required: the media query alone cannot be
+ * toggled, and the attribute alone ignores the OS. */
+@media (prefers-color-scheme:dark) {
+  :root:not([data-theme="light"]) {
+    --bg:#14161A; --surface:#1B1E24; --surface-2:#20242B;
+    --border:#2E333C; --border-strong:#68707D;
+    --text:#E9ECF1; --text-muted:#A3ACBA;
+    --accent:#8FA8FF; --accent-soft:#232A40; --accent-strong:#B3C4FF;
+    --good:#6FD3A4; --good-soft:#1B2E26;
+    --danger:#F29497; --danger-soft:#332123;
+    --warn:#E5B871; --warn-soft:#2E2617;
+    --shadow:rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"] {
+  --bg:#14161A; --surface:#1B1E24; --surface-2:#20242B;
+  --border:#2E333C; --border-strong:#68707D;
+  --text:#E9ECF1; --text-muted:#A3ACBA;
+  --accent:#8FA8FF; --accent-soft:#232A40; --accent-strong:#B3C4FF;
+  --good:#6FD3A4; --good-soft:#1B2E26;
+  --danger:#F29497; --danger-soft:#332123;
+  --warn:#E5B871; --warn-soft:#2E2617;
+  --shadow:rgba(0,0,0,.45);
+}
+
+* { box-sizing:border-box; }
+
+body {
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:var(--font-sans); font-size:15px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* minmax(0,1fr), never 1fr. `1fr` is `minmax(auto,1fr)`, so a column refuses to
+ * shrink below its min-content -- a 390px preview frame then forces the page
+ * wider than a 390px viewport and puts a horizontal scrollbar on the one
+ * viewport that cannot afford one. */
+.shell { display:grid; grid-template-columns:minmax(0,1fr); gap:0; align-items:start; }
+.shell.has-preview { grid-template-columns:minmax(320px,0.62fr) minmax(0,1.38fr); }
+@media (max-width:1180px) { .shell.has-preview { grid-template-columns:minmax(0,1fr); } }
+
+.col-decide { padding:28px 20px 120px; max-width:860px; width:100%; }
+.col-preview {
+  position:sticky; top:0; height:100vh; border-left:1px solid var(--border);
+  background:var(--surface-2); display:flex; flex-direction:column; min-width:0;
+}
+/* `display:flex` above outranks the UA `[hidden]` rule, so without this the
+ * preview column rendered -- empty, "No live build" -- on every record that has
+ * no --proxy origin, including at the foot of the phone layout. */
+.col-preview[hidden] { display:none; }
+@media (max-width:1180px) {
+  .col-preview { position:static; height:auto; border-left:none; border-top:1px solid var(--border); }
+}
+
+/* ------------------------------------------------------------------ views */
+/* Three views, one document. The default is `open` -- the whole point of the
+ * surface is that what is waiting for you is the first thing you see. */
+.view { display:none; }
+body[data-view="open"]      .view-open,
+body[data-view="ruled"]     .view-ruled,
+body[data-view="reference"] .view-reference,
+body[data-view="compare"]   .view-compare,
+body[data-view="selected"]  .view-selected { display:block; }
+/* A and B side by side needs more width than a column of cards does. */
+body[data-view="compare"] .col-decide,
+body[data-view="selected"] .col-decide { max-width:1180px; }
+body.has-groups .c-jump, body.has-groups .c-index { display:none; }
+
+.tabs {
+  display:flex; gap:4px; border-bottom:1px solid var(--border);
+  padding:0 20px; background:var(--surface); position:sticky; top:0; z-index:5;
+  overflow-x:auto;
+}
+/* Selected nav is weight + a 2px bottom rule. Never a background pill: a filled
+ * shape reads as a button that can be pressed again, not as where you are. */
+.tab {
+  appearance:none; background:none; border:none; cursor:pointer;
+  flex:0 0 auto;
+  font:inherit; color:var(--text-muted); padding:14px 12px; min-height:44px;
+  border-bottom:2px solid transparent; margin-bottom:-1px;
+}
+.tab:hover { color:var(--text); }
+.tab[aria-current="page"] { color:var(--text); font-weight:600; border-bottom-color:var(--text); }
+.tab:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
+.tab-count { color:var(--text-muted); font-weight:400; }
+
+.open-h1 { font-size:20px; line-height:1.3; margin:26px 0 18px; font-weight:600; }
+.open-empty { color:var(--text-muted); }
+
+/* ------------------------------------------------------------------- cards */
+/* One border around the whole stack, dividers between the cards. */
+.open-stack {
+  border:1px solid var(--border); border-radius:12px; background:var(--surface);
+  overflow:hidden;
+}
+.d-card { padding:20px 18px 22px; }
+.d-card + .d-card { box-shadow:inset 0 1px 0 var(--border); }
+
+.d-head { display:flex; gap:10px; align-items:baseline; }
+.d-num {
+  flex:none; min-width:22px; font-variant-numeric:tabular-nums;
+  color:var(--text-muted); font-size:13px; font-weight:600;
+}
+.d-q { font-size:16px; line-height:1.35; margin:0; font-weight:600; }
+
+/* WHAT THIS IS -- the answer to "I don't know what this refers to". A picture
+ * of the element, or the words themselves. It sits ABOVE the question. */
+.d-what { margin:12px 0 0 32px; }
+.d-shot {
+  display:block; max-width:100%; height:auto; border:1px solid var(--border);
+  border-radius:8px; background:var(--surface-2);
+}
+.d-shot-cap { display:block; margin-top:6px; color:var(--text-muted); font-size:12.5px; }
+.d-missing {
+  color:var(--text-muted); font-size:13px; border:1px dashed var(--border-strong);
+  border-radius:8px; padding:10px 12px;
+}
+.d-text-pair { border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+.d-text-cell { padding:10px 12px; }
+.d-text-cell + .d-text-cell { box-shadow:inset 0 1px 0 var(--border); }
+.d-text-k {
+  display:block; font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--text-muted); font-weight:600; margin-bottom:3px;
+}
+.d-text-v { font-family:var(--font-mono); font-size:12.5px; white-space:pre-wrap; word-break:break-word; }
+
+/* Two sentences, ~35 words. The full reason is not thrown away -- it is the
+ * first thing "more" opens. */
+.d-why { margin:10px 0 0 32px; color:var(--text-muted); font-size:14px; }
+.d-more-btn {
+  appearance:none; background:none; border:none; cursor:pointer; font:inherit;
+  color:var(--accent); padding:10px 0 10px 32px; min-height:44px; text-align:left;
+}
+.d-more-btn:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.d-more { margin:0 0 0 32px; color:var(--text-muted); font-size:14px; }
+.d-more dt { font-weight:600; color:var(--text); margin-top:8px; font-size:13px; }
+.d-more dd { margin:2px 0 0; }
+.d-status { color:var(--warn); font-size:13px; }
+
+/* ----------------------------------------------------------------- options */
+/* The control is inline in the card. One container edge, dividers between. */
+.d-opts {
+  list-style:none; margin:14px 0 0 32px; padding:0;
+  border:1px solid var(--border); border-radius:10px; overflow:hidden;
+  background:var(--surface);
+}
+.d-opts li + li > .d-opt { box-shadow:inset 0 1px 0 var(--border); }
+.d-opt {
+  display:block; width:100%; text-align:left; min-height:48px; padding:13px 14px;
+  appearance:none; background:none; border:none; cursor:pointer; font:inherit;
+  color:var(--text);
+}
+.d-opt:hover { background:var(--surface-2); }
+.d-opt:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
+
+/* Selection is an inset rule, not a fill alone: a 3px bar survives a re-theme
+ * and reads at a glance down a column of rows. */
+.d-opt.picked { background:var(--accent-soft); box-shadow:inset 3px 0 0 var(--accent); }
+/* A picked row that is ALSO a divider row needs both shadows. Listing only the
+ * accent here silently deletes the divider above the selected option. */
+.d-opts li + li > .d-opt.picked { box-shadow:inset 3px 0 0 var(--accent), inset 0 1px 0 var(--border); }
+.d-opt-label { display:block; font-weight:600; }
+.d-opt-note { display:block; margin-top:3px; font-size:13px; font-weight:400; color:var(--text-muted); }
+.d-opt.picked .d-opt-note { color:var(--accent-strong); }
+.d-opt-cost { display:block; margin-top:3px; font-size:12.5px; color:var(--warn); }
+
+/* The text field belongs UNDER the option it qualifies, inside the same group,
+ * so it reads as part of that choice rather than a second question. */
+.d-field { padding:12px 14px; background:var(--surface-2); box-shadow:inset 0 1px 0 var(--border); }
+.d-field label { display:block; font-size:13px; color:var(--text-muted); margin-bottom:6px; }
+textarea, input[type="text"] {
+  width:100%; min-height:44px; padding:10px 12px; border:1px solid var(--border-strong);
+  border-radius:8px; background:var(--surface); color:var(--text); font:inherit;
+  resize:vertical;
+}
+textarea:focus-visible, input:focus-visible { outline:2px solid var(--accent); outline-offset:-1px; }
+.d-field textarea { min-height:80px; }
+
+.d-foot { display:flex; gap:12px; align-items:center; margin:14px 0 0 32px; flex-wrap:wrap; }
+.d-use {
+  min-height:44px; padding:0 18px; border-radius:8px; font:inherit; font-weight:600;
+  cursor:pointer; border:1px solid var(--accent); background:var(--accent); color:var(--surface);
+}
+:root[data-theme="dark"] .d-use, :root:not([data-theme="light"]) .d-use { color:#14161A; }
+@media (prefers-color-scheme:light) { :root:not([data-theme="dark"]) .d-use { color:#FFFFFF; } }
+.d-use:disabled { opacity:.5; cursor:not-allowed; }
+.d-use:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.d-hint { color:var(--text-muted); font-size:13px; }
+
+/* ------------------------------------------------------------------- ruled */
+.ruled-list { list-style:none; margin:18px 0 0; padding:0;
+  border:1px solid var(--border); border-radius:12px; background:var(--surface); overflow:hidden; }
+.ruled-item { padding:16px 18px; box-shadow:inset 4px 0 0 var(--good); }
+.ruled-item + .ruled-item { box-shadow:inset 4px 0 0 var(--good), inset 0 1px 0 var(--border); }
+.ruled-q { font-weight:600; margin:0 0 4px; }
+.ruled-what { color:var(--good); font-size:14px; }
+.ruled-when { color:var(--text-muted); font-size:12.5px; margin-top:3px; }
+.ruled-text { margin-top:6px; color:var(--text-muted); font-size:13.5px; }
+/* A receipt is what makes a ruling checkable later: what was done, where, and
+ * whether the ruling survived. */
+.receipt { margin-top:8px; font-size:13px; color:var(--text-muted); }
+.receipt dt { font-weight:600; color:var(--text); font-size:12px; }
+.receipt dd { margin:0 0 4px; }
+
+/* ------------------------------------------------------------- annotations */
+.note-list { list-style:none; margin:0; padding:0;
+  border:1px solid var(--border); border-radius:12px; background:var(--surface); overflow:hidden; }
+.note-item { padding:14px 16px; }
+.note-item + .note-item { box-shadow:inset 0 1px 0 var(--border); }
+/* Disposition is TEXT COLOUR, never a filled badge. A badge is a box competing
+ * with the content for attention; the word already carries the meaning. */
+.disp { font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; }
+.disp.incorporated { color:var(--good); }
+.disp.declined { color:var(--warn); }
+.note-item.declined { box-shadow:inset 2px 0 0 var(--warn); }
+.note-item.declined + .note-item { box-shadow:inset 0 1px 0 var(--border); }
+/* Unsaved is the one state that earns a danger rule: it means the file has
+ * never heard of this. */
+.note-item.unsaved-item { box-shadow:inset 2px 0 0 var(--danger); }
+.note-reason { color:var(--text-muted); font-size:13px; margin-top:4px; }
+.note-el { color:var(--text-muted); font-size:12.5px; font-family:var(--font-mono); word-break:break-word; }
+
+.pin {
+  position:absolute; min-width:24px; min-height:24px; border-radius:50%;
+  background:var(--accent); color:var(--surface); border:2px solid var(--surface);
+  font-size:12px; font-weight:700; line-height:20px; text-align:center;
+  cursor:pointer; padding:0; box-shadow:0 1px 4px var(--shadow);
+}
+.pin:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.pin-card {
+  position:absolute; z-index:20; width:280px; max-width:calc(100vw - 32px);
+  background:var(--surface); border:1px solid var(--border-strong); border-radius:10px;
+  box-shadow:0 6px 24px var(--shadow); padding:12px;
+}
+.pin-card-actions { display:flex; gap:8px; margin-top:10px; }
+.mini-btn {
+  min-height:44px; padding:0 14px; border-radius:8px; font:inherit; cursor:pointer;
+  border:1px solid var(--border-strong); background:var(--surface); color:var(--text);
+}
+.mini-btn:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.mini-btn.danger { color:var(--danger); border-color:var(--danger); }
+
+/* ----------------------------------------------------------------- preview */
+.pv-bar {
+  display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+  padding:10px 14px; border-bottom:1px solid var(--border); font-size:13px;
+  color:var(--text-muted); min-height:44px;
+}
+.pv-source { display:flex; gap:0; border:1px solid var(--border-strong); border-radius:8px; overflow:hidden; }
+.pv-source .mini-btn { border:none; border-radius:0; min-height:44px; }
+.pv-source .mini-btn + .mini-btn { box-shadow:inset 1px 0 0 var(--border-strong); }
+.pv-source .mini-btn[aria-pressed="true"] { background:var(--accent-soft); color:var(--accent-strong); font-weight:600; }
+.pv-sha { font-family:var(--font-mono); font-size:12px; }
+.pv-frame { flex:1; border:none; width:100%; background:var(--surface); min-height:420px; }
+.pv-wrap { flex:1; overflow:auto; display:flex; justify-content:center; padding:12px; min-height:0; }
+/* An overlay is a temporary edit to the live document, so it says so, with the
+ * way back out sitting next to it. */
+.pv-previewing {
+  display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+  padding:8px 14px; background:var(--accent-soft); color:var(--accent-strong);
+  font-size:13px; border-bottom:1px solid var(--border);
+}
+.pv-note { color:var(--warn); }
+
+/* ---------------------------------------------------------------- compare */
+/* Related variants are one choice. The compact current card stays beside the
+ * proposals; the range control changes proposal width without scaling text. */
+.g-list { display:grid; grid-template-columns:minmax(0,1fr); gap:28px; }
+.g-list[hidden] { display:none; }
+.work-lane { min-width:0; border:1px solid var(--border); border-radius:10px; background:var(--surface); }
+.work-lane > summary { display:flex; align-items:center; justify-content:space-between; gap:12px;
+  min-height:48px; padding:10px 16px; cursor:pointer; font-size:17px; font-weight:700; }
+.work-lane > summary:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.work-count { min-width:28px; padding:2px 7px; border-radius:99px; background:var(--surface-2);
+  color:var(--text-muted); text-align:center; font-size:14px; }
+.work-items { padding:0 16px 16px; }
+.work-empty { margin:4px 0; color:var(--text-muted); font-size:14px; }
+.work-state { display:flex; align-items:start; gap:8px; flex-wrap:wrap; margin-top:8px; }
+.work-tag { padding:3px 8px; border-radius:99px; background:var(--surface-2);
+  color:var(--text-muted); font-size:14px; font-weight:700; }
+.work-in-progress .work-tag { background:var(--accent-soft); color:var(--accent-strong); }
+.work-complete .work-tag { color:var(--good); }
+.work-evidence { margin:0; padding-left:20px; color:var(--text-muted); font-size:14px; overflow-wrap:anywhere; }
+.work-evidence li + li { margin-top:3px; }
+.work-evidence code { font:inherit; color:var(--text); }
+.selected-list { display:grid; grid-template-columns:minmax(0,1fr); gap:18px; margin-top:22px; }
+.selected-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr)); gap:12px; padding:0 16px 16px; }
+.selected-card { min-width:0; border:1px solid var(--border); border-radius:8px; background:var(--surface-2); }
+.selected-card[open] { grid-column:1 / -1; }
+.selected-card > summary { display:flex; align-items:center; justify-content:space-between; gap:12px;
+  min-height:88px; padding:12px 14px; cursor:pointer; list-style:none; }
+.selected-card > summary::-webkit-details-marker { display:none; }
+.selected-card > summary::after { content:"⌄"; flex:0 0 auto; font-size:20px; color:var(--text-muted); }
+.selected-card[open] > summary::after { transform:rotate(180deg); }
+.selected-card > summary:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.selected-card-text { display:grid; gap:3px; min-width:0; }
+.selected-card-text strong { font-size:16px; line-height:1.3; }
+.selected-choice { color:var(--text-muted); font-size:14px; line-height:1.35; overflow-wrap:anywhere; }
+.selected-card > summary .work-state { flex:0 0 auto; margin:0; }
+.selected-card-body { min-width:0; border-top:1px solid var(--border); padding:0 12px 12px; }
+.selected-card-body .g-set { border-top:0; }
+.selected-card-body .c-dec { border-top:0; }
+@media (max-width:560px) {
+  .selected-card > summary { align-items:flex-start; flex-direction:column; gap:8px; }
+}
+.g-set { padding:22px 10px 12px; border-top:1px solid var(--border); scroll-margin-top:68px; }
+.g-heading { display:flex; align-items:end; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.g-heading h2 { font-size:23px; line-height:1.25; margin:2px 0 0; }
+.g-kicker { margin:0; font-size:14px; font-weight:700; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--text-muted); }
+.g-size { display:grid; gap:2px; color:var(--text-muted); font-size:14px; }
+.g-size input { width:170px; accent-color:var(--accent); }
+.g-size output { font-variant-numeric:tabular-nums; }
+.g-direction { margin:8px 0 12px; color:var(--text-muted); font-size:14px; }
+.g-strip { display:flex; align-items:stretch; gap:12px; overflow-x:auto; padding:4px 4px 16px;
+  scroll-snap-type:x proximity; scrollbar-color:var(--border-strong) transparent; }
+.g-current, .g-option { flex:0 0 var(--card-width); min-width:0; display:flex; flex-direction:column;
+  gap:8px; padding:12px; border:1px solid var(--border); border-radius:10px;
+  background:var(--surface); scroll-snap-align:start; }
+.g-current { flex-basis:148px; background:var(--surface-2); }
+.g-current h3, .g-option h3 { font-size:15px; line-height:1.3; margin:0; min-height:40px; }
+.g-current p, .g-option p { margin:0; font-size:14px; color:var(--text-muted); }
+.g-current > p:first-of-type { min-height:42px; max-height:42px; overflow:hidden; display:-webkit-box;
+  -webkit-box-orient:vertical; -webkit-line-clamp:2; }
+.g-current .c-frame, .g-option .c-frame { max-height:260px; }
+.g-current .c-frame { max-height:150px; }
+.g-current .c-frame img, .g-option .c-frame img { max-height:inherit; object-fit:contain; }
+.g-current .c-wire iframe { height:150px; }
+.g-option .c-wire iframe { height:260px; }
+.g-option .c-frame { border:2px solid var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+.g-option .g-change { color:var(--text); font-weight:600; min-height:3em; }
+.g-current.chosen, .g-option.chosen { border-color:var(--good); box-shadow:0 0 0 2px var(--good); }
+.g-pick { margin-top:auto; min-height:44px; padding:8px; border:1px solid var(--border-strong);
+  border-radius:7px; background:var(--surface); color:var(--text); font:inherit;
+  font-size:14px; font-weight:600; cursor:pointer; }
+.g-pick[aria-pressed="true"] { color:var(--good); border-color:var(--good); }
+.g-pick:focus-visible, .g-size input:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.g-option .g-prior { border-top:1px solid var(--border); padding-top:7px; overflow-wrap:anywhere; }
+.g-decision { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px 12px;
+  align-items:end; max-width:600px; margin-top:10px; }
+.g-decision label { grid-column:1 / -1; font-size:14px; color:var(--text-muted); }
+.g-decision textarea { min-height:64px; font-size:16px; }
+.g-status { grid-column:1 / -1; font-size:14px; color:var(--text-muted); }
+.g-status.ok { color:var(--good); font-weight:600; }
+.g-status.warn { color:var(--warn); font-weight:600; }
+.g-status.err { color:var(--danger); font-weight:600; }
+.g-actions { display:flex; gap:8px; align-items:start; }
+.g-ask { font:inherit; font-size:14px; min-height:44px; padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); cursor:pointer; }
+.g-ask:disabled { opacity:.45; cursor:default; }
+.g-ask:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.g-requests { grid-column:1 / -1; margin:0; font-size:14px; color:var(--text-muted); }
+.g-requests:empty { display:none; }
+.g-set.g-is-saved { box-shadow:inset 4px 0 0 var(--good); }
+.g-set.g-is-unsaved { box-shadow:inset 4px 0 0 var(--warn); }
+.save-toast { position:fixed; left:50%; bottom:24px; transform:translate(-50%, 16px); opacity:0; pointer-events:none;
+  background:var(--surface); color:var(--good); border:1px solid var(--good); border-radius:10px; padding:10px 16px;
+  font-size:15px; font-weight:600; transition:opacity .2s, transform .2s; z-index:50; }
+.save-toast.err { color:var(--danger); border-color:var(--danger); }
+.save-toast.show { opacity:1; transform:translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) { .save-toast { transition:none; } }
+#legacy-compare { margin-top:30px; }
+#legacy-compare summary { cursor:pointer; color:var(--text-muted); min-height:44px; padding:10px 0; }
+@media (max-width:600px) { .g-decision { grid-template-columns:minmax(0,1fr); } }
+
+/* A-or-B board. Mobile first: at 390px A and B stack, the four answers sit in
+ * a 2x2 grid of 48px buttons, and the index becomes a number grid. Nothing in
+ * this block is smaller than 14px. Status is TEXT COLOUR only -- no filled
+ * badges -- and the colours are the existing tokens, so the contrast gate in
+ * test_decisions_contrast.py grades every pair painted here. */
+.c-intro { display:grid; gap:10px; margin:0 0 20px; }
+.c-intro .open-h1 { margin:18px 0 0; }
+.c-lede { margin:0; color:var(--text-muted); font-size:15px; max-width:68ch; }
+.c-progress {
+  margin:0; display:flex; flex-wrap:wrap; gap:4px 20px; align-items:baseline;
+  font-size:14px; color:var(--text-muted);
+}
+.c-progress b { font-size:24px; color:var(--text); font-variant-numeric:tabular-nums; }
+
+.c-jump {
+  display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; margin:0 0 8px;
+}
+.c-jump a {
+  display:flex; align-items:center; justify-content:center; min-height:44px;
+  border:1px solid var(--border); border-radius:8px; background:var(--surface);
+  color:var(--text-muted); text-decoration:none; font-size:16px; font-weight:600;
+  font-variant-numeric:tabular-nums;
+}
+.c-jump a:focus-visible, .c-idx a:focus-visible, .c-back:focus-visible {
+  outline:2px solid var(--accent); outline-offset:2px;
+}
+.c-index { display:none; }
+
+.c-idx-g { display:grid; gap:6px; align-content:start; }
+.c-idx-h {
+  margin:0; font-size:14px; font-weight:600; color:var(--text-muted);
+  text-transform:uppercase; letter-spacing:.06em;
+}
+.c-idx {
+  list-style:none; margin:0; padding:0; border:1px solid var(--border);
+  border-radius:10px; background:var(--surface); overflow:hidden;
+}
+.c-idx li + li > a { box-shadow:inset 0 1px 0 var(--border); }
+.c-idx a {
+  display:grid; grid-template-columns:32px minmax(0,1fr); gap:8px; align-items:baseline;
+  min-height:48px; padding:12px 14px; text-decoration:none; color:var(--text);
+}
+.c-idx a:hover .c-tt { text-decoration:underline; }
+.c-no { font-size:18px; font-weight:700; color:var(--text-muted); font-variant-numeric:tabular-nums; }
+.c-tt { display:block; font-size:15px; }
+.c-st { display:block; font-size:14px; color:var(--text-muted); }
+
+.c-dec {
+  display:grid; gap:18px; padding:40px 0 8px; scroll-margin-top:64px;
+  box-shadow:inset 0 1px 0 var(--border);
+}
+.c-head { display:grid; grid-template-columns:48px minmax(0,1fr); gap:2px 12px; align-items:start; }
+.c-big {
+  grid-row:1 / span 3; font-size:40px; line-height:1; font-weight:700;
+  font-variant-numeric:tabular-nums; color:var(--text);
+}
+.c-area { font-size:14px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; }
+.c-q { margin:0; font-size:20px; line-height:1.3; font-weight:600; }
+.c-why { margin:4px 0 0; color:var(--text-muted); font-size:15px; max-width:70ch; }
+
+.c-pair { display:grid; grid-template-columns:minmax(0,1fr); gap:20px; align-items:start; }
+.c-side { display:grid; gap:10px; align-content:start; }
+.c-opt-h { display:grid; gap:2px; }
+.c-k { font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+.c-k-a { color:var(--text-muted); }
+.c-k-b { color:var(--accent); }
+.c-s { font-size:15px; }
+.c-frame { border:1px solid var(--border); border-radius:10px; overflow:hidden; background:var(--surface); }
+.c-frame img { display:block; width:100%; height:auto; }
+/* A wireframe says so at a glance: a dashed edge, and the caption under it. */
+.c-wire { border:2px dashed var(--warn); }
+.c-wire iframe { display:block; width:100%; height:420px; border:0; background:var(--surface); }
+.c-side.chosen .c-frame { outline:3px solid var(--good); outline-offset:3px; }
+.c-cap { margin:0; font-size:14px; color:var(--text-muted); }
+.d-missing.c-missing { margin:0; font-size:14px; }
+
+.c-resp {
+  display:grid; gap:10px; padding:16px; border:1px solid var(--border);
+  border-radius:10px; background:var(--surface);
+}
+.c-choices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.c-choice {
+  min-height:48px; padding:0 10px; border-radius:8px; border:1px solid var(--border-strong);
+  background:var(--surface); color:var(--text); font:inherit; font-size:15px; font-weight:600;
+  cursor:pointer;
+}
+.c-choice:hover { border-color:var(--text); }
+.c-choice:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+/* Pressed is the answer's own colour plus a 2px ring in that colour: a state
+ * on the control, never a filled chip. */
+.c-choice[aria-pressed="true"] { border-color:currentColor; box-shadow:inset 0 0 0 1px currentColor; }
+.c-label { font-size:14px; color:var(--text-muted); }
+/* 16px, not 15: iOS zooms the page into any field under 16px on focus. */
+.c-note { font-size:16px; min-height:88px; }
+.c-note[aria-invalid="true"] { border-color:var(--danger); }
+.c-err { margin:0; font-size:14px; color:var(--danger); }
+.c-foot { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+.c-saved { font-size:14px; color:var(--text-muted); }
+.c-saved.err { color:var(--danger); }
+.c-second { margin:0; font-size:14px; color:var(--text-muted); }
+.c-second b { font-weight:600; color:var(--text); }
+.c-back {
+  display:inline-flex; align-items:center; min-height:44px; font-size:14px;
+  color:var(--accent); justify-self:start;
+}
+
+/* Answer colour, one rule set, used by the jump grid, the index, the second
+ * opinion and a pressed answer button. Last, so it wins over the base rules
+ * above. keep-a is ink at a heavier weight so it still differs from "no
+ * answer" (muted) without a new hue. */
+.c-jump a[data-c="keep-a"], .c-st[data-c="keep-a"], .c-second b[data-v="keep-a"],
+.c-choice[aria-pressed="true"][data-c="keep-a"] { color:var(--text); font-weight:700; }
+.c-jump a[data-c="approve-b"], .c-st[data-c="approve-b"], .c-second b[data-v="approve-b"],
+.c-choice[aria-pressed="true"][data-c="approve-b"] { color:var(--good); }
+.c-jump a[data-c="revise-b"], .c-st[data-c="revise-b"], .c-second b[data-v="revise-b"],
+.c-choice[aria-pressed="true"][data-c="revise-b"] { color:var(--warn); }
+.c-jump a[data-c="other"], .c-st[data-c="other"], .c-second b[data-v="other"],
+.c-choice[aria-pressed="true"][data-c="other"] { color:var(--accent); }
+.c-jump a[data-c="pending"], .c-st[data-c="pending"] { color:var(--danger); }
+
+@media (min-width:761px) {
+  .c-jump { display:none; }
+  .c-index { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; margin:0 0 8px; }
+  .c-head { grid-template-columns:72px minmax(0,1fr); gap:4px 16px; }
+  .c-big { font-size:56px; }
+  .c-q { font-size:24px; line-height:1.25; }
+  .c-pair { grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; }
+  .c-choices { grid-template-columns:repeat(4,minmax(0,1fr)); }
+}
+
+/* --------------------------------------------------------------- save line */
+/* One quiet line at the foot. Nothing else reports save state in the open view. */
+.quiet-foot { color:var(--text-muted); font-size:13px; margin:20px 0 0; }
+.quiet-foot.has-unsaved { color:var(--danger); }
+.save-row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:18px; }
+.status-line { font-size:13px; color:var(--text-muted); }
+.status-line.err { color:var(--danger); }
+.status-line.ok { color:var(--good); }
+
+.sr-only {
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+
+@media (prefers-reduced-motion:reduce) {
+  * { animation-duration:.01ms !important; transition-duration:.01ms !important; }
+}

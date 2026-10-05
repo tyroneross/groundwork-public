@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0.0",
+  "id": "dashboard-builder-canonical-home",
+  "archetype": "A1",
+  "title": "Where should Dashboard Builder live?",
+  "decision": "Where should the Dashboard Builder emitter live once v1 proves out?",
+  "context": "Groundwork owns every stage the builder needs. A census of 157 dashboard artifacts found 67 accept input and only 4 write to a durable sink. The review loop is fully wired to port 3847 and has never written a row, because a served bundle no-ops silently when its service is down.",
+  "status": "proposed",
+  "recommendation": "groundwork-lane",
+  "options": [
+    {
+      "id": "groundwork-lane",
+      "label": "Build as a Groundwork lane, split later on a named trigger",
+      "detail": "designer/dashboards/ plus a thin skill. Ships immediately; packaging cost deferred until the contract is proven.",
+      "tradeoffs": [
+        "Usable the day it works",
+        "No marketplace or sync cost yet",
+        "Groundwork grows before it splits"
+      ]
+    },
+    {
+      "id": "separate-repo-now",
+      "label": "Extract to its own repo immediately",
+      "detail": "~/dev/git-folder/dashboard-builder, symlinked into the toolkit like the other 18 plugins.",
+      "tradeoffs": [
+        "Clean boundary from day one",
+        "Pays packaging cost before the contract is frozen",
+        "Rebuilds nine stages Groundwork already owns"
+      ]
+    },
+    {
+      "id": "extend-audit-dashboard",
+      "label": "Generalise research:audit-dashboard in place",
+      "detail": "It is the one working emitter. Widen its schema from audits to contracts.",
+      "tradeoffs": [
+        "Reuses a proven renderer",
+        "Couples dashboards to the research plugin",
+        "Its schema is audit-shaped, not decision-shaped"
+      ]
+    }
+  ],
+  "sink": {
+    "kind": "http-jsonl",
+    "base": "http://127.0.0.1:3847",
+    "path": "/events"
+  }
+}

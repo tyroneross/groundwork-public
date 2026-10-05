@@ -1,0 +1,22 @@
+{
+  "capturedWith": "ibr 1.5.0 session:screenshot, device iphone-14, cropped",
+  "device": "iphone-14",
+  "items": {
+    "home-intro#a": {
+      "file": "home-current.png",
+      "selector": "main",
+      "capturedAt": "2026-09-24",
+      "sourceUrl": "synthetic page written for this fixture"
+    },
+    "plan-picker#a": {
+      "file": "plans-current.png",
+      "selector": "main",
+      "capturedAt": "2026-09-24",
+      "sourceUrl": "synthetic page written for this fixture"
+    },
+    "export-home#a": {
+      "file": null,
+      "reason": "The app has no export control today, so there is nothing to capture."
+    }
+  }
+}

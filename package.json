@@ -1,0 +1,34 @@
+{
+  "name": "groundwork",
+  "version": "0.5.0",
+  "description": "Whole-app UI/UX planning for AI builders. Groundwork codifies the product schema, requirements, flows, screens, states, design patterns, architecture, implementation plan, and acceptance criteria into one traceable builder packet. Start with /groundwork:run.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build:engine": "esbuild engine/src/cli.ts --bundle --platform=node --format=esm --outfile=engine/dist/cli.js",
+    "test": "bash scripts/check.sh",
+    "test:adapters": "npx tsx --test engine/src/exporters/exporters.test.ts engine/src/derived-export.test.ts",
+    "test:release": "bash scripts/test-release.sh",
+    "test:host-release": "bash scripts/test-host-release.sh",
+    "release:stage": "node scripts/stage-release.mjs",
+    "release:create-activation-report": "node scripts/create-live-activation-report.mjs",
+    "release:record-activation": "node scripts/release-evidence.mjs record --gate activation --status passed --gate-command authenticated-host-activation",
+    "release:verify": "node scripts/release-evidence.mjs verify",
+    "conformance": "python3 -m designer.conformance.flow_cli_check --verbose"
+  },
+  "dependencies": {
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "esbuild": "^0.25.0"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tyroneross/groundwork-public.git"
+  }
+}

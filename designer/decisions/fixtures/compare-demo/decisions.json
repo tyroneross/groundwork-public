@@ -1,0 +1,72 @@
+{
+  "schema": "groundwork.decision-set/v1",
+  "id": "compare-demo",
+  "product": "Example Notes",
+  "_comment": [
+    "SYNTHETIC. Every string, screenshot and wireframe here was written for this fixture.",
+    "It is what `decisions_build init --template compare` copies into a project so the",
+    "A-or-B board opens with something real-shaped to rule on. Replace it."
+  ],
+  "compares": [
+    {
+      "id": "home-intro",
+      "area": "Home",
+      "question": "How should the home page introduce the product?",
+      "why": "The headline is the first thing a new visitor reads, and today it names no feature.",
+      "optionA": {
+        "summary": "Slogan headline; the three features are named but not described.",
+        "visual": "home-current.png"
+      },
+      "optionB": {
+        "summary": "Plain headline plus one line on what each feature does.",
+        "visual": "home-proposed.html"
+      },
+      "secondOpinion": {
+        "source": "Persona panel",
+        "verdict": "approve",
+        "note": "Name who it is for in the first line."
+      }
+    },
+    {
+      "id": "plan-picker",
+      "area": "Home",
+      "question": "How should visitors pick a plan?",
+      "why": "Choosing a plan takes two dialogs today, and the second one hides the billing period.",
+      "optionA": {
+        "summary": "A dialog with a second picker inside it.",
+        "visual": "plans-current.png"
+      },
+      "optionB": {
+        "summary": "Three inline plan rows, one button each.",
+        "visual": "plans-proposed.html"
+      },
+      "secondOpinion": {
+        "source": "Persona panel",
+        "verdict": "revise",
+        "note": "Show the price on each row."
+      }
+    },
+    {
+      "id": "export-home",
+      "area": "Settings",
+      "question": "Where should export live?",
+      "why": "People ask how to get their notes out, and nothing in the app answers.",
+      "optionA": {
+        "summary": "No export control anywhere in the app."
+      },
+      "optionB": {
+        "summary": "An Export row in Settings that downloads every note as Markdown.",
+        "visual": "export-proposed.html"
+      }
+    }
+  ],
+  "previewComments": [],
+  "annotations": [],
+  "history": [],
+  "lifecycle": {
+    "generation": 1,
+    "generatedAt": null,
+    "savedAt": null,
+    "savedScope": null
+  }
+}

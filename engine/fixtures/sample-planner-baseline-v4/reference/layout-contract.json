@@ -1,0 +1,135 @@
+{
+    "schema": "sample-planner.layout-contract/v4",
+    "environment": {
+        "viewport": {
+            "width": 430,
+            "height": 932,
+            "unit": "css-px"
+        },
+        "appearance": "light",
+        "safeAreaBottom": 16
+    },
+    "geometry": {
+        "screen": {
+            "x": 0,
+            "y": 0,
+            "width": 430,
+            "height": 932
+        },
+        "contentInset": {
+            "left": 18,
+            "right": 18,
+            "top": 18,
+            "bottom": 130
+        },
+        "header": {
+            "x": 18,
+            "y": 22,
+            "width": 394,
+            "height": 44,
+            "columns": [
+                44,
+                1,
+                44
+            ]
+        },
+        "horizon": {
+            "x": 18,
+            "width": 394,
+            "height": 44,
+            "gap": 8,
+            "itemHeight": 44,
+            "selectedAttribute": {
+                "name": "aria-current",
+                "value": "page"
+            }
+        },
+        "sectionGap": 16,
+        "cardRadius": 18,
+        "cardBorder": 1,
+        "focusRow": {
+            "minHeight": 65,
+            "horizontalInset": 15,
+            "gridColumns": [
+                10,
+                "1fr",
+                60
+            ],
+            "gap": 11
+        },
+        "attention": {
+            "x": 18,
+        "y": 588.359,
+            "width": 394,
+            "height": 140,
+            "inset": 13,
+            "actionHeight": 44,
+            "actionGap": 8
+        },
+        "scheduleRow": {
+            "x": 18,
+        "y": 744.359,
+            "width": 394,
+            "height": 70,
+            "horizontalInset": 15,
+            "twoLineContent": true
+        },
+        "timelineBlock": {
+            "minHeight": 48,
+            "gridColumns": [
+                48,
+                "1fr"
+            ],
+            "gap": 9
+        },
+        "eventAction": {
+            "height": 44,
+            "radius": 13
+        },
+        "statusToast": {
+            "x": 18,
+            "y": 810,
+            "width": 394,
+            "height": 34,
+            "durationMs": 3600
+        },
+        "actionBar": {
+            "x": 0,
+            "y": 852,
+            "width": 430,
+            "height": 80,
+            "horizontalInset": 18,
+            "bottomInset": 16,
+            "gap": 12,
+            "order": [
+                "action.calendar.beginExport",
+                "action.plan.save"
+            ],
+            "columns": [
+                177.674,
+                204.326
+            ],
+            "ratio": [
+                1,
+                1.15
+            ],
+            "childX": [
+                18,
+                207.674
+            ],
+            "childCenters": [
+                106.837,
+                309.837
+            ],
+            "controlHeight": 48,
+            "controlRadius": 14,
+            "fixed": true
+        }
+    },
+    "nestingRules": [
+        "Focus rows and timeline blocks use inset dividers inside one card.",
+        "The plan considerations block is nested inside the schedule card after the timeline.",
+        "The action bar is a fixed footer outside the scrolling main content.",
+        "The export review is a modal dialog sibling of the footer, not a nested card."
+    ]
+}

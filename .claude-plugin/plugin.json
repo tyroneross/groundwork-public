@@ -1,0 +1,20 @@
+{
+  "name": "groundwork",
+  "version": "0.5.0",
+  "description": "Whole-app UI/UX planning for AI builders. Groundwork codifies the product schema, requirements, flows, screens, states, design patterns, architecture, implementation plan, and acceptance criteria into one traceable builder packet. Start with /groundwork:run.",
+  "author": {
+    "name": "Tyrone Ross"
+  },
+  "repository": "https://github.com/tyroneross/groundwork-public",
+  "license": "Apache-2.0",
+  "keywords": [
+    "product-design",
+    "product-planning",
+    "requirements",
+    "ui-design",
+    "mockups",
+    "design-system",
+    "codex",
+    "claude-code"
+  ]
+}

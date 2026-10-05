@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Groundwork — Design workspace</title>
+  <link rel="stylesheet" href="/picker.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark"></span>
+      <span class="brand-text">Groundwork</span>
+    </div>
+    <div class="ctx" id="ctx"></div>
+    <span class="tier-label" id="tier-label"></span>
+    <div class="progress" id="progress"></div>
+  </header>
+
+  <!-- One panel: a persistent left rail of Groundwork components beside one
+       content area. Designer is one component among them, not the whole app. -->
+  <div class="shell">
+    <nav class="rail" id="rail" aria-label="Groundwork components">
+      <p class="rail-group-label" id="rail-group-panel">In this panel</p>
+      <ul class="rail-list" aria-labelledby="rail-group-panel">
+        <li>
+          <button type="button" class="rail-item" id="rail-designer" data-destination="designer" aria-current="page">
+            <span class="rail-item-label">Designer</span>
+            <span class="rail-item-note">Choose the direction</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="rail-item" id="rail-saved" data-destination="saved">
+            <span class="rail-item-label">Saved work</span>
+            <span class="rail-item-note">Review and refine</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="rail-item" id="rail-output" data-destination="output">
+            <span class="rail-item-label">Design output</span>
+            <span class="rail-item-note">Handoff and versions</span>
+          </button>
+        </li>
+      </ul>
+
+      <p class="rail-group-label" id="rail-group-chat">More in chat</p>
+      <ul class="rail-list rail-list--static" aria-labelledby="rail-group-chat">
+        <li class="rail-item rail-item--static">
+          <span class="rail-item-label">Project overview</span>
+          <span class="rail-item-note">Define the product</span>
+        </li>
+        <li class="rail-item rail-item--static">
+          <span class="rail-item-label">Requirements</span>
+          <span class="rail-item-note">Shape flows and requirements</span>
+        </li>
+        <li class="rail-item rail-item--static">
+          <span class="rail-item-label">Mockups</span>
+          <span class="rail-item-note">Explore more directions</span>
+        </li>
+        <li class="rail-item rail-item--static">
+          <span class="rail-item-label">Iterate</span>
+          <span class="rail-item-note">Annotate specific elements</span>
+        </li>
+        <li class="rail-item rail-item--static">
+          <span class="rail-item-label">Handoff</span>
+          <span class="rail-item-note">Prepare the build packet</span>
+        </li>
+      </ul>
+    </nav>
+
+    <main class="stage" id="stage">
+
+    <!-- Startup gate prevents the generic intro from flashing before an
+         invoked app bootstrap is resolved. -->
+    <section id="startup-screen" aria-live="polite">
+      <div class="decision-head">
+        <p class="baseline-kicker">Loading Groundwork</p>
+        <h1 class="decision-title">Preparing your design context…</h1>
+      </div>
+    </section>
+
+    <!-- Existing-app invocations start here instead of entering generic setup. -->
+    <section id="baseline-screen" hidden></section>
+
+    <!-- Intro screen -->
+    <section id="intro" hidden>
+      <div class="decision-head">
+        <h1 class="decision-title">Design your system</h1>
+        <p class="decision-desc">Walk through a short set of paired comparisons. Each pick narrows your design preferences. At the end you get a versioned DESIGN.md — a complete set of design tokens for your product.</p>
+        <p class="decision-note">Takes 3–5 minutes. You can re-run it any time to produce a new version.</p>
+      </div>
+
+      <!-- Drive mode toggle — Standard (default) vs Adaptive (agent-driven order) -->
+      <fieldset class="drive-group" id="drive-group">
+        <legend class="drive-legend">Walkthrough mode</legend>
+        <label class="drive-option">
+          <input type="radio" name="drive" value="standard" checked>
+          <div>
+            <span class="drive-label">Standard</span>
+            <span class="drive-sublabel">— you drive</span>
+          </div>
+        </label>
+        <label class="drive-option">
+          <input type="radio" name="drive" value="adaptive">
+          <div>
+            <span class="drive-label">Adaptive</span>
+            <span class="drive-sublabel">— an agent drives the order</span>
+          </div>
+        </label>
+        <p class="drive-hint">Adaptive: a connected coding agent chooses the next decision based on your picks; you still pick the options yourself.</p>
+      </fieldset>
+
+      <button class="btn-primary" id="start-btn" style="min-width:160px">Start</button>
+
+      <!-- Resume a draft — progressive disclosure (Hick's Law) -->
+      <details id="resume-region" class="resume-region" hidden>
+        <summary class="resume-summary">Resume a draft</summary>
+        <div class="resume-list" id="resume-list"></div>
+      </details>
+    </section>
+
+    <!-- Mode picker screen -->
+    <section id="mode-screen" hidden>
+      <div class="decision-head">
+        <h1 class="decision-title">What are you designing for?</h1>
+        <p class="decision-desc">Choose how specific you want the output to be.</p>
+      </div>
+      <fieldset class="mode-group">
+        <label class="mode-option">
+          <input type="radio" name="mode" value="general" checked>
+          <div>
+            <div><span style="font-weight:600;color:var(--ink)">General design style</span> <span class="mode-recommended">(default)</span></div>
+            <p class="option-desc">A reusable design system with no product-specific assumptions.</p>
+          </div>
+        </label>
+        <label class="mode-option" style="border-top:1px solid var(--border)">
+          <input type="radio" name="mode" value="product">
+          <div>
+            <div><span style="color:var(--ink2)">Specific product</span></div>
+            <p class="option-desc">Tailored to a repo and context you describe.</p>
+          </div>
+        </label>
+      </fieldset>
+
+      <!-- Repo/context section (revealed in product mode) -->
+      <section id="repo-section" hidden>
+        <div class="field-row">
+          <label class="field-label" for="repo-path">Repo path</label>
+          <input class="field-input" id="repo-path" type="text" placeholder="/Users/you/dev/git-folder/my-app" autocomplete="off" spellcheck="false">
+          <div class="repo-validation" id="repo-validation" aria-live="polite"></div>
+        </div>
+        <div class="field-row">
+          <label class="field-label" for="repo-context">What is this product? (optional)</label>
+          <textarea class="field-input" id="repo-context" rows="3" placeholder="A SaaS dashboard for logistics teams tracking delivery routes."></textarea>
+        </div>
+      </section>
+
+      <button class="btn-primary" id="continue-btn">Continue →</button>
+    </section>
+
+    <!-- Extract screen (product mode only, between mode-confirm and walk) -->
+    <section id="extract-screen" hidden>
+      <div class="decision-head">
+        <h1 class="decision-title">Extract current design</h1>
+        <p class="decision-desc">Point at your running app and the designer will read its current design system, then you confirm or evolve it.</p>
+      </div>
+
+      <div class="field-row" style="max-width:480px">
+        <label class="field-label" for="extract-url">Running app URL</label>
+        <input class="field-input" id="extract-url" type="text" placeholder="http://localhost:3000" autocomplete="off" spellcheck="false">
+        <div class="field-note">Must be a running app — the extractor reads live CSS from the page.</div>
+      </div>
+
+      <button class="btn-primary" id="extract-btn" style="margin-bottom:24px">Extract current design</button>
+
+      <!-- Result card (hidden until extraction succeeds) -->
+      <div id="extract-result" class="extract-card" hidden>
+        <div class="extract-card-row" id="exr-accent">
+          <span class="exr-label">Accent</span>
+          <span class="exr-value"><span class="exr-swatch" id="exr-swatch-el" hidden></span><span id="exr-accent-val"></span></span>
+        </div>
+        <div class="extract-card-row" id="exr-surface">
+          <span class="exr-label">Surface tone</span>
+          <span class="exr-value" id="exr-surface-val"></span>
+        </div>
+        <div class="extract-card-row" id="exr-type">
+          <span class="exr-label">Typography</span>
+          <span class="exr-value" id="exr-type-val"></span>
+        </div>
+        <div class="extract-card-row" id="exr-density">
+          <span class="exr-label">Density</span>
+          <span class="exr-value" id="exr-density-val"></span>
+        </div>
+        <div class="extract-card-row" id="exr-components">
+          <span class="exr-label">Components</span>
+          <span class="exr-value" id="exr-components-val"></span>
+        </div>
+      </div>
+
+      <!-- Warning / degradation message -->
+      <div id="extract-warning" class="extract-warning" hidden></div>
+
+      <!-- Import DESIGN.md — third entry path (PART D) -->
+      <div class="import-region">
+        <p class="import-label">Or import an existing DESIGN.md</p>
+        <div class="import-row">
+          <input class="field-input import-path-input" id="import-path" type="text" placeholder="/path/to/your/DESIGN.md" autocomplete="off" spellcheck="false">
+          <button class="btn-primary" id="import-btn">Import</button>
+        </div>
+        <div id="import-skipped" class="import-skipped" hidden></div>
+      </div>
+
+      <!-- Actions -->
+      <div class="extract-actions">
+        <button class="btn-primary" id="confirm-extract-btn" disabled hidden>Confirm &amp; continue →</button>
+        <button class="btn-quiet" id="skip-extract-btn">Skip — describe instead</button>
+      </div>
+    </section>
+
+    <!-- Review screen — confirm/evolve extracted dimensions (product mode only) -->
+    <section id="review-screen" hidden>
+      <div class="decision-head">
+        <h1 class="decision-title">Here's your current design system</h1>
+        <p class="decision-desc">We read these from your app. Keep them, or change any.</p>
+      </div>
+      <div id="review-dims"></div>
+      <div style="margin-top:24px">
+        <button class="btn-primary" id="review-continue-btn">Continue →</button>
+      </div>
+    </section>
+
+    <!-- Decision pane -->
+    <section class="decision" id="decision" hidden>
+      <!-- Agent strip: shown in adaptive mode only. Displays wait state or agent reason. -->
+      <div id="agent-strip" class="agent-strip" hidden>
+        <span class="agent-strip-dot" aria-hidden="true"></span>
+        <span id="agent-strip-text"></span>
+      </div>
+      <div class="decision-head">
+        <h1 class="decision-title" id="decision-title"></h1>
+        <p class="decision-desc" id="decision-desc"></p>
+        <p class="decision-note" id="decision-note"></p>
+        <div id="decision-explainer-slot"></div>
+      </div>
+
+      <!-- Generated mockup panel (adaptive, PART A FORK B1 — appears ABOVE options) -->
+      <div id="generated-panel" class="generated-panel" hidden>
+        <p id="generated-reason" class="generated-reason"></p>
+        <div class="generated-frame-wrap">
+          <div id="generated-frame" class="generated-frame"></div>
+          <p id="generated-frame-label" class="generated-frame-label"></p>
+        </div>
+        <div id="generated-deltas" class="generated-deltas" hidden></div>
+        <div class="generated-actions">
+          <button class="btn-primary" id="apply-deltas-btn" hidden>Apply these tokens</button>
+          <button class="btn-quiet" id="keep-exploring-btn">Keep exploring</button>
+          <span id="generated-ref-label" class="generated-ref-label" hidden>reference — explored direction</span>
+        </div>
+        <div id="generated-confirm" class="generated-confirm" hidden></div>
+      </div>
+
+      <div class="options" id="options"></div>
+
+      <!-- Chat region (PART A) — persistent at bottom of decision pane -->
+      <div id="chat-region" class="chat-region">
+        <!-- Standard mode: note instead of live input (Integrity: no fake control) -->
+        <div id="chat-standard-note" class="chat-standard-note" hidden>
+          <span class="chat-note-text">Adaptive mode lets a connected agent generate mockups from your description —</span>
+          <button class="btn-quiet chat-enable-btn" id="enable-adaptive-btn">Enable Adaptive</button>
+        </div>
+        <!-- Adaptive mode: live input -->
+        <div id="chat-input-wrap" class="chat-input-wrap" hidden>
+          <input class="field-input chat-input" id="chat-input" aria-label="Design feedback" maxlength="4000" type="text" placeholder="Describe a direction, or ask to change what's shown…" autocomplete="off" spellcheck="false">
+          <button class="btn-primary chat-send-btn" id="chat-send">Send</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Adaptive wait pane — shown while polling for agent to choose next decision -->
+    <section id="await-pane" hidden>
+      <div class="await-body">
+        <span class="await-dot" aria-hidden="true"></span>
+        <p class="await-msg" id="await-msg">Agent is choosing the next decision…</p>
+        <button class="btn-quiet" id="switch-standard-btn" hidden>Switch to Standard mode</button>
+      </div>
+    </section>
+
+    <!-- Terminal Designer screen. A finished walk has no live decision to
+         answer, so returning to Designer must not reopen the answered one. -->
+    <section id="walk-complete" hidden>
+      <div class="decision-head">
+        <h1 class="decision-title">This walk is complete</h1>
+        <p class="decision-desc">Every decision in this session is answered. DESIGN.md, its drafts and its versions are in Design output.</p>
+      </div>
+      <button type="button" class="btn-quiet" id="walk-complete-output">Go to Design output</button>
+    </section>
+
+    <!-- Saved work — its own rail destination, no longer stacked above the task. -->
+    <section id="workspace-screen" class="workspace" hidden>
+      <div class="decision-head">
+        <h1 class="decision-title">Review designs</h1>
+        <p class="decision-desc">Choose a direction, compare alternatives, or send one focused revision.</p>
+      </div>
+      <button id="workspace-refresh" class="btn-quiet">Refresh saved work</button>
+      <p id="workspace-status" role="status" aria-live="polite"></p>
+      <p id="workspace-empty">No generated directions yet. Ask your connected agent for alternatives; they will appear here.</p>
+      <div id="workspace-alternatives" class="workspace-grid"></div>
+
+      <fieldset class="review-controls" id="workspace-review-controls">
+        <legend>Next review</legend>
+        <label class="review-toggle"><input id="workspace-suggestions" type="checkbox" checked> Suggest directions</label>
+        <label>Options
+          <select id="workspace-option-count" class="field-input review-select" aria-label="Number of suggested directions">
+            <option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option>
+          </select>
+        </label>
+        <label>View
+          <select id="workspace-review-layout" class="field-input review-select" aria-label="Review layout">
+            <option value="single">One at a time</option><option value="compare" selected>Side by side</option>
+          </select>
+        </label>
+        <label class="review-toggle"><input id="workspace-low-fi" type="checkbox" checked> Low fidelity</label>
+      </fieldset>
+      <p class="review-help">These choices apply only to the next feedback round.</p>
+
+      <label for="workspace-refinement">Describe what to change</label>
+      <textarea id="workspace-refinement" class="field-input" maxlength="4000" rows="3"></textarea>
+      <button id="workspace-refine" class="btn-primary">Send feedback</button>
+      <p><a id="workspace-export" href="/api/workspace/export" hidden>Use this design · download visual handoff</a></p>
+      <p class="decision-note">This is a visual handoff. Application behavior still needs build verification.</p>
+      <details class="workspace-context" open><summary>Suggested inputs and outputs</summary>
+        <p>Groundwork derives these from the loaded app context. Observed items came from inspected evidence; suggested items are proposals you can edit, accept, or remove.</p>
+        <div id="workspace-suggestions-list" class="suggestion-list"></div>
+        <label for="workspace-source">Add context Groundwork missed</label>
+        <textarea id="workspace-source" class="field-input" maxlength="4000" rows="2"></textarea>
+        <button id="workspace-source-save" class="btn-quiet">Add context</button>
+      </details>
+      <details><summary>Processing history</summary>
+        <p>Processed notes received a valid designer response. They are not automatically confirmed decisions.</p>
+        <ul id="workspace-ledger"></ul>
+      </details>
+    </section>
+
+    <!-- Design output — DESIGN.md, drafts and versions. -->
+    <section class="done" id="done" hidden>
+      <div class="decision-head">
+        <h1 class="decision-title" id="done-title">Design output</h1>
+        <p class="decision-desc" id="done-reason"></p>
+      </div>
+      <p class="decision-note" id="done-empty">Nothing emitted yet. Finish the Designer walk and DESIGN.md, its drafts and its versions appear here.</p>
+      <div id="done-body" hidden>
+        <div class="done-actions">
+          <button class="btn-primary" id="emit-btn">Emit DESIGN.md</button>
+          <button class="btn-primary" id="promote-btn">Promote to version</button>
+          <button class="btn-quiet" id="save-draft-btn" title="make a change to save a draft">Save draft</button>
+          <span class="emit-status" id="emit-status"></span>
+        </div>
+        <div class="draft-promote-row">
+          <span id="draft-status" class="draft-status" hidden></span>
+          <span id="promote-status" class="promote-status" hidden></span>
+        </div>
+
+        <!-- Version history — read-only progressive disclosure (PART C) -->
+        <details id="version-history" class="version-history decision-explainer">
+          <summary class="decision-explainer-summary">Version history</summary>
+          <div class="decision-explainer-body" id="version-history-body">
+            <p class="dex-what" style="color:var(--ink3)">Loading…</p>
+          </div>
+        </details>
+
+        <pre class="design-md" id="design-md"></pre>
+      </div>
+    </section>
+
+    </main>
+  </div>
+
+  <script type="module" src="/picker.js"></script>
+</body>
+</html>

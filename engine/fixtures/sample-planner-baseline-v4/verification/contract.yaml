@@ -1,0 +1,11 @@
+schema: sample-planner.verification-contract/v4
+id: verification.planner-baseline.v4
+environment:
+  viewportCssPixels: {width: 430, height: 932}
+  appearance: light
+checks:
+  - id: verify.integrity
+    proves: Artifact hashes match the synthetic fixture declaration.
+  - id: verify.reconstruction
+    command: node engine/scripts/check-reconstruction.mjs
+    proves: Independent candidate observations satisfy declared constraints; copied baselines and fabricated measurements are rejected.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Product Design Manager"
+  short_description: "Orchestrate product design from idea to handoff"
+  default_prompt: "Use $product-design-manager to guide this product from its current state through a complete, build-ready design."

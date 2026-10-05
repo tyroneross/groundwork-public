@@ -1,0 +1,19 @@
+node_modules/
+/dist/
+
+# Local coordination and generated state must never enter a plugin payload.
+.rally/
+.build-loop/
+.designer/
+.designer-*.json
+.pytest_cache/
+.ibr/
+.navgator/
+.mockup-gallery/
+.designdoc/
+.groundwork-tx-*/
+__pycache__/
+*.pyc
+
+# The dependency-free engine bundle is the runtime entrypoint.
+!/engine/dist/

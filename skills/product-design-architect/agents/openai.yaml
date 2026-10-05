@@ -1,0 +1,4 @@
+interface:
+  display_name: "Product Design Architect"
+  short_description: "Connect UI choices to functional architecture"
+  default_prompt: "Use $product-design-architect to map this UI decision to data, contracts, components, flows, tasks, and tests."

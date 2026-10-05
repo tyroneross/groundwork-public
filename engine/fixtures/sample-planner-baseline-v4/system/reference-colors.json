@@ -1,0 +1,30 @@
+{
+  "schema": "sample-planner.reference-colors/v2",
+  "scope": "Exact populated iPhone Day Planner reference state only.",
+  "status": "locked",
+  "colors": {
+    "action.brand": "#3F96F2",
+    "action.timer": "#2563EB",
+    "text.primary": "#14213A",
+    "text.muted": "#52627B",
+    "surface.card": "#FFFFFF",
+    "surface.page.start": "#FFFFFF",
+    "surface.page.end": "#F4F8FF",
+    "surface.soft": "#F5F8FE",
+    "border.default": "#D6E1F0",
+    "link.action": "#075FC6",
+    "focus.visible": "#0B63CE",
+    "attention.text": "#805108",
+    "attention.message": "#714A18",
+    "attention.border": "#E5BD85",
+    "attention.background": "#FFF6E8"
+  },
+  "gradients": {"action.primary": {"angleDegrees": 135, "stops": ["#3F96F2", "#2563EB"]}},
+  "contrastAssertions": [
+    {"foreground":"#14213A","background":"#FFFFFF","minimumRatio":4.5},
+    {"foreground":"#52627B","background":"#FFFFFF","minimumRatio":4.5},
+    {"foreground":"#075FC6","background":"#FFFFFF","minimumRatio":4.5},
+    {"foreground":"#805108","background":"#FFF6E8","minimumRatio":4.5},
+    {"foreground":"#FFFFFF","background":"#2563EB","minimumRatio":4.5}
+  ]
+}

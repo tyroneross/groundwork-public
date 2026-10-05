@@ -1,0 +1,18 @@
+[
+  {
+    "path": "specs/001-pulse/groundwork-source.json",
+    "sha256": "de06541e22eff5bad504cb9e9a5d44a8f8ec5d3de0d36dae0e762fc0b9edd8b5"
+  },
+  {
+    "path": "specs/001-pulse/plan.md",
+    "sha256": "666b2d06034d7b4c4be59c9baa28584bce737a8423189d3affe5ec457da4a001"
+  },
+  {
+    "path": "specs/001-pulse/spec.md",
+    "sha256": "a9759a0dc063e117c29c89bfa09d24775467e3dc6beaeda8c941d5a6b67aefb7"
+  },
+  {
+    "path": "specs/001-pulse/tasks.md",
+    "sha256": "0d2558d259810acecb0eb2479cca1792fbe12927a8a5d58588d989bbd20ce7fd"
+  }
+]
