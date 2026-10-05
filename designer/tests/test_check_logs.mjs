@@ -12,12 +12,13 @@ for (const mode of ['failure', 'required skip']) {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'groundwork-log-test-'));
     t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
     const command = path.join(dir, 'check.sh');
-    fs.writeFileSync(command, '#!/bin/bash\necho ORIGINAL_EARLY_DIAGNOSTIC\n' + (mode === 'required skip' ? 'echo "# SKIP required fixture"\n' : '') + 'for ((i=0;i<150;i++)); do echo "later output $i"; done\nexit ' + (mode === 'failure' ? '1' : '0') + '\n');
+    fs.writeFileSync(command, '#!/bin/bash\necho ORIGINAL_EARLY_DIAGNOSTIC\n' + (mode === 'required skip' ? 'echo "# SKIP required fixture"\n' : 'echo "not ok 1 - early failing browser test"\necho ACTIONABLE_FAILURE_DETAIL\n') + 'for ((i=0;i<150;i++)); do echo "later output $i"; done\nexit ' + (mode === 'failure' ? '1' : '0') + '\n');
     const result = spawnSync('bash', ['-c', 'source "$1"; run "fixture gate" bash "$2"', '--', script, command], { encoding: 'utf8', env: { ...process.env, TMPDIR: dir }, timeout: 5000 });
     assert.equal(result.status, 1, result.stderr);
     const match = result.stderr.match(/Full check log retained at: (.+)/);
     assert.ok(match, 'failure should report the retained log path');
     assert.match(fs.readFileSync(match[1], 'utf8'), /ORIGINAL_EARLY_DIAGNOSTIC/);
     assert.match(result.stderr, /FAILED: fixture gate/);
+    if (mode === 'failure') assert.match(result.stderr, /ACTIONABLE_FAILURE_DETAIL/);
   });
 }

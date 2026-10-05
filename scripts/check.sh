@@ -16,6 +16,7 @@ run() {
   log="$(mktemp -t groundwork-check.XXXXXX)"
   echo "── $label"
   if ! "$@" >"$log" 2>&1; then
+    awk '/^not ok / { remaining=45 } remaining>0 { print; remaining-- }' "$log" >&2
     tail -80 "$log" >&2
     echo "Full check log retained at: $log" >&2
     echo "FAILED: $label" >&2
