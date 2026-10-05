@@ -122,7 +122,9 @@ try {
   })));
   writeFileSync(candidatePath, `${JSON.stringify(coordinated)}\n`);
   const coordinatedResult = spawnSync(process.execPath, [validator, "--packet-dir", packet, "--candidate", candidatePath], { encoding: "utf8" });
-  if (coordinatedResult.status === 0 || !coordinatedResult.stdout.includes("required #save-plan/#add-calendar shared action container is missing")) throw new Error("coordinated candidate/observation echo bypass was accepted or lacked actionable browser diagnostics");
+  if (coordinatedResult.status === 0 || !coordinatedResult.stdout.includes("required #save-plan/#add-calendar shared action container is missing")) {
+    throw new Error(`coordinated candidate/observation echo bypass was accepted or lacked actionable browser diagnostics (exit=${coordinatedResult.status}):\n${coordinatedResult.stdout}\n${coordinatedResult.stderr}`);
+  }
 
   const badSourceRoot = path.join(temp, "bad-source");
   cpSync(path.dirname(fixture), badSourceRoot, { recursive: true });
