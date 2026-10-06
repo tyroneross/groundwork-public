@@ -99,12 +99,12 @@
        board mid-answer. */
     var frame = body.querySelector("iframe");
     var keep = frame && frame.getAttribute("data-key") === frameKey();
-    if (!keep) body.innerHTML = html;
+    if (!keep) body.innerHTML = html; // nosec: every value is built by the render* functions with esc(), encodeURIComponent or constant text
     else {
       var info = body.querySelector("[data-live-info]");
-      var fresh = document.createElement("div"); fresh.innerHTML = html;
+      var fresh = document.createElement("div"); fresh.innerHTML = html; // nosec: every value is built by the render* functions with esc(), encodeURIComponent or constant text
       var freshInfo = fresh.querySelector("[data-live-info]");
-      if (info && freshInfo) info.innerHTML = freshInfo.innerHTML;
+      if (info && freshInfo) info.innerHTML = freshInfo.innerHTML; // nosec: every value is built by the render* functions with esc(), encodeURIComponent or constant text
     }
     renderNotes();
   }
@@ -251,7 +251,7 @@
       list.innerHTML = '<li class="empty">' + (notesScope === "all" ? "No notes in this project yet." : "No notes in this section yet.") + "</li>";
       return;
     }
-    list.innerHTML = items.slice(0, 50).map(function (f) {
+    list.innerHTML = items.slice(0, 50).map(function (f) { // nosec: note text, section and time pass through esc(); statusText is constant markup
       return '<li><div class="note-text">' + esc(f.text) + '</div><div class="meta">' + esc(LABELS[f.section] || f.section) +
         " · " + statusText(f.status) + (f.submittedAt ? " · " + esc(hhmm(f.submittedAt)) : "") + "</div></li>";
     }).join("");
