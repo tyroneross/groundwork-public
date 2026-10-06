@@ -10,6 +10,8 @@ spec.loader.exec_module(publication)
 
 @pytest.mark.parametrize("path,data", [
     (".designdoc/spec.json", b"{}"),
+    (".groundwork/project.json", b"{}"),
+    (".groundwork/decisions/home/decisions.json", b"{}"),
     ("docs/reviews/transcript.txt", b"a private transcript"),
     ("designer/references/dashboards/example.html", b"<html>"),
     ("projects/my-project/index.json", b"{}"),
@@ -30,3 +32,8 @@ def test_private_material_is_rejected(path, data):
 ])
 def test_product_contracts_and_synthetic_examples_are_allowed(path, data):
     assert publication.violations(path, data) == []
+
+
+def test_project_store_code_is_not_mistaken_for_store_data():
+    """The library that writes .groundwork/ ships; only the store directory is private."""
+    assert not publication.violations("designer/project/project_store.py", b"STORE = '.groundwork'")

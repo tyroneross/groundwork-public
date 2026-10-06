@@ -25,6 +25,7 @@ __pycache__/
 
 # Private, project-local design history
 .groundwork-workspace/
+.groundwork/
 
 # Private project data and maintainer evidence
 .designdoc/

@@ -6,7 +6,7 @@ import subprocess
 import sys
 
 PRIVATE_ROOTS = (".build-loop", ".designdoc", ".ibr", ".rally", ".bookmark",
-                 ".procedural", ".claude-code-debugger", ".groundwork-workspace",
+                 ".procedural", ".claude-code-debugger", ".groundwork-workspace", ".groundwork",
                  "docs/reviews", "docs/plans", "docs/hosted-app",
                  "references/design-library/snapshots")
 
