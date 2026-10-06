@@ -419,3 +419,16 @@ test('P11: readBoard falls back to the legacy board', () => {
   const r = tmp(); writeFile(path.join(r, '.designdoc', 'old', 'decisions.json'), fs.readFileSync(FIXTURE));
   assert.ok(Buffer.compare(make(r).readBoard('old'), fs.readFileSync(FIXTURE)) === 0);
 });
+
+test('canvas page is found beside the .canvas control dir', async () => {
+  const { projectStore } = await import('../project/project-store.mjs');
+  const R = fs.mkdtempSync(path.join(os.tmpdir(), 'gw-canvas-'));
+  try {
+    fs.mkdirSync(path.join(R, 'mockups', '.canvas'), { recursive: true });
+    fs.writeFileSync(path.join(R, 'mockups', '.canvas', 'feedback.jsonl'), '');
+    fs.writeFileSync(path.join(R, 'mockups', 'home.html'), '<p>canvas</p>');
+    const c = projectStore(R).snapshot().sections.canvas;
+    assert.equal(c.available, true);
+    assert.equal(c.htmlFile, 'mockups/home.html');
+  } finally { fs.rmSync(R, { recursive: true, force: true }); }
+});

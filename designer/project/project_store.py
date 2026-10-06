@@ -904,6 +904,11 @@ class ProjectStore:
 
     # ---------------------------------------------------- artifacts / migrations
     def _canvas_html(self, d: Path) -> str | None:
+        # The canvas server serves its page from the folder above .canvas/
+        # (control files only inside), so look beside it when .canvas/ is empty.
+        return self._canvas_html_in(d) or self._canvas_html_in(d.parent)
+
+    def _canvas_html_in(self, d: Path) -> str | None:
         htmls = [p for p in d.iterdir() if p.name.endswith(".html") and p.is_file() and not p.is_symlink()]
         if not htmls:
             return None

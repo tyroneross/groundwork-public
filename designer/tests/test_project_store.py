@@ -734,3 +734,14 @@ def test_p11_read_board_falls_back_to_legacy(tmp_path):
     leg.mkdir(parents=True)
     (leg / "decisions.json").write_bytes(COMPARE_DEMO.read_bytes())
     assert make(tmp_path).read_board("old") == COMPARE_DEMO.read_bytes()
+
+
+def test_canvas_page_is_found_beside_the_control_dir(tmp_path):
+    """canvas-server keeps only control files in .canvas/; the page sits above it."""
+    from designer.project.project_store import ProjectStore
+    ctrl = tmp_path / "mockups" / ".canvas"
+    ctrl.mkdir(parents=True)
+    (ctrl / "feedback.jsonl").write_text("", encoding="utf-8")
+    (tmp_path / "mockups" / "home.html").write_text("<p>canvas</p>", encoding="utf-8")
+    canvas = ProjectStore(tmp_path).snapshot()["sections"]["canvas"]
+    assert canvas["available"] is True and canvas["htmlFile"] == "mockups/home.html"

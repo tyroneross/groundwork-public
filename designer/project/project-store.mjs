@@ -438,7 +438,13 @@ export function projectStore(root, { now = isoNow, newId = defaultNewId, tool = 
     }
     return null;
   }
-  function canvasHtml(dir) {
+  // The canvas server keeps only control files in .canvas/ and serves the page
+  // from the folder above it (canvas-server.mjs CTRL_DIR = <page dir>/.canvas),
+  // so look beside .canvas/ when .canvas/ itself holds no page.
+  function canvasHtml(ctrl) {
+    return canvasHtmlIn(ctrl) || canvasHtmlIn(path.dirname(ctrl));
+  }
+  function canvasHtmlIn(dir) {
     const files = fs.readdirSync(dir).filter(n => n.endsWith('.html'))
       .map(n => ({ n, st: fs.lstatSync(path.join(dir, n), { bigint: true }) }))
       .filter(x => x.st.isFile());
