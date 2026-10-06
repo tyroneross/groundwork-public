@@ -144,6 +144,11 @@ revision of B to say no to both.
   "secondOpinion": { "source": "Persona panel", "verdict": "approve", "note": "..." } }
 ```
 
+Picking A or B saves a **draft** (`draftChoice`) with the note; the card stays
+put and the line under it says exactly what is saved. **Done** records the
+answer (`ruling`), clears the draft and moves the card out of the queue. A
+draft is never an answer.
+
 Optional fields: `headline` is the decision's one main idea in a few words
 ("Team lead model level"); the index card shows the category (`area`), the
 headline, then the question. Set `"ordered": true` at the record's top level

@@ -660,3 +660,25 @@ test("implementation evidence can bind a legacy string option", () => {
   assert.deepEqual(plain(D.selectedProposal(set, "approve-b")), { summary: "Proposal" });
   assert.equal(D.implementationLane(disk, set).key, "in-progress");
 });
+
+/* Picking A or B is a DRAFT: it saves to the file so a reload shows it, never
+ * counts as an answer, and only Done turns it into the ruling (2026-10-06:
+ * an immediate commit moved the card while the owner was still typing). */
+test("a compare pick saves as a draft that is not an answer until Done", () => {
+  const disk = { schema: D.SCHEMA, id: "s", compares: [{ id: "c1", question: "Q?",
+    optionA: { summary: "a" }, optionB: { summary: "b" } }] };
+  const drafted = plain(D.buildRecord(disk, { notes: { c1: { source: "compares", freeText: "thinking", draftChoice: "keep-a" } } }, "notes"));
+  assert.equal(drafted.compares[0].draftChoice, "keep-a");
+  assert.equal(drafted.compares[0].rulingText, "thinking");
+  assert.equal(drafted.compares[0].ruling, undefined, "a draft must not write the ruling");
+  const all = plain(D.normalize(drafted)); const n = (Array.isArray(all) ? all : all.items || all.ruleables).find((r) => r.id === "c1");
+  assert.equal(n.compare.draftChoice, "keep-a");
+  assert.ok(!D.truthy(n.chosen), "a draft must not make the item answered");
+
+  const done = plain(D.buildRecord(drafted, {
+    rulings: { c1: { source: "compares", chosen: "keep-a", ruledAt: "2026-10-06T08:00:00Z", freeText: "final" } },
+    notes: { c1: { source: "compares", freeText: "final", draftChoice: null } } }, "compare"));
+  assert.equal(done.compares[0].ruling, "keep-a");
+  assert.equal(done.compares[0].rulingText, "final");
+  assert.equal("draftChoice" in done.compares[0], false, "Done clears the draft");
+});

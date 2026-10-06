@@ -94,6 +94,7 @@
     return {
       area: str(raw.area),
       headline: str(raw.headline),
+      draftChoice: str(raw.draftChoice),
       optionA: side(raw.optionA), optionB: side(raw.optionB),
       secondOpinion: second
     };
@@ -403,6 +404,11 @@
           var n = mem.notes[raw.id];
           if (!n || n.source !== source || typeof n.freeText !== "string") return;
           raw[ADAPTER.freeText[source]] = n.freeText;
+          /* A compare's unfinished pick. null clears it once Done records the answer. */
+          if (source === "compares" && n.draftChoice !== undefined) {
+            if (n.draftChoice === null) delete raw.draftChoice;
+            else raw.draftChoice = n.draftChoice;
+          }
         });
       });
     }
@@ -549,7 +555,7 @@
      its note -- shown as pressed, never written. `cCommits` is a ruling the
      person clicked and the file has not confirmed yet. `cNotes`/`cNoteDirty`
      is typed text, which autosaves on its own because typing is not a ruling. */
-  var cPending = {}, cCommits = {}, cNotes = {}, cNoteDirty = {}, cMsg = {}, cTimers = {};
+  var cPending = {}, cCommits = {}, cNotes = {}, cNoteDirty = {}, cMsg = {}, cTimers = {}, cDrafts = {};
   var gPending = {}, gCommits = {}, gNotes = {}, gMsg = {}, gRequests = [];
   var cSignature = "";
 
@@ -800,11 +806,20 @@
   /* What the person sees as their answer: a commit in flight wins, then the
      recorded ruling, and a pending (noteless) click is reported separately. */
   function cShown(r) {
-    if (cPending[r.id]) return cPending[r.id];
+    if (cDraft(r)) return cDraft(r);
     if (cCommits[r.id]) return cCommits[r.id].chosen;
     return truthy(r.chosen) ? r.chosen : null;
   }
   function cRecorded(r) { return truthy(r.chosen) ? r.chosen : null; }
+  /* A draft is a pick the person has not finished: picking never moves a card.
+     It is saved to the file as `draftChoice` so a reload shows it, and it only
+     becomes the answer when the person presses Done. */
+  function cDraft(r) {
+    if (cPending[r.id]) return cPending[r.id];
+    if (cCommits[r.id]) return null;
+    var d = r.compare && r.compare.draftChoice;
+    return d && d !== cRecorded(r) ? d : null;
+  }
 
   function visualHtml(r, which) {
     var opt = r.compare[which === "a" ? "optionA" : "optionB"];
@@ -868,11 +883,11 @@
       "</div>" +
       '<div class="c-resp">' +
       '<div class="c-choices" role="group" aria-label="' + esc("Your answer to decision " + n) + '">' + choices + "</div>" +
-      '<label class="c-label" for="cn-' + esc(r.id) + '">Note. Required for Revise B (what to change) and Neither (what you want instead).</label>' +
+      '<label class="c-label" for="cn-' + esc(r.id) + '">Pick A or B, add a note if you want, then press Done. Your pick and note save as you go; nothing moves until Done. A note is required for Revise B and Neither.</label>' +
       '<textarea class="c-note" id="cn-' + esc(r.id) + '" data-cnote="' + esc(r.id) + '" aria-describedby="ce-' + esc(r.id) + '">' +
       esc(cNoteValue(r)) + "</textarea>" +
       '<p class="c-err" id="ce-' + esc(r.id) + '" hidden></p>' +
-      '<div class="c-foot"><button type="button" class="d-use c-record" data-crecord="' + esc(r.id) + '" hidden>Record</button>' +
+      '<div class="c-foot"><button type="button" class="d-use c-record" data-crecord="' + esc(r.id) + '" hidden>Done</button>' +
       '<span class="c-saved" data-csaved="' + esc(r.id) + '" role="status" aria-live="polite"></span></div>' +
       second + "</div>" +
       '<a class="c-back" href="' + (selectedView ? '#selected-top' : '#compare-top') + '">Back to index</a>' +
@@ -880,8 +895,8 @@
   }
 
   function compareStatusText(r) {
-    var pend = cPending[r.id];
-    if (pend) return { text: compareLabel(pend) + " · needs a note", c: "pending" };
+    var pend = cDraft(r);
+    if (pend) return { text: "Draft: " + compareLabel(pend) + (cNoteValue(r).trim() ? " + note" : "") + " · not done", c: "pending" };
     var shown = cShown(r);
     if (!shown) return { text: "No response yet", c: "" };
     return { text: compareLabel(shown) + (cNoteValue(r).trim() ? " · note" : ""), c: shown };
@@ -1098,7 +1113,7 @@
     var r = byId(id);
     var sec = document.querySelector('[data-compare="' + cssEsc(id) + '"]');
     if (!r || !sec) return;
-    var shown = cShown(r), pend = cPending[id] || null;
+    var shown = cShown(r), pend = cDraft(r);
     sec.querySelectorAll(".c-choice").forEach(function (b) {
       b.setAttribute("aria-pressed", b.getAttribute("data-c") === shown ? "true" : "false");
     });
@@ -1116,12 +1131,13 @@
     if (rec) {
       rec.hidden = !pend;
       rec.disabled = !!problem;
-      rec.textContent = pend ? "Record " + compareLabel(pend) : "Record";
+      rec.textContent = pend ? "Done: record " + compareLabel(pend) : "Done";
     }
     var saved = sec.querySelector("[data-csaved]");
     if (saved) {
       var m = cMsg[id];
-      saved.textContent = m ? m.text : (cRecorded(r) ? "Recorded" + (r.ruledAt ? " " + r.ruledAt : "") : "");
+      saved.textContent = m ? m.text : (pend ? "Draft saved: " + compareLabel(pend) + noteSummary(r) + ". Press Done when finished."
+        : (cRecorded(r) ? "Answered: " + compareLabel(cRecorded(r)) + noteSummary(r) + (r.ruledAt ? " · " + clock(r.ruledAt) : "") : ""));
       saved.className = "c-saved" + (m && m.err ? " err" : "");
     }
     var st = compareStatusText(r);
@@ -1207,7 +1223,12 @@
     return m ? m[1] + ":" + m[2] + ":" + m[3] + " UTC" : String(savedAt || "");
   }
 
-  /* A ruling commits on the explicit click and nowhere else. */
+  function noteSummary(r) {
+    var n = cNoteValue(r).trim();
+    return n ? " + note (" + n.length + " characters)" : ", no note";
+  }
+
+  /* A ruling commits on Done and nowhere else. */
   function commitCompare(id, key) {
     var r = byId(id);
     if (!r) return;
@@ -1218,6 +1239,7 @@
       ruledAt: new Date().toISOString() };
     cCommits[id] = mine;
     delete cPending[id];
+    cNotes[id] = note; cNoteDirty[id] = true; cDrafts[id] = null;
     setCMsg(id, "Saving…");
     putRecord("compare").then(function (j) {
       /* Report only what the file now holds. A newer click still queued owns
@@ -1225,10 +1247,10 @@
       if (!cCommits[id]) {
         var now = byId(id);
         setCMsg(id, now && cRecorded(now)
-          ? "Saved " + compareLabel(now.chosen) + " at " + clock(j.savedAt) + "." : "");
+          ? "Answered " + compareLabel(now.chosen) + noteSummary(now) + " at " + clock(j.savedAt) + ". Moved to Selected." : "");
+        toast("Answered " + compareLabel(key) + ". Moved to Selected.");
       }
       render();
-      navigateView("selected", true);
     }).catch(function (e) {
       /* Drop only THIS click. A newer one queued behind it must survive. */
       if (cCommits[id] === mine) {
@@ -1242,29 +1264,31 @@
   function onComparePick(id, key) {
     var r = byId(id);
     if (!r) return;
-    var note = cNoteValue(r);
-    if (compareNoteError(key, note)) {
-      cPending[id] = key;
-      setCMsg(id, "Not recorded yet.");
-      paintProgress();
-      var ta = el("cn-" + id);
-      if (ta) ta.focus();
-      return;
-    }
-    commitCompare(id, key);
+    cPending[id] = key;
+    cDrafts[id] = key;
+    cNotes[id] = cNoteValue(r);
+    cNoteDirty[id] = true;
+    paintCompare(id);
+    paintProgress();
+    scheduleNoteSave(id, 0);
+    var ta = el("cn-" + id);
+    if (ta && compareNoteError(key, cNoteValue(r))) ta.focus();
   }
 
-  function scheduleNoteSave(id) {
+  function scheduleNoteSave(id, delay) {
     if (cTimers[id]) clearTimeout(cTimers[id]);
     cTimers[id] = setTimeout(function () {
-      setCMsg(id, "Saving note…");
+      setCMsg(id, "Saving…");
       putRecord("notes").then(function (j) {
-        setCMsg(id, "Note saved at " + clock(j.savedAt) + (cPending[id] ? ". " + compareLabel(cPending[id]) + " is not recorded until you press Record." : "."));
-        render();
+        var r = byId(id), d = r ? cDraft(r) : null;
+        setCMsg(id, (d ? "Draft saved at " + clock(j.savedAt) + ": " + compareLabel(d) : "Saved at " + clock(j.savedAt) + ":" +
+          (r && cRecorded(r) ? " " + compareLabel(cRecorded(r)) : " no pick yet")) + (r ? noteSummary(r) : "") +
+          (d ? ". Press Done when finished." : "."));
+        paintCompare(id);
       }).catch(function (e) {
-        setCMsg(id, "Note not saved: " + e.message, true);
+        setCMsg(id, "Not saved: " + e.message + ". Your text is still here; keep typing to retry.", true);
       });
-    }, 800);
+    }, delay === undefined ? 800 : delay);
   }
 
   function paintCounts() {
@@ -1308,6 +1332,7 @@
     var notes = {};
     Object.keys(cNoteDirty).forEach(function (id) {
       notes[id] = { source: "compares", freeText: cNotes[id] };
+      if (Object.prototype.hasOwnProperty.call(cDrafts, id)) notes[id].draftChoice = cDrafts[id];
     });
     if (scope === "group") {
       return {
@@ -1580,8 +1605,9 @@
     }
     if (t.hasAttribute("data-crecord")) {
       var cid = t.getAttribute("data-crecord");
-      if (cPending[cid] && !compareNoteError(cPending[cid], cNoteValue(byId(cid) || { id: cid }))) {
-        commitCompare(cid, cPending[cid]);
+      var cr = byId(cid), dk = cr ? cDraft(cr) : null;
+      if (dk && !compareNoteError(dk, cNoteValue(cr))) {
+        commitCompare(cid, dk);
       }
       return;
     }

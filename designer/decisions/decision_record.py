@@ -130,6 +130,7 @@ def _compare(raw: dict[str, Any]) -> dict[str, Any]:
     return {
         "area": s(raw.get("area")),
         "headline": s(raw.get("headline")),
+        "draftChoice": s(raw.get("draftChoice")),
         "optionA": _side(raw.get("optionA")),
         "optionB": _side(raw.get("optionB")),
         "secondOpinion": second,
