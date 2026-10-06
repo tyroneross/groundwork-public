@@ -140,6 +140,19 @@ def test_op_script_exercised_what_it_claims(runs):
     rev_item = next(f for f in proj["feedback"] if f["id"] == "fb_rev")
     assert list(rev_item)[-1] == "draftRevision" and rev_item["draftRevision"] == 3
     assert "draftRevision" not in next(f for f in proj["feedback"] if f["id"] == "fb_cafe")
+    # Tombstones: a deleted draft keeps its revision as a floor; a late write at or
+    # below it is refused, a newer one recreates the draft and clears the floor.
+    assert r[48] == {"deleted": "fb_tomb"}
+    assert r[49] == {"error": "stale"} and r[50] == {"error": "stale"}
+    assert r[51]["text"] == "newer save after delete" and r[51]["draftRevision"] == 6
+    assert r[53] == {"deleted": "fb_tomb3"}
+    assert r[54]["text"] == "tool write without revision" and "draftRevision" not in r[54]
+    assert r[55] == {"error": "stale"}
+    drafts = {f["id"]: f["text"] for f in r[56]}
+    assert drafts.get("fb_tomb") == "newer save after delete" and "fb_revdel" not in drafts
+    assert "fb_revdel" not in json.dumps(r[57])                                 # never in the agent contract
+    assert proj["draftFloors"] == {"fb_revdel": 6, "fb_tomb3": 3}
+    assert list(proj)[-1] == "draftFloors"
 
 
 @pytest.mark.parametrize("reader_src,writer", [("py", "py"), ("js", "py"), ("py", "js"), ("js", "js")])

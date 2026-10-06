@@ -47,8 +47,12 @@ is not greater than it, so a save that arrives late, such as one still in flight
 when the page-exit save went out, cannot put older text back. A write without
 `revision` (CLI, agents) is accepted as before and leaves `draftRevision`
 unchanged. Revisions apply only to drafts: a sent or processed note still
-refuses every change with `state`. After a draft is deleted its revision is
-gone, so a late write for that id creates the draft again.
+refuses every change with `state`. Deleting a draft that held a revision (or
+deleting with one) leaves a tombstone in `project.json` `draftFloors`
+(`{"<id>": <revision>}`), so a late write for that id at or below it is refused
+with `stale` instead of bringing the draft back; a newer write recreates the
+draft and clears the entry. Tombstones are not notes: no list, snapshot or agent
+contract shows them.
 
 ## Read and write it from a shell or an agent
 

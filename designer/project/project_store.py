@@ -218,13 +218,46 @@ def validate_draft_revision(revision: Any) -> int | None:
     return revision
 
 
-def _refuse_stale_revision(cur: dict, revision: int | None) -> None:
-    """A revisioned write must be newer than the revision the draft already holds."""
-    held = cur.get("draftRevision")
-    if revision is None or isinstance(held, bool) or not isinstance(held, int):
+def _rev_int(v: Any) -> int | None:
+    return v if isinstance(v, int) and not isinstance(v, bool) else None
+
+
+def _draft_floor(doc: dict, fid: Any) -> int | None:
+    """The revision a deleted draft held (project.json draftFloors), or None."""
+    floors = doc.get("draftFloors")
+    return _rev_int(floors.get(fid)) if isinstance(floors, dict) and isinstance(fid, str) else None
+
+
+def _held_revision(doc: dict, fid: Any, cur: dict | None) -> int | None:
+    held = [r for r in (_rev_int(cur.get("draftRevision")) if cur else None, _draft_floor(doc, fid)) if r is not None]
+    return max(held) if held else None
+
+
+def _refuse_stale_revision(doc: dict, fid: Any, cur: dict | None, revision: int | None) -> None:
+    """A revisioned write must be newer than the revision the draft holds, or held when deleted."""
+    held = _held_revision(doc, fid, cur)
+    if revision is None or held is None:
         return
     if revision <= held:
-        raise StoreError("stale", f"feedback {cur['id']} revision {revision} is not newer than stored revision {held}")
+        raise StoreError("stale", f"feedback {fid} revision {revision} is not newer than stored revision {held}")
+
+
+def _clear_draft_floor(doc: dict, fid: str) -> None:
+    floors = doc.get("draftFloors")
+    if isinstance(floors, dict) and fid in floors:
+        del floors[fid]
+        if not floors:
+            del doc["draftFloors"]
+
+
+def _set_draft_floor(doc: dict, fid: str, floor: int) -> None:
+    """Tombstone: a deleted draft keeps its revision so a late write cannot recreate it."""
+    floors = doc.get("draftFloors")
+    if not isinstance(floors, dict):
+        floors = doc["draftFloors"] = {}
+    floors[fid] = floor
+    while len(floors) > MAX_FEEDBACK:
+        del floors[next(iter(floors))]
 
 
 def validate_preference_input(text: Any, scope: Any = "repo", provenance: Any = None) -> dict:
@@ -561,10 +594,16 @@ class ProjectStore:
             cur = None if v["id"] is None else self._find(doc["feedback"], v["id"])
             if cur is None:
                 fid = v["id"] if v["id"] is not None else self._gen_feedback_id()
-                return copy.deepcopy(self._new_item(doc, fid, v, "draft"))
+                _refuse_stale_revision(doc, fid, None, v["revision"])
+                item = self._new_item(doc, fid, v, "draft")
+                if v["revision"] is not None:
+                    _clear_draft_floor(doc, fid)
+                return copy.deepcopy(item)
             if cur["status"] != "draft":
                 raise StoreError("state", f"feedback {cur['id']} is {cur['status']}; only drafts can change")
-            _refuse_stale_revision(cur, v["revision"])
+            _refuse_stale_revision(doc, cur["id"], cur, v["revision"])
+            if v["revision"] is not None:
+                _clear_draft_floor(doc, cur["id"])
             new = {**cur, "section": v["section"], "target": v["target"], "text": v["text"],
                    "origin": v["origin"]}
             if v["revision"] is not None:
@@ -651,8 +690,11 @@ class ProjectStore:
                 raise StoreError("not-found", f"unknown feedback: {id}")
             if cur["status"] != "draft":
                 raise StoreError("state", f"feedback {id} is {cur['status']}; only drafts can be deleted")
-            _refuse_stale_revision(cur, rv)
+            _refuse_stale_revision(doc, id, cur, rv)
+            held = [r for r in (_held_revision(doc, id, cur), rv) if r is not None]
             doc["feedback"].remove(cur)
+            if held:
+                _set_draft_floor(doc, id, max(held))
             return {"deleted": id}
         return self.mutate(fn)
 

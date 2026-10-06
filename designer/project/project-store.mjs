@@ -192,11 +192,35 @@ export function validateDraftRevision(revision) {
   return revision;
 }
 
-// A revisioned write must be newer than the revision the draft already holds.
-function refuseStaleRevision(cur, revision) {
-  const held = cur.draftRevision;
-  if (revision === null || !Number.isInteger(held)) return;
-  if (revision <= held) fail('stale', `feedback ${cur.id} revision ${revision} is not newer than stored revision ${held}`);
+const revInt = (v) => (Number.isInteger(v) ? v : null);
+// The revision a deleted draft held (project.json draftFloors), or null.
+function draftFloor(doc, id) {
+  const floors = doc.draftFloors;
+  return isObj(floors) && typeof id === 'string' && Object.prototype.hasOwnProperty.call(floors, id) ? revInt(floors[id]) : null;
+}
+function heldRevision(doc, id, cur) {
+  const held = [cur ? revInt(cur.draftRevision) : null, draftFloor(doc, id)].filter(r => r !== null);
+  return held.length ? Math.max(...held) : null;
+}
+// A revisioned write must be newer than the revision the draft holds, or held when deleted.
+function refuseStaleRevision(doc, id, cur, revision) {
+  const held = heldRevision(doc, id, cur);
+  if (revision === null || held === null) return;
+  if (revision <= held) fail('stale', `feedback ${id} revision ${revision} is not newer than stored revision ${held}`);
+}
+function clearDraftFloor(doc, id) {
+  const floors = doc.draftFloors;
+  if (isObj(floors) && Object.prototype.hasOwnProperty.call(floors, id)) {
+    delete floors[id];
+    if (Object.keys(floors).length === 0) delete doc.draftFloors;
+  }
+}
+// Tombstone: a deleted draft keeps its revision so a late write cannot recreate it.
+function setDraftFloor(doc, id, floor) {
+  if (!isObj(doc.draftFloors)) doc.draftFloors = {};
+  doc.draftFloors[id] = floor;
+  const keys = Object.keys(doc.draftFloors);
+  for (let i = 0; i < keys.length - MAX_FEEDBACK; i += 1) delete doc.draftFloors[keys[i]];
 }
 
 export function validatePreferenceInput(input = {}) {
@@ -576,9 +600,15 @@ export function projectStore(root, { now = isoNow, newId = defaultNewId, tool = 
     const v = { ...validateFeedbackInput(input), revision: validateDraftRevision((input || {}).revision) };
     return mutate((doc, t) => {
       const old = v.id === null ? undefined : doc.feedback.find(f => isObj(f) && f.id === v.id);
-      if (!old) return clone(newFeedback(doc, t, v, 'draft'));
+      if (!old) {
+        if (v.id !== null) refuseStaleRevision(doc, v.id, null, v.revision);
+        const item = newFeedback(doc, t, v, 'draft');
+        if (v.revision !== null) clearDraftFloor(doc, item.id);
+        return clone(item);
+      }
       if (old.status !== 'draft') fail('state', `feedback ${old.id} is ${old.status}; only drafts can change`);
-      refuseStaleRevision(old, v.revision);
+      refuseStaleRevision(doc, old.id, old, v.revision);
+      if (v.revision !== null) clearDraftFloor(doc, old.id);
       const next = { ...old, section: v.section, target: v.target, text: v.text, origin: v.origin };
       if (v.revision !== null) next.draftRevision = v.revision;
       if (canonical(next) !== canonical(old)) { Object.assign(old, next); old.updatedAt = t; }
@@ -642,8 +672,11 @@ export function projectStore(root, { now = isoNow, newId = defaultNewId, tool = 
       const i = doc.feedback.findIndex(f => isObj(f) && f.id === id);
       if (i < 0) fail('not-found', `unknown feedback: ${id}`);
       if (doc.feedback[i].status !== 'draft') fail('state', `feedback ${id} is ${doc.feedback[i].status}; only drafts can be deleted`);
-      refuseStaleRevision(doc.feedback[i], rv);
+      const cur = doc.feedback[i];
+      refuseStaleRevision(doc, id, cur, rv);
+      const held = [heldRevision(doc, id, cur), rv].filter(r => r !== null);
       doc.feedback.splice(i, 1);
+      if (held.length) setDraftFloor(doc, id, Math.max(...held));
       return { deleted: id };
     });
   }

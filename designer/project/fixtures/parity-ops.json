@@ -318,6 +318,71 @@
       "op": "listFeedback",
       "section": "general",
       "status": "draft"
+    },
+    {
+      "op": "upsertDraft",
+      "id": "fb_tomb",
+      "section": "general",
+      "text": "draft before delete",
+      "revision": 4
+    },
+    {
+      "op": "deleteDraft",
+      "id": "fb_tomb",
+      "revision": 5
+    },
+    {
+      "op": "upsertDraft",
+      "id": "fb_tomb",
+      "section": "general",
+      "text": "late save, same revision as the delete",
+      "revision": 5
+    },
+    {
+      "op": "upsertDraft",
+      "id": "fb_tomb",
+      "section": "general",
+      "text": "late save, older revision",
+      "revision": 3
+    },
+    {
+      "op": "upsertDraft",
+      "id": "fb_tomb",
+      "section": "general",
+      "text": "newer save after delete",
+      "revision": 6
+    },
+    {
+      "op": "upsertDraft",
+      "id": "fb_tomb3",
+      "section": "spec",
+      "text": "second tombstone",
+      "revision": 2
+    },
+    {
+      "op": "deleteDraft",
+      "id": "fb_tomb3",
+      "revision": 3
+    },
+    {
+      "op": "upsertDraft",
+      "id": "fb_tomb3",
+      "section": "spec",
+      "text": "tool write without revision"
+    },
+    {
+      "op": "upsertDraft",
+      "id": "fb_tomb3",
+      "section": "spec",
+      "text": "late pane save",
+      "revision": 3
+    },
+    {
+      "op": "listFeedback",
+      "status": "draft"
+    },
+    {
+      "op": "agentContract"
     }
   ]
 }
