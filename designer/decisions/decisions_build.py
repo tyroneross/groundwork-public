@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """Scaffold a guided-decision surface for any project, and serve it.
 
-Groundwork's storage model (SPEC.md, projects/README.md) puts a project's design
-data in `<repo>/.designdoc/<slug>/`. This drops a decision record and the surface
-that renders it there, so the page, its record and its screenshots live together
-in the repository they describe.
+A project's decision boards live in the repository they describe, in the one
+per-repo Groundwork store: `<repo>/.groundwork/decisions/<slug>/` holds the
+record and its screenshots. The page that renders a board is served from the
+Groundwork install by the project server (`designer/project/project-server.mjs`),
+which shows every board, the canvas, saved work, the Spec and project memory at
+one URL per repo. Boards made before the store existed sit in
+`<repo>/.designdoc/<slug>/`; `python3 -m designer.project migrate` copies them in
+without touching the originals.
 
     python3 -m designer.decisions.decisions_build init   <repo> --slug <slug> [--template compare]
     python3 -m designer.decisions.decisions_build check  <record.json> [--json]
@@ -15,16 +19,15 @@ in the repository they describe.
 person has been writing in; replacing it with a template because a command was
 run twice is not recoverable from, so the command refuses and says so.
 
-The app files are COPIED rather than symlinked, because the record must stay
-readable after the plugin is upgraded or uninstalled -- a surface that stops
-opening when its generator moves is not a durable record of anything.
+The app files are NOT copied beside the record. A copy per board drifted from
+every later fix to the board, so the page is served from the install instead.
+The record itself stays plain JSON that `check --json` reads with no server.
 """
 from __future__ import annotations
 
 import argparse
 import json
 import os
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -37,6 +40,7 @@ HERE = Path(__file__).resolve().parent
 APP_DIR = HERE / "app"
 APP_FILES = ("index.html", "decisions.css", "decisions.js")
 SERVER = HERE / "decisions-server.mjs"
+PROJECT_SERVER = HERE.parent / "project" / "project-server.mjs"
 RECORD_NAME = "decisions.json"
 # `init --template compare` copies this synthetic A-or-B set, visuals and all,
 # so the board opens on something real-shaped instead of a blank.
@@ -98,10 +102,16 @@ def compare_record(slug: str, product: str | None) -> dict:
 
 
 def target_dir(repo: str, slug: str) -> Path:
+    return Path(repo).expanduser().resolve() / ".groundwork" / "decisions" / slug
+
+
+def legacy_dir(repo: str, slug: str) -> Path:
     return Path(repo).expanduser().resolve() / ".designdoc" / slug
 
 
 def cmd_init(a) -> int:
+    from designer.project.project_store import ProjectStore, StoreError
+
     repo = Path(a.repo).expanduser().resolve()
     if not repo.is_dir():
         return _die(f"not a directory: {repo}")
@@ -114,9 +124,11 @@ def cmd_init(a) -> int:
             f"{record} already exists.\n"
             "  A decision record is a document someone has been writing in, so this\n"
             "  command will not replace it. Delete it yourself if that is what you want.")
-
-    out.mkdir(parents=True, exist_ok=True)
-    (out / "visuals").mkdir(exist_ok=True)
+    legacy = legacy_dir(a.repo, a.slug) / RECORD_NAME
+    if legacy.exists():
+        return _die(
+            f"{legacy} already exists from before the project store.\n"
+            f"  Copy it into the store with: python3 -m designer.project migrate --repo {repo}")
 
     if a.template == "compare":
         rec = compare_record(a.slug, a.product)
@@ -125,25 +137,29 @@ def cmd_init(a) -> int:
     errs = dr.validate(rec)
     if errs:  # pragma: no cover - would mean starter_record itself is broken
         return _die("the starter record is invalid:\n  - " + "\n  - ".join(errs))
-    _atomic_write(record, json.dumps(rec, indent=2, ensure_ascii=False) + "\n")
 
-    for name in APP_FILES:
-        shutil.copyfile(APP_DIR / name, out / name)
-    if a.template == "compare":
-        # Never over an existing picture: visuals/ may predate the record.
-        for src in sorted((COMPARE_TEMPLATE / "visuals").iterdir()):
-            dst = out / "visuals" / src.name
-            if src.is_file() and not dst.exists():
-                shutil.copyfile(src, dst)
-    else:
-        manifest = out / "visuals" / "manifest.json"
-        if not manifest.exists():
-            _atomic_write(manifest, json.dumps({"items": {}}, indent=2) + "\n")
+    store = ProjectStore(repo, tool="decisions_build")
+    try:
+        store.init()
+        base = f"decisions/{a.slug}"
+        with store.lock():
+            if record.exists():
+                return _die(f"{record} already exists.")
+            store.write_bytes(f"{base}/{RECORD_NAME}",
+                              (json.dumps(rec, indent=2, ensure_ascii=False) + "\n").encode("utf-8"))
+            if a.template == "compare":
+                # Never over an existing picture: visuals/ may predate the record.
+                for src in sorted((COMPARE_TEMPLATE / "visuals").iterdir()):
+                    if src.is_file() and not (out / "visuals" / src.name).exists():
+                        store.write_bytes(f"{base}/visuals/{src.name}", src.read_bytes())
+            elif not (out / "visuals" / "manifest.json").exists():
+                store.write_bytes(f"{base}/visuals/manifest.json",
+                                  (json.dumps({"items": {}}, indent=2) + "\n").encode("utf-8"))
+    except StoreError as e:
+        return _die(str(e), 3 if getattr(e, "code", None) == "lock-timeout" else 2)
 
     print(f"created {out}")
     print(f"  {RECORD_NAME}   the record -- edit this, or have an agent append to it")
-    for name in APP_FILES:
-        print(f"  {name}{' ' * max(0, 12 - len(name))} the surface")
     print(f"  visuals/       put per-decision screenshots here (see VISUALS.md)")
     print(f"\nserve it:\n  python3 -m designer.decisions.decisions_build serve {a.repo} --slug {a.slug}")
     return 0
@@ -238,17 +254,26 @@ def cmd_export(a) -> int:
     return 0
 
 
+def serve_command(repo: str, slug: str, port: int | None = None, proxy: str | None = None) -> list[str]:
+    """The project server command line that shows this board (and the rest of
+    the project) at one URL per repo."""
+    cmd = ["node", str(PROJECT_SERVER), "--repo", str(Path(repo).expanduser().resolve())]
+    if port:
+        cmd += ["--port", str(port)]
+    if proxy:
+        cmd += ["--proxy", proxy]
+    return cmd
+
+
 def cmd_serve(a) -> int:
     out = target_dir(a.repo, a.slug)
     record = out / RECORD_NAME
-    if not record.exists():
+    legacy = legacy_dir(a.repo, a.slug) / RECORD_NAME
+    if not record.exists() and not legacy.exists():
         return _die(f"no record at {record}\n  run `init` first.")
-    cmd = ["node", str(SERVER), "--record", str(record), "--app", str(out)]
-    if a.port:
-        cmd += ["--port", str(a.port)]
-    if a.proxy:
-        cmd += ["--proxy", a.proxy]
+    cmd = serve_command(a.repo, a.slug, a.port, a.proxy)
     print("  " + " ".join(cmd))
+    print(f"  the board opens at <printed URL>decisions/{a.slug}/ (the pane lists every board)")
     try:
         return subprocess.call(cmd)
     except FileNotFoundError:
@@ -261,7 +286,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="decisions_build.py", description=__doc__.split("\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
 
-    i = sub.add_parser("init", help="scaffold a record and the surface into a repo")
+    i = sub.add_parser("init", help="create a board record in <repo>/.groundwork/decisions/<slug>/")
     i.add_argument("repo")
     i.add_argument("--slug", required=True)
     i.add_argument("--product", default=None)
@@ -282,7 +307,7 @@ def main(argv: list[str] | None = None) -> int:
     e.add_argument("--slug", default=None, help="selection slug (default: the record id)")
     e.set_defaults(fn=cmd_export)
 
-    s = sub.add_parser("serve", help="serve an existing surface")
+    s = sub.add_parser("serve", help="serve the project pane (all boards) for a repo")
     s.add_argument("repo")
     s.add_argument("--slug", required=True)
     s.add_argument("--port", type=int, default=None)

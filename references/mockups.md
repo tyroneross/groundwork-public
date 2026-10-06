@@ -416,7 +416,7 @@ put the pairs on a compare board (`AGENTS.md`, `designer/decisions/README.md`)
 and export the answers instead of hand-writing this file:
 
 ```bash
-python3 -m designer.decisions.decisions_build export <repo>/.designdoc/<slug>/decisions.json --format selection --out <design-dir>/mockups/selection.json
+python3 -m designer.decisions.decisions_build export <repo>/.groundwork/decisions/<slug>/decisions.json --format selection --out <design-dir>/mockups/selection.json
 ```
 
 `primaryMode` is the seed the next step consumes: the explore-ui flow maps the Spec to a Designer context whose `mood` should now carry this chosen mode, so the token-level walk starts from the direction the user already endorsed at full-screen scale.

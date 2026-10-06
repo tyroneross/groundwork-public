@@ -31,8 +31,11 @@ Full contract: [`designer/decisions/README.md`](designer/decisions/README.md).
 python3 -m designer.decisions.decisions_build init <repo> --slug <slug> --template compare
 ```
 
-This writes `<repo>/.designdoc/<slug>/`: `decisions.json` (the record), the page
-(`index.html`, `decisions.css`, `decisions.js`), and `visuals/`. The template
+This writes `<repo>/.groundwork/decisions/<slug>/`: `decisions.json` (the record)
+and `visuals/`. The page is served from this install, never copied beside the
+record. A board made before the store existed (`<repo>/.designdoc/<slug>/`) is
+copied in, without changing the original, by
+`python3 -m designer.project migrate --repo <repo>`. The template
 holds three synthetic decisions. Replace them with real ones. Each item in
 `compares[]` looks like this:
 
@@ -61,19 +64,21 @@ holds three synthetic decisions. Replace them with real ones. Each item in
 ### 2. Validate, then serve
 
 ```bash
-python3 -m designer.decisions.decisions_build check <repo>/.designdoc/<slug>/decisions.json
+python3 -m designer.decisions.decisions_build check <repo>/.groundwork/decisions/<slug>/decisions.json
 python3 -m designer.decisions.decisions_build serve <repo> --slug <slug> --port 8920
 ```
 
-`serve` runs in the foreground and prints its URL (loopback only, next free
-port if 8920 is taken). Run it in the background, give the person the URL, and
+`serve` starts the project server for the whole repo in the foreground and
+prints its URL (loopback only, next free port if the chosen one is taken). The
+board is at `<URL>decisions/<slug>/`; the page at `<URL>` shows every board plus
+the canvas, saved work, Spec and project memory. Run it in the background, give the person the URL, and
 wait for them to answer. Clicking an answer writes it to the file immediately.
 Notes save as the person types. A note alone never counts as an answer.
 
 ### 3. Read the answers back
 
 ```bash
-python3 -m designer.decisions.decisions_build check <repo>/.designdoc/<slug>/decisions.json --json
+python3 -m designer.decisions.decisions_build check <repo>/.groundwork/decisions/<slug>/decisions.json --json
 ```
 
 The answers live in the record itself, `compares[].ruling` (`keep-a`,
@@ -84,7 +89,7 @@ and non-blank. Never infer that from `status`, which is free prose.
 ### 4. Export to the mockup flow
 
 ```bash
-python3 -m designer.decisions.decisions_build export <repo>/.designdoc/<slug>/decisions.json --format selection --out <design-dir>/mockups/selection.json
+python3 -m designer.decisions.decisions_build export <repo>/.groundwork/decisions/<slug>/decisions.json --format selection --out <design-dir>/mockups/selection.json
 ```
 
 This writes `groundwork.mockups.selection/v1` (`references/mockups.md` §5):
@@ -99,6 +104,23 @@ Revise B or Neither with no note.
 - Never write `status`. Keep unknown keys; the format is open.
 - A record can hold private product plans. Do not copy one, or its
   screenshots, into this repository. Fixtures here are synthetic.
+
+## One project store per repo
+
+Every Groundwork tool keeps a repo's data in `<repo>/.groundwork/` (decision
+boards, notes from every section, preferences, Designer's saved work, Spec
+pointers). Read and write it with:
+
+```bash
+python3 -m designer.project status   --repo <repo>
+python3 -m designer.project read     --repo <repo> --contract --json   # pending notes, preferences, rulings; changes nothing
+python3 -m designer.project feedback --repo <repo> --section decisions --text "..."
+python3 -m designer.project ack      --repo <repo> <note-id>           # only after acting on it
+python3 -m designer.project serve    --repo <repo>                     # one URL: Decisions, Canvas, Saved work, Spec, Memory
+python3 -m designer.project snapshot --repo <repo>
+```
+
+`bin/groundwork project <verb>` is the same CLI. Contract: `docs/project-store.md`.
 
 ## Tests
 

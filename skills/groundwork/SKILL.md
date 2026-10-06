@@ -68,7 +68,11 @@ When the user wants to compare options, decide A vs B, or record their
 decisions, use the compare board instead of asking in chat: follow the commands
 in `../../AGENTS.md` (`init --template compare`, `serve`, `check --json`,
 `export --format selection`). It records Keep A / Approve B / Revise B /
-Neither plus a note per item into the project's own `.designdoc/`.
+Neither plus a note per item into the project's own Groundwork store,
+`.groundwork/decisions/<slug>/`. One URL per repo (`python3 -m designer.project
+serve --repo <repo>`) shows every board beside the canvas, saved work, Spec and
+project memory; agents read all of it with `python3 -m designer.project read
+--repo <repo> --contract --json`.
 
 ## Operating boundaries
 

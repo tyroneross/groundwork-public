@@ -13,9 +13,10 @@ For an A-or-B board (Keep A / Approve B / Revise B / Neither), add
 `--template compare`; see [Compare: A or B](#compare-a-or-b) below. Any agent
 can drive it from the plain commands in the repository's `AGENTS.md`.
 
-That scaffolds `~/dev/my-app/.designdoc/home/` with the record and the surface
-beside it, matching the storage model in `SPEC.md`: a project's design data lives
-in the repository it describes.
+That scaffolds `~/dev/my-app/.groundwork/decisions/home/` with the record and its
+`visuals/`; the page itself is served from the Groundwork install by the project
+server, so every board gets every fix. A project's design data lives in the
+repository it describes (`docs/project-store.md`).
 
 ## The six things this surface does differently
 
@@ -183,8 +184,8 @@ item. Answered items stay on the board; they also appear under Ruled.
 
 ```bash
 python3 -m designer.decisions.decisions_build init   ~/dev/my-app --slug redesign --template compare
-python3 -m designer.decisions.decisions_build check  ~/dev/my-app/.designdoc/redesign/decisions.json --json
-python3 -m designer.decisions.decisions_build export ~/dev/my-app/.designdoc/redesign/decisions.json --format selection --out ~/dev/my-app/design/mockups/selection.json
+python3 -m designer.decisions.decisions_build check  ~/dev/my-app/.groundwork/decisions/redesign/decisions.json --json
+python3 -m designer.decisions.decisions_build export ~/dev/my-app/.groundwork/decisions/redesign/decisions.json --format selection --out ~/dev/my-app/design/mockups/selection.json
 ```
 
 `export` writes `groundwork.mockups.selection/v1` (`references/mockups.md` §5):

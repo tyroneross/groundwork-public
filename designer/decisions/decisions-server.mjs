@@ -31,6 +31,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
+import { projectStore, StoreError } from '../project/project-store.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -86,6 +87,17 @@ function parseFlags(argv) {
 // UTC compact ISO basic, e.g. "20260914T031500Z" — the client's savedAt field.
 function utcCompactStamp(date = new Date()) {
   return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+}
+
+// The `.groundwork` directory that contains `file`, or null.
+function groundworkDirOf(file) {
+  let dir = path.dirname(path.resolve(file));
+  while (true) {
+    if (path.basename(dir) === '.groundwork') return dir;
+    const up = path.dirname(dir);
+    if (up === dir) return null;
+    dir = up;
+  }
 }
 
 function readRawBody(req) {
@@ -238,6 +250,22 @@ function makeServer(opts) {
             error: `body must be an object with "schema": ${JSON.stringify(SCHEMA_ID)}`,
           });
         }
+        // A record inside a per-repo Groundwork store (<repo>/.groundwork/) is
+        // written through the store library so this server honours the one
+        // lock every other Groundwork writer takes.
+        const storeDir = groundworkDirOf(RECORD_PATH);
+        if (storeDir) {
+          const store = projectStore(path.dirname(storeDir), { tool: 'decisions-server' });
+          try {
+            store.withLock(() => store.writeBytes(path.relative(storeDir, RECORD_PATH).split(path.sep).join('/'), raw));
+          } catch (err) {
+            if (err instanceof StoreError && err.code === 'lock-timeout') {
+              return sendJSON(res, 423, { error: err.message, code: err.code });
+            }
+            throw err;
+          }
+          return sendJSON(res, 200, { ok: true, savedAt: utcCompactStamp(), bytes: raw.length });
+        }
         // Atomic write: temp file in the SAME directory, then rename. A
         // half-written record must never be readable — a crash mid-write
         // leaves the temp file orphaned, never the real path corrupted.
@@ -324,7 +352,7 @@ function main() {
   });
 }
 
-export { makeServer, listenWithFallback, SCHEMA_ID, STATIC_ROUTES, VISUAL_HTML_HEADERS, utcCompactStamp };
+export { makeServer, listenWithFallback, SCHEMA_ID, STATIC_ROUTES, VISUAL_TYPES, VISUAL_HTML_HEADERS, utcCompactStamp, gitInfo, readRawBody };
 
 if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
   main();

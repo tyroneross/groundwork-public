@@ -15,7 +15,7 @@ from designer.decisions import decisions_build as db
 
 def test_init_creates_a_record_that_the_contract_accepts(tmp_path):
     assert db.main(["init", str(tmp_path), "--slug", "demo"]) == 0
-    record = tmp_path / ".designdoc" / "demo" / "decisions.json"
+    record = tmp_path / ".groundwork" / "decisions" / "demo" / "decisions.json"
     assert record.exists()
     rec = json.loads(record.read_text(encoding="utf-8"))
     assert dr.validate(rec) == []
@@ -26,30 +26,42 @@ def test_init_creates_a_record_that_the_contract_accepts(tmp_path):
 def test_a_new_record_opens_with_something_waiting(tmp_path):
     """An empty surface reads as broken rather than as empty."""
     db.main(["init", str(tmp_path), "--slug", "demo"])
-    rec = json.loads((tmp_path / ".designdoc" / "demo" / "decisions.json").read_text())
+    rec = json.loads((tmp_path / ".groundwork" / "decisions" / "demo" / "decisions.json").read_text())
     assert len(dr.lanes(rec)["open"]) >= 1
 
 
-def test_init_ships_the_surface_beside_the_record(tmp_path):
+def test_init_writes_the_record_and_visuals_but_no_app_copies(tmp_path):
+    """The page is served from the install, so a fix to the board reaches every
+    board; copies beside each record drifted from those fixes."""
     db.main(["init", str(tmp_path), "--slug", "demo"])
-    out = tmp_path / ".designdoc" / "demo"
+    out = tmp_path / ".groundwork" / "decisions" / "demo"
     for name in db.APP_FILES:
-        assert (out / name).exists(), f"{name} must sit beside the record"
+        assert not (out / name).exists(), f"{name} must not be copied beside the record"
     assert (out / "visuals" / "manifest.json").exists()
+    assert (tmp_path / ".groundwork" / ".gitignore").read_text() == "*\n"
+    assert not (tmp_path / ".groundwork" / "write.lock").exists()
 
 
-def test_the_app_is_copied_not_linked(tmp_path):
-    """The record must still open after the plugin moves or is uninstalled."""
-    db.main(["init", str(tmp_path), "--slug", "demo"])
-    for name in db.APP_FILES:
-        p = tmp_path / ".designdoc" / "demo" / name
-        assert not p.is_symlink(), f"{name} is a symlink; it would dangle"
-        assert p.read_text(encoding="utf-8") == (db.APP_DIR / name).read_text(encoding="utf-8")
+def test_init_refuses_when_an_unmigrated_legacy_board_exists(tmp_path, capsys):
+    legacy = tmp_path / ".designdoc" / "demo"
+    legacy.mkdir(parents=True)
+    (legacy / "decisions.json").write_text("{}", encoding="utf-8")
+    assert db.main(["init", str(tmp_path), "--slug", "demo"]) != 0
+    assert "designer.project migrate" in capsys.readouterr().err
+    assert not (tmp_path / ".groundwork" / "decisions" / "demo").exists()
+    assert (legacy / "decisions.json").read_text() == "{}"
+
+
+def test_serve_targets_the_project_server_for_the_repo(tmp_path):
+    cmd = db.serve_command(str(tmp_path), "demo", 8920, None)
+    assert cmd[0] == "node"
+    assert cmd[1].endswith("designer/project/project-server.mjs")
+    assert cmd[2:] == ["--repo", str(tmp_path.resolve()), "--port", "8920"]
 
 
 def test_init_refuses_to_overwrite_an_existing_record(tmp_path, capsys):
     db.main(["init", str(tmp_path), "--slug", "demo"])
-    record = tmp_path / ".designdoc" / "demo" / "decisions.json"
+    record = tmp_path / ".groundwork" / "decisions" / "demo" / "decisions.json"
     rec = json.loads(record.read_text())
     rec["openItems"].append({"id": "real-work", "question": "Something a person wrote",
                              "choices": [{"key": "a", "label": "A"}]})
@@ -106,7 +118,7 @@ def test_check_reports_malformed_json_rather_than_raising(tmp_path, capsys):
 def test_the_record_is_written_atomically(tmp_path):
     """No half-written record may ever be readable, and no temp file survives."""
     db.main(["init", str(tmp_path), "--slug", "demo"])
-    out = tmp_path / ".designdoc" / "demo"
+    out = tmp_path / ".groundwork" / "decisions" / "demo"
     leftovers = [p.name for p in out.iterdir() if p.name.startswith(".") and p.name.endswith(".tmp")]
     assert not leftovers, f"temp files left behind: {leftovers}"
 
@@ -115,7 +127,7 @@ def test_the_record_is_written_atomically(tmp_path):
 
 def _compare_init(tmp_path) -> Path:
     assert db.main(["init", str(tmp_path), "--slug", "demo", "--template", "compare"]) == 0
-    return tmp_path / ".designdoc" / "demo" / "decisions.json"
+    return tmp_path / ".groundwork" / "decisions" / "demo" / "decisions.json"
 
 
 def test_init_compare_template_ships_a_valid_three_item_board(tmp_path):
@@ -134,7 +146,7 @@ def test_init_compare_template_ships_a_valid_three_item_board(tmp_path):
 
 
 def test_init_compare_never_overwrites_an_existing_picture(tmp_path):
-    vis = tmp_path / ".designdoc" / "demo" / "visuals"
+    vis = tmp_path / ".groundwork" / "decisions" / "demo" / "visuals"
     vis.mkdir(parents=True)
     (vis / "home-current.png").write_bytes(b"mine")
     _compare_init(tmp_path)
