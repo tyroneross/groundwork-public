@@ -123,7 +123,7 @@ def test_lock_file_content_and_reentrancy(tmp_path):
     s = make(tmp_path, tool="unit")
     with s.lock():
         info = json.loads((tmp_path / ".groundwork" / "write.lock").read_text())
-        assert list(info) == ["pid", "host", "tool", "acquiredAt"]
+        assert list(info) == ["pid", "host", "tool", "acquiredAt", "token"]
         assert info["pid"] == os.getpid() and info["tool"] == "unit"
         with s.lock():
             pass
@@ -745,3 +745,28 @@ def test_canvas_page_is_found_beside_the_control_dir(tmp_path):
     (tmp_path / "mockups" / "home.html").write_text("<p>canvas</p>", encoding="utf-8")
     canvas = ProjectStore(tmp_path).snapshot()["sections"]["canvas"]
     assert canvas["available"] is True and canvas["htmlFile"] == "mockups/home.html"
+
+
+def test_release_never_removes_a_lock_that_is_no_longer_ours(tmp_path):
+    """Audit f2: a writer whose lock was replaced must not delete the new holder's lock."""
+    s = make(tmp_path)
+    lock = tmp_path / ".groundwork" / "write.lock"
+    other = json.dumps({"pid": os.getpid(), "host": socket.gethostname(), "tool": "other",
+                        "acquiredAt": "x", "token": "theirs"})
+    with s.lock():
+        lock.write_text(other, encoding="utf-8")  # simulate another holder taking over
+    assert lock.read_text(encoding="utf-8") == other
+
+
+def test_breaking_a_stale_lock_restores_a_live_lock_that_replaced_it(tmp_path):
+    """Audit f2: the rename-and-compare break puts back a lock that changed under it."""
+    s = make(tmp_path)
+    s.init()
+    lock = tmp_path / ".groundwork" / "write.lock"
+    live = json.dumps({"pid": os.getpid(), "host": socket.gethostname(), "tool": "live",
+                       "acquiredAt": "x", "token": "live"})
+    lock.write_text(live, encoding="utf-8")
+    assert s._break_stale(lock, seen="a different, dead holder") is False
+    assert lock.read_text(encoding="utf-8") == live
+    assert [p.name for p in lock.parent.iterdir() if p.name.endswith(".stale")] == []
+    lock.unlink()

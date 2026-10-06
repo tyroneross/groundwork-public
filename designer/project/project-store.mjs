@@ -242,6 +242,7 @@ export function projectStore(root, { now = isoNow, newId = defaultNewId, tool = 
   const projectFile = path.join(G, 'project.json');
   const warnings = [];
   let held = 0;
+  let lockBody = null;
   let opStamp = null;
 
   const rel = (abs) => path.relative(R, abs).split(path.sep).join('/');
@@ -277,27 +278,43 @@ export function projectStore(root, { now = isoNow, newId = defaultNewId, tool = 
     const deadline = Date.now() + lockTimeoutMs;
     let broke = false;
     for (;;) {
+      const body = JSON.stringify({ pid: process.pid, host: os.hostname(), tool, acquiredAt: t, token: randomUUID().replace(/-/g, '') });
       try {
         const fd = fs.openSync(lockPath, 'wx', 0o600);
-        try { fs.writeSync(fd, JSON.stringify({ pid: process.pid, host: os.hostname(), tool, acquiredAt: t })); } finally { fs.closeSync(fd); }
+        try { fs.writeSync(fd, body); } finally { fs.closeSync(fd); }
+        lockBody = body;
         return;
       } catch (e) {
         if (e.code !== 'EEXIST') throw e;
       }
       if (Date.now() < deadline) { sleepSync(lockRetryMs); continue; }
-      let holder = null;
-      try { holder = JSON.parse(fs.readFileSync(lockPath, 'utf8')); } catch { /* unreadable: not provably stale */ }
+      let holder = null, seen = '';
+      try { seen = fs.readFileSync(lockPath, 'utf8'); holder = JSON.parse(seen); } catch { /* unreadable: not provably stale */ }
       if (!broke && isObj(holder) && holder.host === os.hostname() && Number.isInteger(holder.pid) && holder.pid > 0) {
         let dead = false;
         try { process.kill(holder.pid, 0); } catch (err) { dead = err.code === 'ESRCH'; }
-        if (dead) {
-          fs.rmSync(lockPath, { force: true });
+        if (dead && breakStale(seen)) {
           warnings.push({ code: 'lock-stale-broken', detail: `removed stale lock ${lockPath} held by dead pid ${holder.pid}` });
           broke = true;
           continue;
         }
       }
       fail('lock-timeout', `write lock ${lockPath} is held by pid ${isObj(holder) ? jsStr(holder.pid) : 'null'}; retry after the other writer finishes`);
+    }
+  }
+
+  // Remove a dead holder's lock without racing another breaker: rename it
+  // aside (atomic), compare with what was judged dead, and put a lock that
+  // changed in between back (link never overwrites).
+  function breakStale(seen) {
+    const aside = path.join(G, `write.lock.${randomUUID()}.stale`);
+    try { fs.renameSync(lockPath, aside); } catch (e) { if (e.code === 'ENOENT') return true; throw e; }
+    try {
+      if (fs.readFileSync(aside, 'utf8') === seen) return true;
+      try { fs.linkSync(aside, lockPath); } catch (e) { if (e.code !== 'EEXIST') throw e; }
+      return false;
+    } finally {
+      fs.rmSync(aside, { force: true });
     }
   }
 
@@ -314,7 +331,9 @@ export function projectStore(root, { now = isoNow, newId = defaultNewId, tool = 
     } finally {
       held = 0;
       opStamp = null;
-      fs.rmSync(lockPath, { force: true });
+      // Remove the lock only while it is still ours.
+      try { if (fs.readFileSync(lockPath, 'utf8') === lockBody) fs.rmSync(lockPath, { force: true }); } catch { /* gone */ }
+      lockBody = null;
     }
   }
 
@@ -329,7 +348,10 @@ export function projectStore(root, { now = isoNow, newId = defaultNewId, tool = 
     if (st && Buffer.compare(fs.readFileSync(abs), buf) === 0) return false;
     const tmp = path.join(dir, `.${path.basename(abs)}.${randomUUID()}.tmp`);
     try {
-      fs.writeFileSync(tmp, buf, { flag: 'wx', mode: 0o600 });
+      // fsync before rename, as the Python twin does: a crash after the rename
+      // must not leave an empty file in place of a record.
+      const fd = fs.openSync(tmp, 'wx', 0o600);
+      try { fs.writeSync(fd, buf); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
       fs.renameSync(tmp, abs);
     } finally {
       fs.rmSync(tmp, { force: true });
@@ -605,6 +627,9 @@ export function projectStore(root, { now = isoNow, newId = defaultNewId, tool = 
     return withLock(() => {
       const acknowledged = []; const refused = []; const wsTargets = new Set();
       const wsNotes = new Set(workspaceSource().value.notes.filter(n => isObj(n) && typeof n.id === 'string').map(n => n.id));
+      // Refuse before writing anything, so an ack never lands in project.json
+      // and then fails on the workspace half.
+      if (ids.some(id => wsNotes.has(id))) wsGuard();
       mutate((doc, t) => {
         for (const id of ids) {
           if (typeof id === 'string' && id.startsWith('canvas:')) { refused.push({ id, reason: 'canvas-cursor-owned' }); continue; }

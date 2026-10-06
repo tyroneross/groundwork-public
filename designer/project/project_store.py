@@ -300,6 +300,7 @@ class ProjectStore:
         self.tool = tool
         self.warnings: list[dict] = []
         self._depth = 0
+        self._lock_body: str | None = None
         self._op_t: str | None = None
         self._tlock = threading.RLock()
 
@@ -358,18 +359,45 @@ class ProjectStore:
             finally:
                 self._depth = 0
                 self._op_t = None
-                with contextlib.suppress(FileNotFoundError):
-                    os.unlink(path)
+                # Remove the lock only while it is still ours: a writer whose
+                # lock was (wrongly) broken must not delete the next holder's.
+                with contextlib.suppress(OSError):
+                    if path.read_text(encoding="utf-8") == self._lock_body:
+                        os.unlink(path)
+                self._lock_body = None
 
     def _try_create(self, path: Path, t: str) -> bool:
+        body = json.dumps({"pid": os.getpid(), "host": socket.gethostname(),
+                           "tool": self.tool, "acquiredAt": t, "token": uuid.uuid4().hex})
         try:
             fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
         except FileExistsError:
             return False
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            fh.write(json.dumps({"pid": os.getpid(), "host": socket.gethostname(),
-                                 "tool": self.tool, "acquiredAt": t}))
+            fh.write(body)
+        self._lock_body = body
         return True
+
+    def _break_stale(self, path: Path, seen: str) -> bool:
+        """Remove a dead holder's lock without racing another breaker.
+
+        The lock is renamed aside (atomic), then its content is compared with
+        what was judged dead. If another writer replaced it in between, the
+        live lock is put back (link never overwrites) and nothing is broken."""
+        aside = path.with_name(f"write.lock.{uuid.uuid4().hex}.stale")
+        try:
+            os.rename(path, aside)
+        except FileNotFoundError:
+            return True  # someone else already removed it; just retry
+        try:
+            if aside.read_text(encoding="utf-8") == seen:
+                return True
+            with contextlib.suppress(FileExistsError):
+                os.link(aside, path)
+            return False
+        finally:
+            with contextlib.suppress(FileNotFoundError):
+                os.unlink(aside)
 
     def _acquire(self, path: Path, t: str) -> None:
         deadline = time.monotonic() + LOCK_TIMEOUT_MS / 1000
@@ -380,14 +408,14 @@ class ProjectStore:
                 break
             time.sleep(LOCK_RETRY_MS / 1000)
         holder: Any = {}
+        seen = ""
         try:
-            holder = json.loads(path.read_text(encoding="utf-8"))
+            seen = path.read_text(encoding="utf-8")
+            holder = json.loads(seen)
         except (OSError, ValueError):
             holder = {}
         if isinstance(holder, dict) and holder.get("host") == socket.gethostname() \
-                and _pid_dead(holder.get("pid")):
-            with contextlib.suppress(FileNotFoundError):
-                os.unlink(path)
+                and _pid_dead(holder.get("pid")) and self._break_stale(path, seen):
             self.warnings.append({"code": "lock-stale-broken",
                                   "detail": f"removed stale lock {path} held by dead pid {holder.get('pid')}"})
             if self._try_create(path, t):
@@ -684,6 +712,10 @@ class ProjectStore:
         with self.lock():
             ws_ids = {n.get("id") for n in self._workspace_source()["value"]["notes"]
                       if isinstance(n, dict) and isinstance(n.get("id"), str)}
+            # Refuse before writing anything, so an ack never lands in
+            # project.json and then fails on the workspace half.
+            if any(i in ws_ids for i in ids if isinstance(i, str)):
+                self._ws_guard()
 
             def fn(doc: dict) -> None:
                 for id in ids:

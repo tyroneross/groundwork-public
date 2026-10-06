@@ -432,3 +432,19 @@ test('canvas page is found beside the .canvas control dir', async () => {
     assert.equal(c.htmlFile, 'mockups/home.html');
   } finally { fs.rmSync(R, { recursive: true, force: true }); }
 });
+
+test('release never removes a lock that is no longer ours (audit f2)', async () => {
+  const { projectStore } = await import('../project/project-store.mjs');
+  const R = fs.mkdtempSync(path.join(os.tmpdir(), 'gw-lock-'));
+  try {
+    const s = projectStore(R);
+    const lock = path.join(R, '.groundwork', 'write.lock');
+    const other = JSON.stringify({ pid: process.pid, host: os.hostname(), tool: 'other', acquiredAt: 'x', token: 'theirs' });
+    s.withLock(() => {
+      const mine = JSON.parse(fs.readFileSync(lock, 'utf8'));
+      assert.deepEqual(Object.keys(mine), ['pid', 'host', 'tool', 'acquiredAt', 'token']);
+      fs.writeFileSync(lock, other);
+    });
+    assert.equal(fs.readFileSync(lock, 'utf8'), other);
+  } finally { fs.rmSync(R, { recursive: true, force: true }); }
+});
