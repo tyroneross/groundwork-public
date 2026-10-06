@@ -125,6 +125,11 @@ def cmd_migrate(a) -> int:
         lines.append(f"verify: {'MISMATCH' if mismatch else 'ok'}")
         for m in mismatches:
             lines.append(f"  {m}")
+        for e in v.get("storeEdited") or []:
+            # Answered in the pane since migration: listed, never silent.
+            ident = e.get("id") if isinstance(e, dict) else e
+            items = e.get("items") if isinstance(e, dict) else None
+            lines.append(f"  store-edited {ident}" + (f" (items: {', '.join(items)})" if items else ""))
     _out(a, result, "\n".join(lines))
     if mismatch or any(e.get("status") in ("conflict", "error") for e in entries):
         return 1

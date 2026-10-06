@@ -19,6 +19,7 @@
   var POLL_MS = 4000, DRAFT_DEBOUNCE_MS = 600, RETRY_MS = 3000;
 
   var snap = null, section = "decisions", openBoard = null, notesScope = "all";
+  var submittedIds = {};
   var draft = { id: null, section: null, text: "", saved: null, timer: null, inFlight: null };
 
   function $(id) { return document.getElementById(id); }
@@ -266,7 +267,7 @@
 
   function loadDraftFor(sec) {
     var existing = ((snap && snap.feedback) || []).filter(function (f) {
-      return f.status === "draft" && f.section === sec && /^fb_/.test(f.id);
+      return f.status === "draft" && f.section === sec && /^fb_/.test(f.id) && !submittedIds[f.id];
     }).pop();
     draft = { id: existing ? existing.id : null, section: sec, text: existing ? existing.text : "",
       saved: existing ? existing.text : null, timer: null, inFlight: null };
@@ -288,6 +289,14 @@
     if (!mine.text.trim() && !mine.id) return Promise.resolve();
     if (!mine.id) mine.id = newId();
     var keepalive = !!(opts && opts.keepalive);
+    if (keepalive) {
+      /* The page is going away: a chained step would never run, so send the
+         newest text now. The upsert is idempotent and the last write wins. */
+      var url0 = "/api/feedback/" + encodeURIComponent(mine.id);
+      if (mine.text.trim()) api("PUT", url0, { section: mine.section, text: mine.text, target: null }, true);
+      else if (mine.saved !== null) api("DELETE", url0, {}, true);
+      return Promise.resolve();
+    }
     line("Saving…", null);
     var step = (mine.inFlight || Promise.resolve()).then(function () {
       var text = mine.text;
@@ -325,6 +334,7 @@
       return api("POST", "/api/feedback/" + encodeURIComponent(mine.id) + "/submit", { text: text });
     }).then(function (r) {
       var at = r.item && r.item.submittedAt;
+      submittedIds[mine.id] = true; /* a snapshot taken before this must not revive it as a draft */
       /* Clear the box only if the person is still on this draft; a comment
          started meanwhile in another section must not be erased. */
       if (draft === mine) {
