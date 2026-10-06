@@ -458,6 +458,8 @@ textarea:focus-visible, input:focus-visible { outline:2px solid var(--accent); o
   box-shadow:inset 0 1px 0 var(--border);
 }
 .c-head { display:grid; grid-template-columns:48px minmax(0,1fr); gap:2px 12px; align-items:start; }
+/* The number spans three rows; any further header item (status, why) must stay in the text column. */
+.c-head > :not(.c-big) { grid-column:2; }
 .c-big {
   grid-row:1 / span 3; font-size:40px; line-height:1; font-weight:700;
   font-variant-numeric:tabular-nums; color:var(--text);
