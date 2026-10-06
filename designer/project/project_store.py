@@ -17,7 +17,10 @@ Parity rules chosen under AM-16 (identical comment at the top of project-store.m
       are language-neutral strings. Full decision_record.validate is not run
       (the JS side cannot run it).
   P4  Decision items follow decision_record.Ruleable; id/title that resolve to
-      "" become null (AM-7).
+      "" become null (AM-7). A ruleable array field (axes/openItems/compares)
+      that is present, non-null and not a list contributes no items and adds
+      "<field> must be a list" to the summary `errors` and the board entry
+      `errors` (the board stays valid).
   P5  Workspace notes in the D-02u projection need a string id and string
       text; non-string createdAt/processedAt read as null; sort key is
       (createdAt or "", id).
@@ -131,16 +134,26 @@ def project_root(target: Any) -> Path:
     return p.parent if p.name == ".designdoc" else p
 
 
+def _ruleable_view(record: Any) -> tuple[dict, list[str]]:
+    """P4: the record with every malformed ruleable array emptied, plus one error per such field."""
+    rec = record if isinstance(record, dict) else {}
+    errors = [f"{k} must be a list" for k in dr.RULEABLE_ARRAYS
+              if rec.get(k) is not None and not isinstance(rec.get(k), list)]
+    view = {k: v for k, v in rec.items() if not (k in dr.RULEABLE_ARRAYS and not isinstance(v, list))}
+    return view, errors
+
+
 def decision_summary(record: dict) -> dict:
     items = []
     counts = {"open": 0, "ruled": 0}
-    for r in dr.ruleables(record):
+    view, errors = _ruleable_view(record)
+    for r in dr.ruleables(view):
         lane = r.lane
         counts[lane] += 1
         items.append({"id": r.id if r.id != "" else None, "source": r.source,
                       "title": None if r.title == "" else r.title, "lane": lane,
                       "ruling": r.chosen, "note": r.free_text, "ruledAt": r.ruled_at})
-    return {"open": counts["open"], "ruled": counts["ruled"], "items": items}
+    return {"open": counts["open"], "ruled": counts["ruled"], "items": items, "errors": errors}
 
 
 def _pid_dead(pid: Any) -> bool:
@@ -869,20 +882,23 @@ class ProjectStore:
         if e["valid"]:
             s = decision_summary(rec)
             e.update(open=s["open"], ruled=s["ruled"], items=s["items"])
+            e["errors"].extend(s["errors"])
         m = next((x for x in migrations if isinstance(x, dict) and x.get("id") == f"decisions:{slug}"), None)
         if m is not None and m.get("status") == "conflict":
             e["conflict"] = {"source": m.get("source"), "dest": m.get("dest"), "note": m.get("note")}
         return e
 
     def _list_dirs(self, base: Path) -> list[str]:
-        self._check_symlink(base)
+        self._check_chain(self.root, str(base.relative_to(self.root)))
         if not base.is_dir():
             return []
         return sorted(d.name for d in base.iterdir()
                       if SLUG_RE.match(d.name) and d.is_dir() and not d.is_symlink())
 
     def _read_file(self, p: Path) -> bytes | None:
-        self._check_symlink(p)
+        # Every component from the repo root down, like the JS refuseSymlinks:
+        # a symlinked ancestor (e.g. .groundwork/decisions) must not be followed.
+        self._check_chain(self.root, str(p.relative_to(self.root)))
         if not os.path.lexists(p):
             return None
         if not p.is_file():

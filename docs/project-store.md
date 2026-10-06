@@ -98,5 +98,8 @@ writes, moves or deletes an original. Each source is tracked by content hash in
 copy of it, as when an old board server is still open) or `conflict` (anything
 else that changed on both sides, including any edit first made in the store;
 nothing is written, and the entry names the diverging items). A store edit is
-never overwritten by a migration. `--verify` re-reads every migrated board and exits 1 if any
-ruling, note or time differs from its source.
+never overwritten by a migration. `--verify` re-reads every migrated board. While the store copy is still the
+migrated copy, any ruling, note or time that differs from its source exits 1;
+an unreadable store copy also exits 1. A board someone has since answered in
+the pane is listed as `storeEdited` with the items that changed, not as a
+failure, so verify cannot tell a hand edit that leaves valid JSON from a ruling.

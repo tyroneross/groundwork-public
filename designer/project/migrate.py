@@ -15,6 +15,18 @@ None, E = the existing migration entry when it carries a baseline):
   no E and d == s                   -> record only, `migrated`
   no E and d != s                   -> `conflict` (no copy)
 
+A board whose lineage is `unchanged` still gets missing visuals copied (add
+only: a differing store visual is kept and noted). A legacy workspace must be
+a supported workspace record (UTF-8 JSON, version 1, notes/alternatives/
+sources lists) before anything is copied; otherwise the entry is an `error`.
+
+`--verify` compares a board's store copy with its source only while the store
+copy is still the migrated baseline (its sha equals the entry's destSha256).
+A store copy that has since changed and is still a decision-set record (what
+ProjectStore.write_board accepts, e.g. a ruling made in the pane) is listed
+under `storeEdited`, not as a mismatch; an unreadable or non-board store copy
+is a mismatch.
+
 A conflict or error entry keeps the previous baseline shas (or null when there
 was none), so the next run re-detects the same conflict instead of mistaking
 the current bytes for a fresh baseline.
@@ -30,7 +42,7 @@ from typing import Any, Callable
 
 from designer.decisions import decision_record as dr
 from designer.project.project_store import (DIR, LEGACY_WORKSPACES, SLUG_RE, WORKSPACE_MIGRATION_ID,
-                                            ProjectStore, StoreError)
+                                            ProjectStore, StoreError, _check_workspace, _ruleable_view)
 
 DESIGNER_STATE_FILES = (".designdoc/.designer-state.json", ".designer-state.json")
 # A.4. Checked against the emitters: engine/src/cli.ts writes spec.json,
@@ -78,7 +90,7 @@ def _rulings(data: bytes) -> list[tuple[str, tuple]] | None:
         return None
     if not isinstance(rec, dict):
         return None
-    return [(r.id, (r.chosen, r.free_text, r.ruled_at)) for r in dr.ruleables(rec)]
+    return [(r.id, (r.chosen, r.free_text, r.ruled_at)) for r in dr.ruleables(_ruleable_view(rec)[0])]
 
 
 def ruling_diff(a: bytes, b: bytes) -> list[str] | None:
@@ -128,13 +140,13 @@ class _Plan:
 
     @property
     def record(self) -> bool:
-        if self.entry["status"] == "unchanged" and not self._clears:
+        if self.entry["status"] == "unchanged" and not self._clears and not self.writes:
             return False
         return not _same(self.old, self.entry)
 
     @property
     def reported(self) -> dict:
-        if self.entry["status"] == "unchanged" and self.old is not None and not self._clears:
+        if self.entry["status"] == "unchanged" and self.old is not None and not self._clears and not self.writes:
             return {**self.old, "status": "unchanged"}
         return dict(self.entry)
 
@@ -210,12 +222,24 @@ def _plan_board(root: Path, slug: str, old: dict | None) -> _Plan | None:
     d_bytes = _read_file(root, f"{dest}/decisions.json")
     status, entry = _lineage(id, "decision-board", src, dest, s_bytes, d_bytes, old,
                              _board_note(s_bytes, d_bytes))
-    if status not in ("migrated", "recopied"):
+    if status not in ("migrated", "recopied", "unchanged"):
         return _Plan(entry, old)
     writes: list[tuple[str, bytes]] = []
     if status == "recopied" or d_bytes is None:
         writes.append((f"{dest}/decisions.json", s_bytes))
-    notes = []
+    vwrites, notes = _plan_visuals(root, src, dest)
+    writes += vwrites
+    if status == "unchanged" and not vwrites:
+        # Nothing to copy: report the stored entry (Plan.reported), no project.json write.
+        return _Plan(entry, old)
+    entry["note"] = "; ".join(notes) or None
+    return _Plan(entry, old, writes)
+
+
+def _plan_visuals(root: Path, src: str, dest: str) -> tuple[list[tuple[str, bytes]], list[str]]:
+    """Add-only visual reconcile: copy regular legacy visuals (leaf names) missing from the store."""
+    writes: list[tuple[str, bytes]] = []
+    notes: list[str] = []
     vdir = root / src / "visuals"
     if vdir.is_symlink():
         notes.append("skipped symlinked visuals directory")
@@ -236,8 +260,7 @@ def _plan_board(root: Path, slug: str, old: dict | None) -> _Plan | None:
                 writes.append((rel, data))
             elif have != data:
                 notes.append(f"kept store copy of visual {p.name} (differs from legacy)")
-    entry["note"] = "; ".join(notes) or None
-    return _Plan(entry, old, writes)
+    return writes, notes
 
 
 def _plan_workspace(root: Path, old: dict | None) -> _Plan | None:
@@ -259,6 +282,11 @@ def _plan_workspace(root: Path, old: dict | None) -> _Plan | None:
                    base.get("destSha256") if base else None, "conflict",
                    f"legacy workspaces {found[0][0]} and {found[1][0]} both exist and differ; nothing copied")
         return _Plan(e, old)
+    try:
+        _check_workspace(json.loads(s_bytes.decode("utf-8")), src)
+    except (ValueError, UnicodeDecodeError, StoreError) as e:
+        # Never copy bytes the store would refuse to read; the baseline stays.
+        return _error(id, "workspace", src, dest, old, f"legacy workspace is not a supported record: {e}")
     link = _symlink_on_path(root, dest)
     if link:
         return _error(id, "workspace", src, dest, old, f"refusing symlink: {link}")
@@ -319,8 +347,16 @@ def _plans(root: Path, migrations: list[dict]) -> list[_Plan]:
     return [p for p in plans if p is not None]
 
 
+def _is_board(data: bytes) -> bool:
+    try:
+        rec = json.loads(data.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError):
+        return False
+    return isinstance(rec, dict) and rec.get("schema") == dr.SCHEMA
+
+
 def _verify(root: Path, entries: list[dict]) -> dict:
-    checked, mismatches = [], []
+    checked, mismatches, store_edited = [], [], []
     for e in entries:
         if e.get("kind") != "decision-board" or e.get("status") not in VERIFIABLE:
             continue
@@ -329,6 +365,13 @@ def _verify(root: Path, entries: list[dict]) -> dict:
         if src is None or dst is None:
             mismatches.append({"id": e["id"], "source": e["source"], "dest": e["dest"],
                                "problem": "source-missing" if src is None else "dest-missing", "items": []})
+            continue
+        if _sha(dst) != e.get("destSha256") and _is_board(dst):
+            # The store copy moved on from the migrated baseline (a ruling in
+            # the pane): the legacy source is no longer its reference.
+            store_edited.append({"id": e["id"], "source": e["source"], "dest": e["dest"],
+                                 "baselineDestSha256": e.get("destSha256"), "destSha256": _sha(dst),
+                                 "items": ruling_diff(src, dst) or []})
             continue
         checked.append({"id": e["id"], "sourceSha256": _sha(src), "destSha256": _sha(dst),
                         "bytesEqual": src == dst})
@@ -339,7 +382,7 @@ def _verify(root: Path, entries: list[dict]) -> dict:
         elif ids:
             mismatches.append({"id": e["id"], "source": e["source"], "dest": e["dest"],
                                "problem": "rulings-differ", "items": ids})
-    return {"ok": not mismatches, "checked": checked, "mismatches": mismatches}
+    return {"ok": not mismatches, "checked": checked, "mismatches": mismatches, "storeEdited": store_edited}
 
 
 def migrate(root: Any, dry_run: bool = False, verify: bool = False, *,

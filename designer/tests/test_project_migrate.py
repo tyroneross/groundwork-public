@@ -255,10 +255,12 @@ def test_workspace_lineage_recopy_and_root_legacy_candidate(tmp_path):
     root = tmp_path / "r"
     (root / ".groundwork-workspace").mkdir(parents=True)
     src = root / ".groundwork-workspace" / "workspace.json"
-    src.write_text('{"version": 1, "notes": [], "selectedId": null}\n', encoding="utf-8")
+    src.write_text('{"version": 1, "notes": [], "alternatives": [], "sources": [], "selectedId": null}\n',
+                   encoding="utf-8")
     e = by_id(run(root))["workspace:workspace.json"]
     assert e["status"] == "migrated" and e["source"] == ".groundwork-workspace/workspace.json"
-    src.write_text('{"version": 1, "notes": [], "selectedId": "x"}\n', encoding="utf-8")
+    src.write_text('{"version": 1, "notes": [], "alternatives": [], "sources": [], "selectedId": "x"}\n',
+                   encoding="utf-8")
     assert by_id(run(root))["workspace:workspace.json"]["status"] == "recopied"
     assert (root / ".groundwork" / "workspace.json").read_bytes() == src.read_bytes()
 
@@ -266,10 +268,25 @@ def test_workspace_lineage_recopy_and_root_legacy_candidate(tmp_path):
 def test_verify_detects_tampered_dest(repo):
     clean = run(repo, verify=True)
     assert clean["verify"]["ok"] is True and clean["verify"]["mismatches"] == []
+    assert clean["verify"]["storeEdited"] == []
     assert {c["id"] for c in clean["verify"]["checked"]} == {"decisions:compare-demo", "decisions:odd-text"}
-    set_ruling(repo / ".groundwork" / "decisions" / "odd-text" / "decisions.json", "home-intro", "keep-a", "tampered")
-    res = run(repo, verify=True)
-    v = res["verify"]
+    # Tamper 1: a store copy that is no longer a readable board is a mismatch.
+    odd = repo / ".groundwork" / "decisions" / "odd-text" / "decisions.json"
+    odd.write_bytes(odd.read_bytes()[:40])
+    v = run(repo, verify=True)["verify"]
+    assert v["ok"] is False
+    assert [(m["id"], m["problem"]) for m in v["mismatches"]] == [("decisions:odd-text", "unreadable")]
+    # Tamper 2: forged lineage (store copy edited and its sha written in as the
+    # baseline) is compared against the source and caught.
+    odd.write_bytes((repo / ".designdoc" / "odd-text" / "decisions.json").read_bytes())
+    set_ruling(odd, "home-intro", "keep-a", "tampered")
+    pj = repo / ".groundwork" / "project.json"
+    doc = json.loads(pj.read_text(encoding="utf-8"))
+    for m in doc["migrations"]:
+        if m["id"] == "decisions:odd-text":
+            m["destSha256"] = sha(odd)
+    pj.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+    v = run(repo, verify=True)["verify"]
     assert v["ok"] is False
     assert [(m["id"], m["problem"], m["items"]) for m in v["mismatches"]] == \
         [("decisions:odd-text", "rulings-differ", ["home-intro"])]
@@ -278,6 +295,56 @@ def test_verify_detects_tampered_dest(repo):
     res = run(repo, verify=True)
     assert by_id(res)["decisions:compare-demo"]["status"] == "migrated"
     assert {m["id"] for m in res["verify"]["mismatches"]} == {"decisions:odd-text"}
+
+
+def test_verify_lists_a_pane_ruling_as_store_edited_not_a_mismatch(repo):
+    run(repo)
+    store = ProjectStore(repo)
+    rec = json.loads(store.read_board("compare-demo"))
+    rec["compares"][0]["ruling"] = "approve-b"
+    rec["compares"][0]["ruledAt"] = NOW
+    store.write_board("compare-demo", (json.dumps(rec, indent=2) + "\n").encode("utf-8"))
+    res = run(repo, verify=True)
+    v = res["verify"]
+    assert v["ok"] is True and v["mismatches"] == []
+    assert [(x["id"], x["items"]) for x in v["storeEdited"]] == [("decisions:compare-demo", [rec["compares"][0]["id"]])]
+    assert {c["id"] for c in v["checked"]} == {"decisions:odd-text"}
+
+
+def test_invalid_legacy_workspace_is_error_and_never_copied(repo):
+    run(repo)
+    dest = repo / ".groundwork" / "workspace.json"
+    legacy = repo / ".designdoc" / ".groundwork-workspace" / "workspace.json"
+    good, dest_before = legacy.read_bytes(), dest.read_bytes()
+    base = by_id(run(repo))["workspace:workspace.json"]
+    for bad in (good[: len(good) // 2], b'{"version": 2, "notes": [], "alternatives": [], "sources": []}',
+                b'{"version": 1, "notes": {}, "alternatives": [], "sources": []}', b"\xff\xfe"):
+        legacy.write_bytes(bad)
+        e = by_id(run(repo))["workspace:workspace.json"]
+        assert e["status"] == "error" and "not a supported record" in e["note"]
+        assert dest.read_bytes() == dest_before
+        assert (e["sourceSha256"], e["destSha256"]) == (base["sourceSha256"], base["destSha256"])
+    legacy.write_bytes(good)
+    assert by_id(run(repo))["workspace:workspace.json"]["status"] == "unchanged"
+
+
+def test_unchanged_board_still_gets_missing_visuals(repo):
+    run(repo)
+    legacy_vis = repo / ".designdoc" / "compare-demo" / "visuals"
+    dest_vis = repo / ".groundwork" / "decisions" / "compare-demo" / "visuals"
+    (legacy_vis / "new-shot.png").write_bytes(b"\x89PNG synthetic new")
+    existing = sorted(p.name for p in dest_vis.iterdir())[0]
+    (dest_vis / existing).write_bytes(b"store-side visual")
+    before = tree(repo)
+    res = run(repo)
+    e = by_id(res)["decisions:compare-demo"]
+    assert e["status"] == "unchanged" and res["changed"] is True
+    assert (dest_vis / "new-shot.png").read_bytes() == b"\x89PNG synthetic new"
+    assert (dest_vis / existing).read_bytes() == b"store-side visual"
+    assert f"kept store copy of visual {existing}" in e["note"]
+    assert tree(repo) == before
+    again = run(repo)
+    assert again["changed"] is False and by_id(again)["decisions:compare-demo"]["status"] == "unchanged"
 
 
 def test_dry_run_writes_nothing(repo):

@@ -1,0 +1,8 @@
+{
+  "schema": "groundwork.decision-set/v1",
+  "id": "malformed",
+  "_comment": "SYNTHETIC. Schema-correct record whose ruleable arrays are not lists: both summaries treat them as empty and name each field in errors.",
+  "axes": 1,
+  "openItems": "not a list",
+  "compares": {"c1": {"id": "c1", "ruling": "keep-a"}}
+}

@@ -770,3 +770,30 @@ def test_breaking_a_stale_lock_restores_a_live_lock_that_replaced_it(tmp_path):
     assert lock.read_text(encoding="utf-8") == live
     assert [p.name for p in lock.parent.iterdir() if p.name.endswith(".stale")] == []
     lock.unlink()
+
+
+def test_board_reads_refuse_a_symlinked_ancestor(tmp_path):
+    """Review f4: a symlinked .groundwork/decisions dir must not be followed (JS refuseSymlinks parity)."""
+    elsewhere = tmp_path / "elsewhere" / "demo"
+    elsewhere.mkdir(parents=True)
+    (elsewhere / "decisions.json").write_bytes(COMPARE_DEMO.read_bytes())
+    repo = tmp_path / "repo"
+    (repo / ".groundwork").mkdir(parents=True)
+    (repo / ".groundwork" / "decisions").symlink_to(tmp_path / "elsewhere")
+    s = make(repo)
+    with pytest.raises(StoreError) as e:
+        s.read_board("demo")
+    assert e.value.code == "symlink"
+    with pytest.raises(StoreError) as e:
+        s.list_boards([])
+    assert e.value.code == "symlink"
+
+
+def test_decision_summary_malformed_arrays_are_empty_with_errors():
+    """Review f5: non-list ruleable arrays read as empty and are named in errors (JS twin agrees)."""
+    rec = {"schema": dr.SCHEMA, "id": "x", "axes": 1, "openItems": [{"id": "o", "question": "Q"}],
+           "compares": {"c": 1}}
+    sm = ps.decision_summary(rec)
+    assert (sm["open"], sm["ruled"]) == (1, 0)
+    assert sm["errors"] == ["axes must be a list", "compares must be a list"]
+    assert ps.decision_summary({"axes": None})["errors"] == []

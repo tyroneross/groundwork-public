@@ -16,11 +16,12 @@ from pathlib import Path
 import pytest
 
 from designer.decisions import decision_record as dr
-from designer.project.project_store import decision_summary
+from designer.project.project_store import _ruleable_view, decision_summary
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "designer" / "project" / "fixtures" / "parity-ops.json"
 EDGE = ROOT / "designer" / "project" / "fixtures" / "decision-edge.json"
+MALFORMED = ROOT / "designer" / "project" / "fixtures" / "decision-malformed.json"
 COMPARE_DEMO = ROOT / "designer" / "decisions" / "fixtures" / "compare-demo" / "decisions.json"
 JS_RUNNER = ROOT / "designer" / "project" / "tools" / "parity-runner.mjs"
 
@@ -72,7 +73,8 @@ def runs(tmp_path_factory):
 
 
 @pytest.mark.parametrize("name", ["project.json", "workspace.json", ".gitignore",
-                                  "decisions/compare-demo/decisions.json", "decisions/edge/decisions.json"])
+                                  "decisions/compare-demo/decisions.json", "decisions/edge/decisions.json",
+                                  "decisions/malformed/decisions.json"])
 def test_store_files_byte_identical(runs, name):
     a = (runs["py_root"] / ".groundwork" / name).read_bytes()
     b = (runs["js_root"] / ".groundwork" / name).read_bytes()
@@ -144,13 +146,13 @@ def test_cross_read_leaves_store_untouched(runs):
     assert before == after
 
 
-@pytest.mark.parametrize("path", [COMPARE_DEMO, EDGE])
+@pytest.mark.parametrize("path", [COMPARE_DEMO, EDGE, MALFORMED])
 def test_decision_summary_parity(path):
     py = json.loads(_py("summary", str(path)))
     js = json.loads(_js("summary", str(path)))
     assert py == js
     rec = json.loads(path.read_text(encoding="utf-8"))
-    lanes = dr.lanes(rec)
+    lanes = dr.lanes(_ruleable_view(rec)[0])
     assert (py["open"], py["ruled"]) == (len(lanes["open"]), len(lanes["ruled"]))
     assert py == decision_summary(rec)
 
@@ -171,3 +173,14 @@ def test_decision_edge_expected_lanes():
     no_id = [i for i in s["items"] if i["id"] is None]                     # AM-7: "" -> null
     assert [(i["title"], i["lane"]) for i in no_id] == [("No id, ruled", "ruled"), (None, "open")]
     assert (s["open"], s["ruled"]) == (14, 13)
+
+
+def test_malformed_ruleable_arrays_are_empty_with_named_errors(runs):
+    """P4: a non-list axes/openItems/compares is empty plus one error per field, in both libraries."""
+    s = decision_summary(json.loads(MALFORMED.read_text(encoding="utf-8")))
+    assert s == {"open": 0, "ruled": 0, "items": [],
+                 "errors": ["axes must be a list", "openItems must be a list", "compares must be a list"]}
+    for reader in (_py, _js):
+        boards = {b["slug"]: b for b in json.loads(reader("read", str(runs["py_root"])))["boards"]}
+        b = boards["malformed"]
+        assert b["valid"] is True and b["items"] == [] and b["errors"] == s["errors"]

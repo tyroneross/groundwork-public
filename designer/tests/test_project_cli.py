@@ -119,7 +119,13 @@ def test_migrate_verify_passes_then_catches_a_tampered_ruling(tmp_path):
     assert run("migrate", "--repo", str(tmp_path), "--verify").returncode == 0
     dest = tmp_path / ".groundwork" / "decisions" / "demo" / "decisions.json"
     assert dest.read_bytes() == source and (legacy / "decisions.json").read_bytes() == source
+    # A valid ruling edit in the store is a store edit (listed), not a mismatch.
     dest.write_bytes(source.replace(b'"approve-b"', b'"keep-a"'))
+    ok = run("migrate", "--repo", str(tmp_path), "--verify", "--json")
+    assert ok.returncode == 0
+    assert [x["id"] for x in json.loads(ok.stdout)["verify"]["storeEdited"]] == ["decisions:demo"]
+    # A store copy that is no longer a readable board is a tamper: exit 1.
+    dest.write_bytes(source[:40])
     assert run("migrate", "--repo", str(tmp_path), "--verify").returncode == 1
 
 

@@ -448,3 +448,17 @@ test('release never removes a lock that is no longer ours (audit f2)', async () 
     assert.equal(fs.readFileSync(lock, 'utf8'), other);
   } finally { fs.rmSync(R, { recursive: true, force: true }); }
 });
+
+test('review f5: non-list ruleable arrays are empty and named in errors (Python twin agrees)', () => {
+  const sm = decisionSummary({ schema: 'groundwork.decision-set/v1', id: 'x', axes: 1,
+    openItems: [{ id: 'o', question: 'Q' }], compares: { c: 1 } });
+  assert.deepEqual([sm.open, sm.ruled], [1, 0]);
+  assert.deepEqual(sm.errors, ['axes must be a list', 'compares must be a list']);
+  assert.deepEqual(decisionSummary({ axes: null }).errors, []);
+  const r = tmp();
+  const s = make(r);
+  s.writeBoard('bad', Buffer.from(JSON.stringify({ schema: 'groundwork.decision-set/v1', id: 'bad', axes: 1 })));
+  const b = s.listBoards().find(x => x.slug === 'bad');
+  assert.equal(b.valid, true);
+  assert.deepEqual(b.errors, ['axes must be a list']);
+});

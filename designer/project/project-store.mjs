@@ -16,7 +16,10 @@
 //       are language-neutral strings. Full decision_record.validate is not run
 //       (the JS side cannot run it).
 //   P4  Decision items follow decision_record.Ruleable; id/title that resolve to
-//       "" become null (AM-7).
+//       "" become null (AM-7). A ruleable array field (axes/openItems/compares)
+//       that is present, non-null and not a list contributes no items and adds
+//       "<field> must be a list" to the summary `errors` and the board entry
+//       `errors` (the board stays valid).
 //   P5  Workspace notes in the D-02u projection need a string id and string
 //       text; non-string createdAt/processedAt read as null; sort key is
 //       (createdAt or "", id).
@@ -118,14 +121,16 @@ const ADAPTER = {
 };
 const RULEABLE_ARRAYS = ['axes', 'openItems', 'compares'];
 
-// Python iterates `record.get(source) or []`: a list yields its items, a dict its
-// keys and a string its characters -- neither of which is a dict, so only a list
-// can contribute.
+// P4: only a list contributes items; any other present, non-null value is
+// reported in `errors` (Python empties the field before decision_record.ruleables).
 export function decisionSummary(record) {
   const items = [];
   let open = 0; let ruled = 0;
+  const errors = [];
   const rec = isObj(record) ? record : {};
   for (const source of RULEABLE_ARRAYS) {
+    const present = rec[source] !== undefined && rec[source] !== null;
+    if (present && !Array.isArray(rec[source])) errors.push(`${source} must be a list`);
     const arr = Array.isArray(rec[source]) ? rec[source] : [];
     for (const raw of arr) {
       if (!isObj(raw)) continue;
@@ -140,7 +145,7 @@ export function decisionSummary(record) {
       items.push({ id: sid === '' ? null : sid, source, title: title === '' ? null : title, lane, ruling: chosen, note, ruledAt });
     }
   }
-  return { open, ruled, items };
+  return { open, ruled, items, errors };
 }
 
 // AM-8: realpath; under a .groundwork component -> its parent; .designdoc -> parent.
@@ -684,7 +689,7 @@ export function projectStore(root, { now = isoNow, newId = defaultNewId, tool = 
     let rec = null;
     try { rec = JSON.parse(buf.toString('utf8')); } catch { e.valid = false; e.errors.push('decisions.json is not valid JSON'); }
     if (e.valid && (!isObj(rec) || rec.schema !== DECISION_SET_SCHEMA)) { e.valid = false; e.errors.push(`schema must be ${DECISION_SET_SCHEMA}`); }
-    if (e.valid) { const s = decisionSummary(rec); e.open = s.open; e.ruled = s.ruled; e.items = s.items; }
+    if (e.valid) { const s = decisionSummary(rec); e.open = s.open; e.ruled = s.ruled; e.items = s.items; e.errors.push(...s.errors); }
     const m = migrations.find(x => isObj(x) && x.id === `decisions:${slug}`);
     if (m && m.status === 'conflict') e.conflict = { source: m.source ?? null, dest: m.dest ?? null, note: m.note ?? null };
     return e;

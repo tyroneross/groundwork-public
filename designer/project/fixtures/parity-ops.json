@@ -243,6 +243,11 @@
     },
     {
       "op": "agentContract"
+    },
+    {
+      "op": "writeBoard",
+      "slug": "malformed",
+      "file": "designer/project/fixtures/decision-malformed.json"
     }
   ]
 }
