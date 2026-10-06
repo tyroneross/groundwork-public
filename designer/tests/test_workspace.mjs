@@ -31,12 +31,36 @@ test('selection and source provenance survive restart and export exactly the sel
  assert.throws(()=>store.select('unknown'),/Unknown/);
 });
 test('workspace refuses symlinks and concurrent writes without replacing existing bytes', t => {
- const dir=temp(t), other=temp(t);fs.symlinkSync(other,path.join(dir,'.groundwork-workspace'));
- assert.throws(()=>workspaceStore(dir).enqueue('x','x'),/symlinks/);
- fs.unlinkSync(path.join(dir,'.groundwork-workspace'));
+ const dir=temp(t), other=temp(t);fs.symlinkSync(other,path.join(dir,'.groundwork'));
+ assert.throws(()=>workspaceStore(dir).enqueue('x','x'),/symlink/);
+ fs.unlinkSync(path.join(dir,'.groundwork'));
  const store=workspaceStore(dir);store.enqueue('x','x');
- fs.writeFileSync(path.join(dir,'.groundwork-workspace/write.lock'),'');
- assert.throws(()=>store.enqueue('y','y'),/writer lock/);assert.equal(store.read().notes.length,1);
+ // A live holder (this process) is never broken; the writer waits, then fails visibly.
+ fs.writeFileSync(path.join(dir,'.groundwork/write.lock'),JSON.stringify({pid:process.pid,host:os.hostname(),tool:'test',acquiredAt:new Date().toISOString()}));
+ assert.throws(()=>store.enqueue('y','y'),/lock/);assert.equal(store.read().notes.length,1);
+ fs.rmSync(path.join(dir,'.groundwork/write.lock'));
+});
+
+test('saved work lives in the repo store: a .designdoc target maps to <repo>/.groundwork/workspace.json', t => {
+ const repo=temp(t); fs.mkdirSync(path.join(repo,'.designdoc'));
+ workspaceStore(path.join(repo,'.designdoc')).enqueue('Keep left navigation','n1');
+ assert.equal(JSON.parse(fs.readFileSync(path.join(repo,'.groundwork/workspace.json'),'utf8')).notes[0].text,'Keep left navigation');
+ assert.equal(workspaceStore(repo).read().notes.length,1, 'the repo root and its .designdoc see the same saved work');
+ assert.equal(fs.readFileSync(path.join(repo,'.groundwork/.gitignore'),'utf8'),'*\n');
+});
+
+test('a legacy workspace is read in place and copied into the store on first change, never modified', t => {
+ const repo=temp(t), legacyDir=path.join(repo,'.designdoc','.groundwork-workspace'); fs.mkdirSync(legacyDir,{recursive:true});
+ const legacy={version:1,notes:[{id:'old',text:'From before',status:'received',createdAt:'2026-01-01T00:00:00.000Z'}],alternatives:[],selectedId:null,sources:[]};
+ const bytes=JSON.stringify(legacy,null,2); fs.writeFileSync(path.join(legacyDir,'workspace.json'),bytes);
+ const store=workspaceStore(path.join(repo,'.designdoc'));
+ assert.equal(store.read().notes[0].text,'From before');
+ assert.equal(fs.existsSync(path.join(repo,'.groundwork/workspace.json')),false,'reading does not migrate');
+ store.enqueue('After','n2');
+ assert.deepEqual(JSON.parse(fs.readFileSync(path.join(repo,'.groundwork/workspace.json'),'utf8')).notes.map(n=>n.id),['old','n2']);
+ assert.equal(fs.readFileSync(path.join(legacyDir,'workspace.json'),'utf8'),bytes,'legacy bytes unchanged');
+ const project=JSON.parse(fs.readFileSync(path.join(repo,'.groundwork/project.json'),'utf8'));
+ assert.ok(project.migrations.some(m=>m.kind==='workspace' && m.status==='migrated'));
 });
 
 test('live chat replay, generated comparison, selection and export survive a server restart', async t => {

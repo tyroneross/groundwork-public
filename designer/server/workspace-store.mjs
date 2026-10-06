@@ -1,14 +1,17 @@
 // Durable local design workspace. Hosted adapters can preserve this record model.
-import fs from 'node:fs';
-import path from 'node:path';
 import { randomUUID, createHash } from 'node:crypto';
+import { projectStore, projectRoot } from '../project/project-store.mjs';
 
+// Saved work lives in the one per-repo Groundwork store:
+// <repo>/.groundwork/workspace.json, written through the shared store library so
+// Designer, the project pane, the CLI and agents take the same lock and read the
+// same file. A target inside <repo>/.designdoc (Designer's usual output dir) or
+// inside <repo>/.groundwork maps to <repo>. Until the first change, a workspace
+// left at a legacy location (.designdoc/.groundwork-workspace/ or
+// .groundwork-workspace/) is read in place; the first change writes the store
+// copy and records the migration. Legacy files are never modified.
 export function workspaceStore(target) {
-  const dir = path.join(target, '.groundwork-workspace');
-  const file = path.join(dir, 'workspace.json');
-  const safe = (p) => {
-    if (fs.lstatSync(p, { throwIfNoEntry: false })?.isSymbolicLink()) throw new Error('Workspace symlinks are not supported');
-  };
+  const store = projectStore(projectRoot(target), { tool: 'designer-server' });
   const defaultReview = { suggestions: true, optionCount: 3, layout: 'compare', fidelity: 'low' };
   function normalizeReview(review = {}) {
     return {
@@ -18,34 +21,14 @@ export function workspaceStore(target) {
       fidelity: review.fidelity === 'polished' ? 'polished' : 'low',
     };
   }
-  function read() {
-    safe(dir); safe(file);
-    if (!fs.existsSync(file)) return { version: 1, notes: [], alternatives: [], selectedId: null, sources: [], review: { ...defaultReview } };
-    const value = JSON.parse(fs.readFileSync(file, 'utf8'));
+  function check(value) {
     if (value.version !== 1 || !['notes', 'alternatives', 'sources'].every(k => Array.isArray(value[k]))) throw new Error('Unsupported workspace record');
-    value.review = normalizeReview(value.review);
+    value.review = normalizeReview(value.review || defaultReview);
     return value;
   }
+  function read() { return check(store.readWorkspace().value); }
   function change(fn) {
-    safe(dir); fs.mkdirSync(dir, { recursive: true });
-    const lock = path.join(dir, 'write.lock');
-    // Exclusive file locking fails visibly; another writer is never overwritten.
-    let fd;
-    try { fd = fs.openSync(lock, 'wx'); }
-    catch (error) {
-      if (error.code === 'EEXIST') throw new Error(`Workspace writer lock exists at ${lock}. Retry after the other writer finishes; if it crashed, stop all writers before removing this lock.`);
-      throw error;
-    }
-    const temp = path.join(dir, `workspace-${randomUUID()}.tmp`);
-    try {
-      const value = read(); const result = fn(value);
-      fs.writeFileSync(temp, JSON.stringify(value, null, 2), { flag: 'wx', mode: 0o600 });
-      fs.renameSync(temp, file);
-      return result;
-    } finally {
-      fs.closeSync(fd); fs.rmSync(lock);
-      fs.rmSync(temp, { force: true });
-    }
+    return store.changeWorkspace(value => fn(check(value)));
   }
   return {
     read,

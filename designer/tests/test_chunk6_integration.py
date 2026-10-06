@@ -731,7 +731,10 @@ def test_server_file_is_zero_dep():
             continue
         seen.add(source)
         for mod in re.findall(r"import .* from ['\"]([^'\"]+)['\"]", source.read_text()):
-            if mod.startswith("./"):
+            if mod.startswith("./") or mod.startswith("../"):
+                # Local helpers, including the shared project store library
+                # (designer/project/project-store.mjs), are followed and must be
+                # zero-dependency too.
                 helper = (source.parent / mod).resolve()
                 assert helper.is_relative_to(Path(ROOT).resolve()), mod
                 assert helper.is_file(), mod
