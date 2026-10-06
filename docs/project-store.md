@@ -37,6 +37,19 @@ survives a reload or a restart; **Done** sends it. The line under the box says
 which is true: "Draft saved 14:05 — not sent yet" or "Sent 14:06". The notes list
 under it switches between this section and all sections.
 
+Each draft write from the pane carries `revision`, a whole number the page
+raises by one per write for that draft (`PUT /api/feedback/<id>` and `DELETE`
+take it in the JSON body; `upsertDraft({revision})` / `upsert_draft(...,
+revision=)` and `deleteDraft(id, revision)` / `delete_draft(id, revision)` in the
+libraries). The store keeps the newest one on the note as `draftRevision` and
+refuses, with error code `stale` (HTTP 409), any write or delete whose revision
+is not greater than it, so a save that arrives late, such as one still in flight
+when the page-exit save went out, cannot put older text back. A write without
+`revision` (CLI, agents) is accepted as before and leaves `draftRevision`
+unchanged. Revisions apply only to drafts: a sent or processed note still
+refuses every change with `state`. After a draft is deleted its revision is
+gone, so a late write for that id creates the draft again.
+
 ## Read and write it from a shell or an agent
 
 ```bash

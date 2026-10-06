@@ -248,6 +248,76 @@
       "op": "writeBoard",
       "slug": "malformed",
       "file": "designer/project/fixtures/decision-malformed.json"
+    },
+    {
+      "op": "upsertDraft",
+      "id": "fb_rev",
+      "section": "general",
+      "text": "revision one",
+      "revision": 1
+    },
+    {
+      "op": "upsertDraft",
+      "id": "fb_rev",
+      "section": "general",
+      "text": "revision three",
+      "revision": 3
+    },
+    {
+      "op": "upsertDraft",
+      "id": "fb_rev",
+      "section": "general",
+      "text": "revision two arrives late",
+      "revision": 2
+    },
+    {
+      "op": "upsertDraft",
+      "id": "fb_rev",
+      "section": "general",
+      "text": "revision three replayed",
+      "revision": 3
+    },
+    {
+      "op": "deleteDraft",
+      "id": "fb_rev",
+      "revision": 2
+    },
+    {
+      "op": "upsertDraft",
+      "id": "fb_rev",
+      "section": "general",
+      "text": "bad revision",
+      "revision": -1
+    },
+    {
+      "op": "upsertDraft",
+      "id": "fb_rev",
+      "section": "general",
+      "text": "no revision from a tool"
+    },
+    {
+      "op": "upsertDraft",
+      "id": "fb_revdel",
+      "section": "canvas",
+      "text": "to delete",
+      "revision": 5
+    },
+    {
+      "op": "deleteDraft",
+      "id": "fb_revdel",
+      "revision": 6
+    },
+    {
+      "op": "upsertDraft",
+      "id": "fb_cafe",
+      "section": "decisions",
+      "text": "submitted stays",
+      "revision": 99
+    },
+    {
+      "op": "listFeedback",
+      "section": "general",
+      "status": "draft"
     }
   ]
 }

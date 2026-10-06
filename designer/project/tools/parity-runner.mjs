@@ -37,10 +37,10 @@ function runOp(s, op) {
   switch (op.op) {
     case 'init': return s.init();
     case 'readWorkspace': return s.readWorkspace();
-    case 'upsertDraft': return s.upsertDraft({ id: op.id ?? null, section: op.section, text: op.text, target: op.target ?? null, origin: op.origin ?? null });
+    case 'upsertDraft': return s.upsertDraft({ id: op.id ?? null, section: op.section, text: op.text, target: op.target ?? null, origin: op.origin ?? null, revision: op.revision ?? null });
     case 'submitFeedback': return s.submitFeedback(op.id, op.text ?? null);
     case 'addFeedback': return s.addFeedback({ section: op.section, text: op.text, target: op.target ?? null, origin: op.origin ?? null, submit: op.submit ?? true, id: op.id ?? null });
-    case 'deleteDraft': return s.deleteDraft(op.id);
+    case 'deleteDraft': return s.deleteDraft(op.id, op.revision ?? null);
     case 'acknowledge': return s.acknowledge(op.ids);
     case 'addPreference': return s.addPreference({ text: op.text, scope: op.scope ?? 'repo', provenance: op.provenance ?? null, supersedes: op.supersedes ?? null });
     case 'appendAlternative': return s.changeWorkspace(ws => { ws.alternatives.push(op.alternative); }) ?? null;

@@ -405,3 +405,89 @@ test('composer and preference form keep what the person typed (review regression
     fs.rmSync(repo, { recursive: true, force: true });
   }
 });
+
+async function draftsIn(base) {
+  return (await (await fetch(`${base}/api/feedback?status=draft`)).json()).items;
+}
+
+test('page exit sends the newest draft at once, and a late older save cannot replace it', async () => {
+  const repo = makeRepo();
+  const srv = await startServer(repo);
+  try {
+    const base = srv.url;
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+    await goto(`${base}/#decisions`);
+    // Hold the first draft PUT in flight; let every later request through.
+    await cdp.send('Fetch.enable', { patterns: [{ urlPattern: '*/api/feedback/fb_*', requestStage: 'Request' }] });
+    const held = [];
+    cdp.on('Fetch.requestPaused', (p) => {
+      if (p.request.method === 'PUT' && held.length === 0) { held.push(p.requestId); return; }
+      cdp.send('Fetch.continueRequest', { requestId: p.requestId });
+    });
+    try {
+      await typeInto('#composer-text', 'alpha');
+      await waitUntil(() => held.length === 1, 'first draft save never started', 60);
+      // Edit mid-save and leave the page before the debounced save fires.
+      await typeInto('#composer-text', ' beta');
+      await evaluate(cdp, `window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: false }))`);
+      const want = 'alpha beta';
+      await waitUntil(async () => {
+        const items = await draftsIn(base);
+        return items.length === 1 && items[0].text === want;
+      }, 'pagehide did not send the newest draft while an earlier save was in flight', 60);
+      // Now the older save lands last: its lower revision must be refused.
+      await cdp.send('Fetch.continueRequest', { requestId: held[0] });
+      await new Promise((r) => setTimeout(r, 600));
+      const items = await draftsIn(base);
+      assert.equal(items.length, 1);
+      assert.equal(items[0].text, want, 'the older in-flight save overwrote the text sent on page exit');
+    } finally {
+      await cdp.send('Fetch.disable'); cdp.off('Fetch.requestPaused');
+    }
+  } finally {
+    await terminate(srv.child);
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+test('a note submitted from this page is not revived as a draft by an older snapshot', async () => {
+  const repo = makeRepo();
+  const srv = await startServer(repo);
+  try {
+    const base = srv.url;
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+    await goto(`${base}/#decisions`);
+    const note = 'Submitted note that must stay sent';
+    await typeInto('#composer-text', note);
+    await waitUntil(() => evaluate(cdp, `${$('#composer-line')}.textContent.startsWith('Draft saved')`), 'draft never saved', 60);
+    // A snapshot taken while the note was still a draft.
+    const older = await (await fetch(`${base}/api/project`)).text();
+    assert.ok(JSON.parse(older).feedback.some((f) => f.text === note && f.status === 'draft'));
+    // From the moment Done is clicked, every snapshot read returns that older one.
+    await cdp.send('Fetch.enable', { patterns: [{ urlPattern: '*/api/project', requestStage: 'Request' }] });
+    cdp.on('Fetch.requestPaused', (p) => {
+      cdp.send('Fetch.fulfillRequest', {
+        requestId: p.requestId, responseCode: 200,
+        responseHeaders: [{ name: 'Content-Type', value: 'application/json' }, { name: 'Cache-Control', value: 'no-store' }],
+        body: Buffer.from(older).toString('base64'),
+      });
+    });
+    try {
+      await click('#composer-done');
+      await waitUntil(() => evaluate(cdp, `${$('#composer-line')}.textContent.startsWith('Sent')`), 'save line never read "Sent"', 80);
+      const sent = (await (await fetch(`${base}/api/feedback?status=submitted`)).json()).items;
+      assert.ok(sent.some((f) => f.text === note), 'the note was not submitted');
+      // Re-enter the section so the composer reloads its draft from the older snapshot.
+      await openSection(base, 'canvas');
+      await openSection(base, 'decisions');
+      await new Promise((r) => setTimeout(r, 300));
+      assert.equal(await evaluate(cdp, `${$('#composer-text')}.value`), '', 'the submitted note came back as a draft');
+      assert.ok(!(await text('#composer-line')).startsWith('Draft saved'));
+    } finally {
+      await cdp.send('Fetch.disable'); cdp.off('Fetch.requestPaused');
+    }
+  } finally {
+    await terminate(srv.child);
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
+});

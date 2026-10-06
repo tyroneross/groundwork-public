@@ -69,14 +69,15 @@ def run_op(s: ProjectStore, op: dict) -> Any:
         value, legacy = s.read_workspace()
         return {"value": value, "legacy": legacy}
     if k == "upsertDraft":
-        return s.upsert_draft(op.get("id"), op["section"], op["text"], op.get("target"), op.get("origin"))
+        return s.upsert_draft(op.get("id"), op["section"], op["text"], op.get("target"), op.get("origin"),
+                              op.get("revision"))
     if k == "submitFeedback":
         return s.submit_feedback(op["id"], op.get("text"))
     if k == "addFeedback":
         return s.add_feedback(op["section"], op["text"], op.get("target"), op.get("origin"),
                               op.get("submit", True), op.get("id"))
     if k == "deleteDraft":
-        return s.delete_draft(op["id"])
+        return s.delete_draft(op["id"], op.get("revision"))
     if k == "acknowledge":
         return s.acknowledge(op["ids"])
     if k == "addPreference":

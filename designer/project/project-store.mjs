@@ -183,6 +183,22 @@ export function validateFeedbackInput(input = {}) {
   return { id: id ?? null, section, text: t, target: target ?? null, origin: o };
 }
 
+const MAX_DRAFT_REVISION = Number.MAX_SAFE_INTEGER; // 2**53-1, the same range as project_store.py
+
+// A draft write's client sequence: null, or a whole number 0..2**53-1.
+export function validateDraftRevision(revision) {
+  if (revision === null || revision === undefined) return null;
+  if (!Number.isInteger(revision) || revision < 0 || revision > MAX_DRAFT_REVISION) fail('invalid', 'revision must be null or a whole number from 0 to 9007199254740991');
+  return revision;
+}
+
+// A revisioned write must be newer than the revision the draft already holds.
+function refuseStaleRevision(cur, revision) {
+  const held = cur.draftRevision;
+  if (revision === null || !Number.isInteger(held)) return;
+  if (revision <= held) fail('stale', `feedback ${cur.id} revision ${revision} is not newer than stored revision ${held}`);
+}
+
 export function validatePreferenceInput(input = {}) {
   const { text, scope = 'repo', provenance = null, supersedes = null } = input || {};
   if (!PREF_SCOPES.includes(scope)) fail('invalid', `scope must be one of ${PREF_SCOPES.join(', ')}`);
@@ -551,17 +567,20 @@ export function projectStore(root, { now = isoNow, newId = defaultNewId, tool = 
       id, section: v.section, target: v.target, text: v.text, status,
       createdAt: t, updatedAt: t, submittedAt: status === 'submitted' ? t : null, processedAt: null, origin: v.origin,
     };
+    if (v.revision !== null && v.revision !== undefined) item.draftRevision = v.revision;
     doc.feedback.push(item);
     return item;
   }
 
   function upsertDraft(input) {
-    const v = validateFeedbackInput(input);
+    const v = { ...validateFeedbackInput(input), revision: validateDraftRevision((input || {}).revision) };
     return mutate((doc, t) => {
       const old = v.id === null ? undefined : doc.feedback.find(f => isObj(f) && f.id === v.id);
       if (!old) return clone(newFeedback(doc, t, v, 'draft'));
       if (old.status !== 'draft') fail('state', `feedback ${old.id} is ${old.status}; only drafts can change`);
+      refuseStaleRevision(old, v.revision);
       const next = { ...old, section: v.section, target: v.target, text: v.text, origin: v.origin };
+      if (v.revision !== null) next.draftRevision = v.revision;
       if (canonical(next) !== canonical(old)) { Object.assign(old, next); old.updatedAt = t; }
       return clone(old);
     });
@@ -617,11 +636,13 @@ export function projectStore(root, { now = isoNow, newId = defaultNewId, tool = 
     });
   }
 
-  function deleteDraft(id) {
+  function deleteDraft(id, revision = null) {
+    const rv = validateDraftRevision(revision);
     return mutate((doc) => {
       const i = doc.feedback.findIndex(f => isObj(f) && f.id === id);
       if (i < 0) fail('not-found', `unknown feedback: ${id}`);
       if (doc.feedback[i].status !== 'draft') fail('state', `feedback ${id} is ${doc.feedback[i].status}; only drafts can be deleted`);
+      refuseStaleRevision(doc.feedback[i], rv);
       doc.feedback.splice(i, 1);
       return { deleted: id };
     });

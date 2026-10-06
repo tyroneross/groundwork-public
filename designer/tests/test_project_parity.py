@@ -128,6 +128,18 @@ def test_op_script_exercised_what_it_claims(runs):
     codes = [w["code"] for w in r[33]["warnings"]]
     assert codes == ["conflict", "migration-failed", "canvas-invalid-rows", "legacy-unmigrated"]
     assert r[34]["decisions"][0]["items"]                                          # AM-6
+    # Draft revisions: a write whose revision is not newer than the stored one is refused.
+    assert r[36]["draftRevision"] == 1 and r[37]["draftRevision"] == 3 and r[37]["text"] == "revision three"
+    assert r[38] == {"error": "stale"} and r[39] == {"error": "stale"}          # older, then equal
+    assert r[40] == {"error": "stale"}                                          # a stale delete keeps the draft
+    assert r[41] == {"error": "invalid"}
+    assert r[42]["text"] == "no revision from a tool" and r[42]["draftRevision"] == 3
+    assert r[43]["draftRevision"] == 5 and r[44] == {"deleted": "fb_revdel"}
+    assert r[45] == {"error": "state"}                                          # submitted note: state, not stale
+    assert [(f["id"], f["text"]) for f in r[46] if f["id"].startswith("fb_rev")] == [("fb_rev", "no revision from a tool")]
+    rev_item = next(f for f in proj["feedback"] if f["id"] == "fb_rev")
+    assert list(rev_item)[-1] == "draftRevision" and rev_item["draftRevision"] == 3
+    assert "draftRevision" not in next(f for f in proj["feedback"] if f["id"] == "fb_cafe")
 
 
 @pytest.mark.parametrize("reader_src,writer", [("py", "py"), ("js", "py"), ("py", "js"), ("js", "js")])

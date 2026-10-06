@@ -124,6 +124,12 @@ def test_migrate_verify_passes_then_catches_a_tampered_ruling(tmp_path):
     ok = run("migrate", "--repo", str(tmp_path), "--verify", "--json")
     assert ok.returncode == 0
     assert [x["id"] for x in json.loads(ok.stdout)["verify"]["storeEdited"]] == ["decisions:demo"]
+    # The text output names the store-edited board too, not only --json.
+    txt = run("migrate", "--repo", str(tmp_path), "--verify")
+    assert txt.returncode == 0
+    assert "verify: ok" in txt.stdout
+    assert [ln.strip().split(" (items:")[0] for ln in txt.stdout.splitlines()
+            if ln.strip().startswith("store-edited ")] == ["store-edited decisions:demo"]
     # A store copy that is no longer a readable board is a tamper: exit 1.
     dest.write_bytes(source[:40])
     assert run("migrate", "--repo", str(tmp_path), "--verify").returncode == 1

@@ -89,7 +89,7 @@ class HttpError extends Error {
   constructor(status, message, code = null) { super(message); this.status = status; this.code = code; }
 }
 
-const STATUS_BY_CODE = { invalid: 400, 'not-found': 404, state: 409, conflict: 409, limit: 413, 'lock-timeout': 423 };
+const STATUS_BY_CODE = { invalid: 400, 'not-found': 404, state: 409, conflict: 409, stale: 409, limit: 413, 'lock-timeout': 423 };
 
 function readBody(req, cap) {
   return new Promise((resolve, reject) => {
@@ -277,13 +277,14 @@ export function makeServer(opts) {
         const body = await readJson(req);
         const item = store.upsertDraft({
           id, section: body.section, text: body.text, target: body.target ?? null, origin: { kind: 'person', ref: null },
+          revision: body.revision ?? null,
         });
         return sendJSON(res, 200, { ok: true, item, savedAt: item.updatedAt });
       }
       if (method === 'DELETE') {
         requireLocalJson(req);
-        await readBody(req, BODY_CAP);
-        store.deleteDraft(id);
+        const body = await readJson(req);
+        store.deleteDraft(id, body.revision ?? null);
         return sendJSON(res, 200, { ok: true });
       }
       throw notFound();

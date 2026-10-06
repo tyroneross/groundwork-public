@@ -206,6 +206,27 @@ def validate_feedback_input(section: Any, text: Any, target: Any = None, origin:
             "target": _clean_target(target), "origin": _clean_origin(origin)}
 
 
+MAX_DRAFT_REVISION = 2 ** 53 - 1  # Number.MAX_SAFE_INTEGER, so both stores accept the same range
+
+
+def validate_draft_revision(revision: Any) -> int | None:
+    """A draft write's client sequence: None, or a whole number 0..2**53-1."""
+    if revision is None:
+        return None
+    if isinstance(revision, bool) or not isinstance(revision, int) or not 0 <= revision <= MAX_DRAFT_REVISION:
+        raise StoreError("invalid", "revision must be null or a whole number from 0 to 9007199254740991")
+    return revision
+
+
+def _refuse_stale_revision(cur: dict, revision: int | None) -> None:
+    """A revisioned write must be newer than the revision the draft already holds."""
+    held = cur.get("draftRevision")
+    if revision is None or isinstance(held, bool) or not isinstance(held, int):
+        return
+    if revision <= held:
+        raise StoreError("stale", f"feedback {cur['id']} revision {revision} is not newer than stored revision {held}")
+
+
 def validate_preference_input(text: Any, scope: Any = "repo", provenance: Any = None) -> dict:
     if scope not in SCOPES:
         raise StoreError("invalid", f"scope must be one of {', '.join(SCOPES)}")
@@ -520,6 +541,8 @@ class ProjectStore:
                 "status": status, "createdAt": t, "updatedAt": t,
                 "submittedAt": t if status == "submitted" else None, "processedAt": None,
                 "origin": v["origin"]}
+        if v.get("revision") is not None:
+            item["draftRevision"] = v["revision"]
         doc["feedback"].append(item)
         return item
 
@@ -530,8 +553,9 @@ class ProjectStore:
         return fid
 
     def upsert_draft(self, id: str | None, section: str, text: str, target: str | None = None,
-                     origin: dict | None = None) -> dict:
+                     origin: dict | None = None, revision: int | None = None) -> dict:
         v = validate_feedback_input(section, text, target, origin, id)
+        v["revision"] = validate_draft_revision(revision)
 
         def fn(doc: dict) -> dict:
             cur = None if v["id"] is None else self._find(doc["feedback"], v["id"])
@@ -540,8 +564,11 @@ class ProjectStore:
                 return copy.deepcopy(self._new_item(doc, fid, v, "draft"))
             if cur["status"] != "draft":
                 raise StoreError("state", f"feedback {cur['id']} is {cur['status']}; only drafts can change")
+            _refuse_stale_revision(cur, v["revision"])
             new = {**cur, "section": v["section"], "target": v["target"], "text": v["text"],
                    "origin": v["origin"]}
+            if v["revision"] is not None:
+                new["draftRevision"] = v["revision"]
             if new != cur:
                 new["updatedAt"] = self._stamp()
                 cur.update(new)
@@ -615,13 +642,16 @@ class ProjectStore:
             self._mirror_note(item)
             return item
 
-    def delete_draft(self, id: str) -> dict:
+    def delete_draft(self, id: str, revision: int | None = None) -> dict:
+        rv = validate_draft_revision(revision)
+
         def fn(doc: dict) -> dict:
             cur = self._find(doc["feedback"], id)
             if cur is None:
                 raise StoreError("not-found", f"unknown feedback: {id}")
             if cur["status"] != "draft":
                 raise StoreError("state", f"feedback {id} is {cur['status']}; only drafts can be deleted")
+            _refuse_stale_revision(cur, rv)
             doc["feedback"].remove(cur)
             return {"deleted": id}
         return self.mutate(fn)

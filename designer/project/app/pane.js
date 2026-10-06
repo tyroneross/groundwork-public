@@ -20,7 +20,7 @@
 
   var snap = null, section = "decisions", openBoard = null, notesScope = "all";
   var submittedIds = {};
-  var draft = { id: null, section: null, text: "", saved: null, timer: null, inFlight: null };
+  var draft = { id: null, section: null, text: "", saved: null, timer: null, inFlight: null, rev: 0 };
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -269,8 +269,12 @@
     var existing = ((snap && snap.feedback) || []).filter(function (f) {
       return f.status === "draft" && f.section === sec && /^fb_/.test(f.id) && !submittedIds[f.id];
     }).pop();
+    /* Every write carries the next revision of this draft; the store refuses
+       one that is not newer than what it holds, so a request that arrives
+       late can never put older text back. */
+    var heldRev = existing && typeof existing.draftRevision === "number" ? existing.draftRevision : 0;
     draft = { id: existing ? existing.id : null, section: sec, text: existing ? existing.text : "",
-      saved: existing ? existing.text : null, timer: null, inFlight: null };
+      saved: existing ? existing.text : null, timer: null, inFlight: null, rev: heldRev };
     $("composer-text").value = draft.text;
     $("composer-done").disabled = !draft.text.trim();
     if (existing) line("Draft saved " + hhmm(existing.updatedAt) + " — not sent yet", "draft");
@@ -291,10 +295,11 @@
     var keepalive = !!(opts && opts.keepalive);
     if (keepalive) {
       /* The page is going away: a chained step would never run, so send the
-         newest text now. The upsert is idempotent and the last write wins. */
+         newest text now. It carries the highest revision, so an earlier save
+         still in flight is refused by the store if it lands after this one. */
       var url0 = "/api/feedback/" + encodeURIComponent(mine.id);
-      if (mine.text.trim()) api("PUT", url0, { section: mine.section, text: mine.text, target: null }, true);
-      else if (mine.saved !== null) api("DELETE", url0, {}, true);
+      if (mine.text.trim()) api("PUT", url0, { section: mine.section, text: mine.text, target: null, revision: ++mine.rev }, true);
+      else if (mine.saved !== null) api("DELETE", url0, { revision: ++mine.rev }, true);
       return Promise.resolve();
     }
     line("Saving…", null);
@@ -303,8 +308,8 @@
       if (text === mine.saved) return null;
       var url = "/api/feedback/" + encodeURIComponent(mine.id);
       var req = text.trim()
-        ? api("PUT", url, { section: mine.section, text: text, target: null }, keepalive)
-        : (mine.saved === null ? Promise.resolve({}) : api("DELETE", url, {}, keepalive));
+        ? api("PUT", url, { section: mine.section, text: text, target: null, revision: ++mine.rev }, keepalive)
+        : (mine.saved === null ? Promise.resolve({}) : api("DELETE", url, { revision: ++mine.rev }, keepalive));
       return req.then(function (r) {
         mine.saved = text.trim() ? text : null;
         if (mine !== draft || $("composer-text").value !== text) return;
@@ -338,7 +343,7 @@
       /* Clear the box only if the person is still on this draft; a comment
          started meanwhile in another section must not be erased. */
       if (draft === mine) {
-        draft = { id: null, section: section, text: "", saved: null, timer: null, inFlight: null };
+        draft = { id: null, section: section, text: "", saved: null, timer: null, inFlight: null, rev: 0 };
         $("composer-text").value = "";
         line("Sent " + hhmm(at) + " — every section, the CLI and agents can read it", "sent");
       }
