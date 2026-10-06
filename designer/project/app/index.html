@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Groundwork project</title>
+<!-- Served from the Groundwork install by project-server.mjs. No remote
+     resources: the pane renders offline, and every value on it comes from
+     <repo>/.groundwork/ through the /api routes. -->
+<link rel="stylesheet" href="./pane.css">
+</head>
+<body>
+<header class="top">
+  <h1 class="top-title" id="project-title">Groundwork</h1>
+  <p class="top-save" id="top-save" role="status" aria-live="polite"></p>
+</header>
+
+<nav class="sections" aria-label="Sections">
+  <a class="section-tab" href="#decisions" data-section="decisions">Decisions</a>
+  <a class="section-tab" href="#canvas" data-section="canvas">Canvas</a>
+  <a class="section-tab" href="#saved-work" data-section="saved-work">Saved work</a>
+  <a class="section-tab" href="#spec" data-section="spec">Spec</a>
+  <a class="section-tab" href="#memory" data-section="memory">Memory</a>
+</nav>
+
+<main class="body" id="main">
+  <section class="section-body" id="section-body" aria-live="polite"></section>
+
+  <section class="composer" aria-labelledby="composer-h">
+    <h2 class="label" id="composer-h">Comment</h2>
+    <textarea id="composer-text" rows="3" maxlength="4000"
+      aria-describedby="composer-line" placeholder="Write a note for this section"></textarea>
+    <div class="composer-bar">
+      <button type="button" class="btn-primary" id="composer-done" disabled>Done</button>
+      <p class="save-line" id="composer-line" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <section class="notes" aria-labelledby="notes-h">
+    <div class="notes-head">
+      <h2 class="label" id="notes-h">Project notes</h2>
+      <div class="toggle" role="group" aria-label="Which notes">
+        <button type="button" class="btn-toggle" data-scope="section" aria-pressed="false">This section</button>
+        <button type="button" class="btn-toggle" data-scope="all" aria-pressed="true">All sections</button>
+      </div>
+    </div>
+    <ul class="group" id="notes-list"></ul>
+  </section>
+
+  <footer class="foot">
+    <button type="button" class="btn-text" id="snapshot-btn">Save snapshot</button>
+    <p class="foot-line" id="snapshot-line" role="status" aria-live="polite"></p>
+  </footer>
+</main>
+<script src="./pane.js"></script>
+</body>
+</html>
