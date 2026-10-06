@@ -144,6 +144,13 @@ revision of B to say no to both.
   "secondOpinion": { "source": "Persona panel", "verdict": "approve", "note": "..." } }
 ```
 
+Optional fields: `headline` is the decision's one main idea in a few words
+("Team lead model level"); the index card shows the category (`area`), the
+headline, then the question. Set `"ordered": true` at the record's top level
+only when the decisions must be answered in sequence; otherwise no numbers are
+shown, because a number implies an order. Index cards share one width and
+height; hover and keyboard focus raise a border and glow, never an underline.
+
 The rules, each tested:
 
 - **The four answers are fixed**, not authored per item (`COMPARE_CHOICES`),

@@ -27,7 +27,7 @@
 :root {
   --bg:#F5F6F8; --surface:#FFFFFF; --surface-2:#FAFBFC;
   --border:#E0E4EA; --border-strong:#858D9B;
-  --text:#171B21; --text-muted:#5B6472;
+  --text:#171B21; --text-muted:#47505C;
   --accent:#2F52D6; --accent-soft:#EAEEFC; --accent-strong:#1E3AAE;
   --good:#26694A; --good-soft:#E7F3ED;
   --danger:#A5393B; --danger-soft:#F7E9E9;
@@ -48,7 +48,7 @@
   :root:not([data-theme="light"]) {
     --bg:#14161A; --surface:#1B1E24; --surface-2:#20242B;
     --border:#2E333C; --border-strong:#68707D;
-    --text:#E9ECF1; --text-muted:#A3ACBA;
+    --text:#E9ECF1; --text-muted:#BAC2CE;
     --accent:#8FA8FF; --accent-soft:#232A40; --accent-strong:#B3C4FF;
     --good:#6FD3A4; --good-soft:#1B2E26;
     --danger:#F29497; --danger-soft:#332123;
@@ -59,7 +59,7 @@
 :root[data-theme="dark"] {
   --bg:#14161A; --surface:#1B1E24; --surface-2:#20242B;
   --border:#2E333C; --border-strong:#68707D;
-  --text:#E9ECF1; --text-muted:#A3ACBA;
+  --text:#E9ECF1; --text-muted:#BAC2CE;
   --accent:#8FA8FF; --accent-soft:#232A40; --accent-strong:#B3C4FF;
   --good:#6FD3A4; --good-soft:#1B2E26;
   --danger:#F29497; --danger-soft:#332123;
@@ -109,6 +109,23 @@ body[data-view="selected"]  .view-selected { display:block; }
 body[data-view="compare"] .col-decide,
 body[data-view="selected"] .col-decide { max-width:1180px; }
 body.has-groups .c-jump, body.has-groups .c-index { display:none; }
+/* Unordered boards: one uniform card per decision, category + one main idea.
+ * Same width and height everywhere; hover and focus raise a border and glow,
+ * never an underline. */
+body:not(.c-ordered) .c-jump { display:none; }
+body:not(.c-ordered) .c-index { display:block; margin:0 0 8px; }
+.c-cards { list-style:none; margin:0; padding:0; display:grid; gap:12px;
+  grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); grid-auto-rows:1fr; }
+.c-cards li { display:flex; }
+.c-card { flex:1; display:flex; flex-direction:column; gap:6px; min-height:150px; padding:14px 16px;
+  border:1px solid var(--border-strong); border-radius:10px; background:var(--surface);
+  color:var(--text); text-decoration:none; transition:border-color .15s, box-shadow .15s; }
+.c-card:hover, .c-card:focus-visible { border-color:var(--accent); outline:none;
+  box-shadow:0 0 0 3px var(--accent-soft), 0 0 18px var(--accent-soft); }
+.c-cat { font-size:13px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--text-muted); }
+.c-card .c-tt { font-size:17px; font-weight:600; line-height:1.3; }
+.c-sub { font-size:14px; color:var(--text-muted); line-height:1.4; }
+.c-card .c-st { margin-top:auto; padding-top:6px; }
 
 .tabs {
   display:flex; gap:4px; border-bottom:1px solid var(--border);
@@ -448,7 +465,7 @@ textarea:focus-visible, input:focus-visible { outline:2px solid var(--accent); o
   display:grid; grid-template-columns:32px minmax(0,1fr); gap:8px; align-items:baseline;
   min-height:48px; padding:12px 14px; text-decoration:none; color:var(--text);
 }
-.c-idx a:hover .c-tt { text-decoration:underline; }
+.c-idx a:hover, .c-idx a:focus-visible { box-shadow:inset 0 0 0 1px var(--accent), 0 0 12px var(--accent-soft); }
 .c-no { font-size:18px; font-weight:700; color:var(--text-muted); font-variant-numeric:tabular-nums; }
 .c-tt { display:block; font-size:15px; }
 .c-st { display:block; font-size:14px; color:var(--text-muted); }
@@ -459,7 +476,8 @@ textarea:focus-visible, input:focus-visible { outline:2px solid var(--accent); o
 }
 .c-head { display:grid; grid-template-columns:48px minmax(0,1fr); gap:2px 12px; align-items:start; }
 /* The number spans three rows; any further header item (status, why) must stay in the text column. */
-.c-head > :not(.c-big) { grid-column:2; }
+.c-head:not(.no-num) > :not(.c-big) { grid-column:2; }
+.c-head.no-num { grid-template-columns:minmax(0,1fr); }
 .c-big {
   grid-row:1 / span 3; font-size:40px; line-height:1; font-weight:700;
   font-variant-numeric:tabular-nums; color:var(--text);

@@ -93,6 +93,7 @@
     }
     return {
       area: str(raw.area),
+      headline: str(raw.headline),
       optionA: side(raw.optionA), optionB: side(raw.optionB),
       secondOpinion: second
     };
@@ -832,8 +833,12 @@
       (entry && entry.capturedAt ? '<p class="c-cap">' + esc("Captured " + entry.capturedAt) + "</p>" : "");
   }
 
+  /* Numbers imply a sequence. Show them only when the record declares one
+     ("ordered": true); otherwise the area and the main idea identify a card. */
+  function ordered() { return !!(DATA && DATA.ordered === true); }
+
   function compareHtml(r, n, selectedView) {
-    var c = r.compare, so = c.secondOpinion;
+    var c = r.compare, so = c.secondOpinion, num = ordered();
     var shortWhy = condense(r.why, 35, 2);
     var choices = COMPARE_CHOICES.map(function (ch) {
       return '<button type="button" class="c-choice" data-c="' + esc(ch.key) + '" data-cpick="' +
@@ -848,8 +853,10 @@
     }
     return '<section class="c-dec" id="c-' + esc(r.id) + '" tabindex="-1" data-compare="' + esc(r.id) +
       '" aria-labelledby="ch-' + esc(r.id) + '">' +
-      '<div class="c-head"><span class="c-big" aria-hidden="true">' + n + "</span>" +
-      '<span class="c-area">Decision ' + n + (c.area ? " · " + esc(c.area) : "") + "</span>" +
+      '<div class="c-head' + (num ? "" : " no-num") + '">' +
+      (num ? '<span class="c-big" aria-hidden="true">' + n + "</span>" : "") +
+      '<span class="c-area">' + (num ? "Decision " + n + (c.area ? " · " : "") : "") + esc(c.area || (num ? "" : "Decision")) +
+      (c.headline ? " · " + esc(c.headline) : "") + "</span>" +
       '<h2 class="c-q" id="ch-' + esc(r.id) + '">' + esc(r.title) + "</h2>" +
       implementationHtml({ id: r.id, items: [r] }) +
       (shortWhy ? '<p class="c-why">' + esc(shortWhy) + "</p>" : "") + "</div>" +
@@ -1031,17 +1038,21 @@
       /* nosec: every value interpolated into the compare markup passes through
          esc(); visual file names additionally pass safeVisual(), a leaf-name
          allowlist. Same mitigation, and same mutation proof, as the cards. */
-      el("c-jump").innerHTML = pendingItems.map(function (r, i) {  // nosec: esc() on every value
+      el("c-jump").innerHTML = !ordered() ? "" : pendingItems.map(function (r, i) {  // nosec: esc() on every value
         return '<a href="#c-' + esc(r.id) + '" data-cjump="' + esc(r.id) + '">' + (i + 1) + "</a>";
       }).join("");
-      el("c-index").innerHTML = groupsOf(pendingItems).map(function (g) {  // nosec: esc() on every value
-        return '<nav class="c-idx-g" aria-label="' + esc(g.name) + '"><h2 class="c-idx-h">' + esc(g.name) + "</h2>" +
-          '<ol class="c-idx">' + g.items.map(function (it) {
-            return '<li><a href="#c-' + esc(it.r.id) + '"><span class="c-no">' + it.n + "</span>" +
-              '<span><span class="c-tt">' + esc(it.r.title) + '</span><span class="c-st" data-cst="' +
-              esc(it.r.id) + '"></span></span></a></li>';
-          }).join("") + "</ol></nav>";
-      }).join("");
+      document.body.classList.toggle("c-ordered", ordered());
+      el("c-index").innerHTML = '<ul class="c-cards" aria-label="Decisions">' +  // nosec: esc() on every value
+        groupsOf(pendingItems).map(function (g) {
+          return g.items.map(function (it) {
+            var head = it.r.compare.headline;
+            return '<li><a class="c-card" href="#c-' + esc(it.r.id) + '">' +
+              '<span class="c-cat">' + (ordered() ? '<span class="c-no">' + it.n + "</span> " : "") + esc(g.name) + "</span>" +
+              '<span class="c-tt">' + esc(head || it.r.title) + "</span>" +
+              (head ? '<span class="c-sub">' + esc(it.r.title) + "</span>" : "") +
+              '<span class="c-st" data-cst="' + esc(it.r.id) + '"></span></a></li>';
+          }).join("");
+        }).join("") + "</ul>";
       box.innerHTML = ""; // nosec: constant empty markup clears the legacy duplicate.
       if (gallery) {
         gallery.innerHTML = buckets.pending.map(function (set) { // nosec: groupHtml/compareHtml escape record text and validate visual file names.

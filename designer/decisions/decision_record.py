@@ -129,6 +129,7 @@ def _compare(raw: dict[str, Any]) -> dict[str, Any]:
         second = {k: s(so.get(k)) for k in ("source", "verdict", "note")}
     return {
         "area": s(raw.get("area")),
+        "headline": s(raw.get("headline")),
         "optionA": _side(raw.get("optionA")),
         "optionB": _side(raw.get("optionB")),
         "secondOpinion": second,
