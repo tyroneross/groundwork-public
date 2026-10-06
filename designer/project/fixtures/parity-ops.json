@@ -1,0 +1,248 @@
+{
+  "_comment": [
+    "SYNTHETIC. One op script run by designer/project/tools/parity_runner.py and parity-runner.mjs",
+    "with an injected counter clock and id generator; .groundwork/project.json and workspace.json",
+    "must come out byte-identical. A value \"$N.key\" is replaced by key of op N's result."
+  ],
+  "clock": {
+    "start": "2026-10-06T12:00:00.000Z",
+    "stepMs": 1000
+  },
+  "setup": {
+    "mtimeNs": 1790000000000000000,
+    "files": {
+      ".designdoc/.groundwork-workspace/workspace.json": "{\"version\":1,\"notes\":[{\"id\":\"n-legacy\",\"text\":\"Legacy note — keep the header\",\"review\":{\"layout\":\"single\"},\"status\":\"received\",\"createdAt\":\"2026-10-01T09:00:00.000Z\"},{\"id\":\"n-done\",\"text\":\"Already handled\",\"status\":\"processed\",\"createdAt\":\"2026-10-01T08:00:00.000Z\",\"processedAt\":\"2026-10-01T10:00:00.000Z\"}],\"alternatives\":[{\"id\":\"alt-1\",\"mockup\":\"a.html\",\"rationale\":\"First\",\"createdAt\":\"2026-10-01T00:00:00.000Z\"},{\"id\":\"alt-2\",\"mockup\":\"b.html\",\"rationale\":null,\"createdAt\":\"2026-10-01T00:00:01.000Z\"}],\"selectedId\":\"alt-1\",\"sources\":[],\"review\":{\"suggestions\":false,\"optionCount\":\"4\",\"layout\":\"single\"}}",
+      ".designdoc/spec.json": "{\"spec\": \"synthetic ✓\"}\n",
+      ".designdoc/mockups/.canvas/feedback.jsonl": "{\"ts\": \"2026-10-01T11:00:00.000Z\", \"id\": \"c1\", \"kind\": \"comment\", \"text\": \"Bigger hero ✨\", \"component\": \"hero\"}\n{\"ts\": \"2026-10-01T11:00:01.000Z\", \"id\": \"c2\", \"kind\": \"toggle\"}\nnot json\n{\"ts\": \"2026-10-01T11:00:02.000Z\", \"id\": \"c3\", \"kind\": \"decide\", \"dim\": \"density\", \"value\": \"b\"}\n{\"ts\": \"2026-10-01T11:00:03.000Z\", \"id\": \"c4\", \"kind\": \"decide\", \"dim\": \"tone\"}\n{\"ts\": \"2026-10-01T11:00:04.000Z\", \"id\": \"c5\", \"kind\": \"lock\", \"component\": \"\"}\n{\"id\": \"x\"}\n\n",
+      ".designdoc/mockups/.canvas/cursor.json": "{\"last_id\": \"c1\"}\n",
+      ".designdoc/mockups/.canvas/index.html": "<!doctype html><title>canvas</title>\n"
+    },
+    "copies": {
+      ".designdoc/legacy-board/decisions.json": "designer/decisions/fixtures/compare-demo/decisions.json"
+    }
+  },
+  "ops": [
+    {
+      "op": "init"
+    },
+    {
+      "op": "readWorkspace"
+    },
+    {
+      "op": "upsertDraft",
+      "id": "fb_cafe",
+      "section": "decisions",
+      "text": "  Café — naïve façade ✓  ",
+      "target": "decisions:demo#home-intro",
+      "origin": {
+        "kind": "person"
+      }
+    },
+    {
+      "op": "upsertDraft",
+      "id": "fb_emoji",
+      "section": "saved-work",
+      "text": "Ship it 🚀👩🏽‍💻 now"
+    },
+    {
+      "op": "upsertDraft",
+      "id": "fb_cjk",
+      "section": "general",
+      "text": "日本語のフィードバック　"
+    },
+    {
+      "op": "upsertDraft",
+      "id": "fb_cafe",
+      "section": "decisions",
+      "text": "Café — naïve façade ✓",
+      "target": "decisions:demo#home-intro",
+      "origin": {
+        "kind": "person"
+      }
+    },
+    {
+      "op": "upsertDraft",
+      "section": "general",
+      "text": "throwaway"
+    },
+    {
+      "op": "deleteDraft",
+      "id": "$6.id"
+    },
+    {
+      "op": "submitFeedback",
+      "id": "fb_cafe"
+    },
+    {
+      "op": "submitFeedback",
+      "id": "fb_emoji"
+    },
+    {
+      "op": "submitFeedback",
+      "id": "fb_cafe",
+      "text": "different"
+    },
+    {
+      "op": "addFeedback",
+      "section": "spec",
+      "text": "Agent: tighten spacing",
+      "origin": {
+        "kind": "agent",
+        "ref": "run-1"
+      }
+    },
+    {
+      "op": "addFeedback",
+      "section": "memory",
+      "text": "Remember: no gradients",
+      "submit": false,
+      "id": "fb_mem"
+    },
+    {
+      "op": "acknowledge",
+      "ids": [
+        "fb_cafe",
+        "fb_emoji",
+        "n-legacy",
+        "fb_cjk",
+        "canvas:c1",
+        "fb_missing",
+        "fb_cafe"
+      ]
+    },
+    {
+      "op": "addPreference",
+      "text": "Prefer compact density"
+    },
+    {
+      "op": "addPreference",
+      "text": "Prefer roomy density",
+      "scope": "decisions",
+      "provenance": {
+        "source": "decision",
+        "ref": "decisions:demo#density"
+      },
+      "supersedes": "$14.id"
+    },
+    {
+      "op": "addPreference",
+      "text": "again",
+      "supersedes": "$14.id"
+    },
+    {
+      "op": "appendAlternative",
+      "alternative": {
+        "id": "alt-3",
+        "mockup": "c.html",
+        "rationale": "Third — ✓",
+        "createdAt": "2026-10-01T00:00:02.000Z"
+      }
+    },
+    {
+      "op": "selectDesign",
+      "id": "alt-2"
+    },
+    {
+      "op": "selectDesign",
+      "id": "nope"
+    },
+    {
+      "op": "recordArtifact",
+      "kind": "spec",
+      "path": ".designdoc/spec.json"
+    },
+    {
+      "op": "recordArtifact",
+      "kind": "canvas",
+      "path": ".designdoc/mockups/.canvas"
+    },
+    {
+      "op": "recordArtifact",
+      "kind": "spec",
+      "path": "./.designdoc/spec.json"
+    },
+    {
+      "op": "recordMigration",
+      "entry": {
+        "id": "pointer:spec",
+        "kind": "pointer",
+        "source": ".designdoc/spec.json",
+        "dest": null,
+        "sourceSha256": "abc",
+        "destSha256": null,
+        "status": "migrated",
+        "note": null
+      }
+    },
+    {
+      "op": "recordMigration",
+      "entry": {
+        "id": "pointer:spec",
+        "kind": "pointer",
+        "source": ".designdoc/spec.json",
+        "dest": null,
+        "sourceSha256": "abc",
+        "destSha256": null,
+        "status": "migrated",
+        "note": null
+      }
+    },
+    {
+      "op": "recordMigration",
+      "entry": {
+        "id": "decisions:legacy-board",
+        "kind": "decision-board",
+        "source": ".designdoc/legacy-board",
+        "dest": ".groundwork/decisions/legacy-board",
+        "sourceSha256": "s1",
+        "destSha256": "d1",
+        "status": "conflict",
+        "note": "items differ: home-intro"
+      }
+    },
+    {
+      "op": "recordMigration",
+      "entry": {
+        "id": "decisions:broken",
+        "kind": "decision-board",
+        "source": ".designdoc/broken",
+        "dest": null,
+        "status": "error",
+        "note": null
+      }
+    },
+    {
+      "op": "writeBoard",
+      "slug": "compare-demo",
+      "file": "designer/decisions/fixtures/compare-demo/decisions.json"
+    },
+    {
+      "op": "writeBoard",
+      "slug": "edge",
+      "file": "designer/project/fixtures/decision-edge.json"
+    },
+    {
+      "op": "writeBoard",
+      "slug": "edge",
+      "file": "designer/project/fixtures/decision-edge.json"
+    },
+    {
+      "op": "listFeedback"
+    },
+    {
+      "op": "listFeedback",
+      "section": "saved-work",
+      "status": "processed"
+    },
+    {
+      "op": "listPreferences",
+      "includeSuperseded": true
+    },
+    {
+      "op": "snapshot"
+    },
+    {
+      "op": "agentContract"
+    }
+  ]
+}

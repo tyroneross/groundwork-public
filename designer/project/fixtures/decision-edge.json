@@ -1,0 +1,161 @@
+{
+  "schema": "groundwork.decision-set/v1",
+  "id": "decision-edge",
+  "product": "SYNTHETIC parity fixture",
+  "_comment": [
+    "SYNTHETIC. Truthiness edge cases for decisionSummary/decision_summary parity.",
+    "Expected lanes follow decision_record.Ruleable.lane: Python-truthy `addressed`, else _truthy(chosen)."
+  ],
+  "axes": [
+    {
+      "id": "ax-addr-true",
+      "title": "Addressed true",
+      "addressed": true
+    },
+    {
+      "id": "ax-addr-false",
+      "title": "Addressed false",
+      "addressed": false
+    },
+    {
+      "id": "ax-addr-zero",
+      "title": "Addressed 0",
+      "addressed": 0
+    },
+    {
+      "id": "ax-addr-empty-str",
+      "title": "Addressed empty string",
+      "addressed": ""
+    },
+    {
+      "id": "ax-addr-empty-list",
+      "title": "Addressed []",
+      "addressed": []
+    },
+    {
+      "id": "ax-addr-empty-obj",
+      "title": "Addressed {}",
+      "addressed": {}
+    },
+    {
+      "id": "ax-addr-str",
+      "title": "Addressed 'no' (non-empty string is truthy)",
+      "addressed": "no"
+    },
+    {
+      "id": "ax-sel-false",
+      "title": "Selected false",
+      "selected": false,
+      "note": "a real no"
+    },
+    {
+      "id": "ax-sel-zero",
+      "title": "Selected 0",
+      "selected": 0,
+      "ruledAt": "2026-10-01T00:00:00.000Z"
+    },
+    {
+      "id": "ax-sel-blank",
+      "title": "Selected blank",
+      "selected": "",
+      "note": ""
+    },
+    {
+      "id": "ax-sel-ws",
+      "title": "Selected whitespace",
+      "selected": " \t　 "
+    },
+    {
+      "id": "ax-sel-list",
+      "title": "Selected list",
+      "selected": [
+        "a"
+      ]
+    },
+    {
+      "id": "ax-sel-empty-obj",
+      "title": "Selected {}",
+      "selected": {}
+    },
+    {
+      "id": "ax-no-title",
+      "selected": "a"
+    },
+    {
+      "title": "No id, ruled",
+      "selected": "b"
+    },
+    {
+      "title": "",
+      "note": "empty title, no id"
+    },
+    "not-an-object",
+    {
+      "id": "ax-null",
+      "title": null,
+      "selected": null,
+      "note": null,
+      "ruledAt": null
+    }
+  ],
+  "openItems": [
+    {
+      "id": "oi-ruling-false",
+      "question": "Ruling false?",
+      "ruling": false
+    },
+    {
+      "id": "oi-ruling-zero",
+      "question": "Ruling 0?",
+      "ruling": 0,
+      "rulingText": "zero"
+    },
+    {
+      "id": "oi-ruling-blank",
+      "question": "Ruling blank?",
+      "ruling": ""
+    },
+    {
+      "id": "oi-ruling-x",
+      "question": "Café ✓ ruled 🚀",
+      "ruling": "x",
+      "rulingText": "naïve note"
+    },
+    {
+      "id": "oi-addr-zero-ruled",
+      "question": "addressed 0 but ruled",
+      "addressed": 0,
+      "ruling": "y"
+    },
+    {
+      "id": "oi-open",
+      "question": "Still open"
+    }
+  ],
+  "compares": [
+    {
+      "id": "cmp-approve",
+      "question": "Approve B?",
+      "ruling": "approve-b",
+      "rulingText": "ok",
+      "ruledAt": "2026-10-02T00:00:00.000Z"
+    },
+    {
+      "id": "cmp-blank",
+      "question": "Blank ruling",
+      "ruling": "  ",
+      "rulingText": "note alone is not an answer"
+    },
+    {
+      "id": "cmp-addressed-list",
+      "question": "addressed [1]",
+      "addressed": [
+        1
+      ]
+    },
+    {
+      "id": "cmp-open",
+      "question": "Open compare"
+    }
+  ]
+}
