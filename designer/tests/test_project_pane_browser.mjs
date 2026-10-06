@@ -61,8 +61,10 @@ async function connectCdp(webSocketUrl) {
   });
   let sequence = 0;
   const pending = new Map();
+  const listeners = new Map();
   socket.addEventListener('message', (event) => {
     const message = JSON.parse(String(event.data));
+    if (message.method && listeners.has(message.method)) for (const fn of listeners.get(message.method)) fn(message.params);
     if (!message.id || !pending.has(message.id)) return;
     const callbacks = pending.get(message.id);
     pending.delete(message.id);
@@ -77,6 +79,8 @@ async function connectCdp(webSocketUrl) {
         socket.send(JSON.stringify({ id, method, params }));
       });
     },
+    on(method, fn) { if (!listeners.has(method)) listeners.set(method, []); listeners.get(method).push(fn); },
+    off(method) { listeners.delete(method); },
     close() { socket.close(); },
   };
 }
@@ -347,3 +351,57 @@ for (const vp of VIEWPORTS) {
     }
   });
 }
+
+
+test('composer and preference form keep what the person typed (review regressions)', async () => {
+  const repo = makeRepo();
+  const srv = await startServer(repo);
+  try {
+    const base = srv.url;
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+    await goto(`${base}/#decisions`);
+
+    // 1. An older draft save that lands last must not put old text back.
+    await cdp.send('Fetch.enable', { patterns: [{ urlPattern: '*/api/feedback/fb_*', requestStage: 'Request' }] });
+    const held = [];
+    cdp.on('Fetch.requestPaused', (p) => {
+      if (p.request.method === 'PUT' && held.length === 0) { held.push(p.requestId); return; }
+      cdp.send('Fetch.continueRequest', { requestId: p.requestId });
+    });
+    await typeInto('#composer-text', 'first words');
+    await waitUntil(() => held.length === 1, 'first draft save never started', 60);
+    await typeInto('#composer-text', ' and the newer ending');
+    await new Promise((r) => setTimeout(r, 900));
+    await cdp.send('Fetch.continueRequest', { requestId: held[0] });
+    const want = 'first words and the newer ending';
+    await waitUntil(async () => {
+      const items = (await (await fetch(`${base}/api/feedback?status=draft`)).json()).items;
+      return items.length === 1 && items[0].text === want;
+    }, 'the store did not end with the newest draft text', 120);
+    await new Promise((r) => setTimeout(r, 400));
+    const items = (await (await fetch(`${base}/api/feedback?status=draft`)).json()).items;
+    assert.equal(items[0].text, want, 'an older request overwrote newer text');
+    await cdp.send('Fetch.disable'); cdp.off('Fetch.requestPaused');
+
+    // 2. Done, then a new comment in another section before the submit returns.
+    await waitUntil(() => evaluate(cdp, `${$('#composer-line')}.textContent.startsWith('Draft saved')`), 'draft not saved before Done', 60);
+    await click('#composer-done');
+    await evaluate(cdp, `location.hash = '#canvas'`);
+    await typeInto('#composer-text', 'canvas comment typed meanwhile');
+    await new Promise((r) => setTimeout(r, 1500));
+    assert.equal(await evaluate(cdp, `${$('#composer-text')}.value`), 'canvas comment typed meanwhile', 'a finished submit erased the new comment');
+    const sent = (await (await fetch(`${base}/api/feedback?status=submitted`)).json()).items;
+    assert.ok(sent.some((f) => f.text === want && f.section === 'decisions'));
+
+    // 3. A poll must not wipe a preference being written once focus leaves the textarea.
+    await evaluate(cdp, `location.hash = '#memory'`);
+    await waitUntil(() => evaluate(cdp, `!!${$('#pref-text')}`), 'memory form missing');
+    await typeInto('#pref-text', 'Keep navigation on the left');
+    await evaluate(cdp, `${$('#pref-scope')}.focus()`);
+    await new Promise((r) => setTimeout(r, 5000));
+    assert.equal(await evaluate(cdp, `${$('#pref-text')}.value`), 'Keep navigation on the left', 'a poll wiped the preference text');
+  } finally {
+    await terminate(srv.child);
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
+});

@@ -38,8 +38,8 @@
     (window.crypto || window.msCrypto).getRandomValues(a);
     return "fb_" + Array.prototype.map.call(a, function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
   }
-  function api(method, path, body) {
-    var init = { method: method, cache: "no-store", headers: {} };
+  function api(method, path, body, keepalive) {
+    var init = { method: method, cache: "no-store", headers: {}, keepalive: !!keepalive };
     if (body !== undefined) { init.headers["Content-Type"] = "application/json"; init.body = JSON.stringify(body); }
     return fetch(path, init).then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (j) {
@@ -276,44 +276,68 @@
     else line("", null);
   }
 
-  function saveDraft() {
+  /* Saves for one draft run strictly in order, and each step sends the text as
+     it is when the step runs, so an older request can never land after a newer
+     one and put old text back in the store. A draft emptied by the person is
+     deleted rather than left to come back on reload. */
+  function saveDraft(opts) {
     clearTimeout(draft.timer); draft.timer = null;
-    var text = $("composer-text").value;
-    if (!text.trim() || text === draft.saved) return Promise.resolve();
-    if (!draft.id) draft.id = newId();
     var mine = draft;
+    mine.text = $("composer-text").value;
+    if (mine.text === mine.saved && !mine.inFlight) return Promise.resolve();
+    if (!mine.text.trim() && !mine.id) return Promise.resolve();
+    if (!mine.id) mine.id = newId();
+    var keepalive = !!(opts && opts.keepalive);
     line("Saving…", null);
-    mine.inFlight = api("PUT", "/api/feedback/" + encodeURIComponent(mine.id), { section: mine.section, text: text, target: null })
-      .then(function (r) {
-        mine.saved = text;
-        if (mine === draft) line("Draft saved " + hhmm(r.savedAt || (r.item && r.item.updatedAt)) + " — not sent yet", "draft");
-      })
-      .catch(function () {
-        if (mine === draft) { line("Not saved — retrying", "error"); draft.timer = setTimeout(saveDraft, RETRY_MS); }
-      })
-      .then(function () { mine.inFlight = null; });
-    return mine.inFlight;
+    var step = (mine.inFlight || Promise.resolve()).then(function () {
+      var text = mine.text;
+      if (text === mine.saved) return null;
+      var url = "/api/feedback/" + encodeURIComponent(mine.id);
+      var req = text.trim()
+        ? api("PUT", url, { section: mine.section, text: text, target: null }, keepalive)
+        : (mine.saved === null ? Promise.resolve({}) : api("DELETE", url, {}, keepalive));
+      return req.then(function (r) {
+        mine.saved = text.trim() ? text : null;
+        if (mine !== draft || $("composer-text").value !== text) return;
+        if (text.trim()) line("Draft saved " + hhmm(r.savedAt || (r.item && r.item.updatedAt)) + " — not sent yet", "draft");
+        else line("", null);
+      });
+    });
+    mine.inFlight = step.catch(function () {
+      if (mine === draft) { line("Not saved — retrying", "error"); draft.timer = setTimeout(saveDraft, RETRY_MS); }
+    }).then(function () { if (mine.inFlight === tail) mine.inFlight = null; });
+    var tail = mine.inFlight;
+    return tail;
   }
 
-  function flushDraft() { if (draft.timer || ($("composer-text").value !== draft.saved && $("composer-text").value.trim())) saveDraft(); }
+  function flushDraft(opts) {
+    var v = $("composer-text").value;
+    if (draft.timer || v !== (draft.saved === null ? "" : draft.saved)) saveDraft(opts);
+  }
 
   function done() {
     var text = $("composer-text").value;
     if (!text.trim()) return;
+    var mine = draft;
     $("composer-done").disabled = true;
-    var wait = draft.inFlight || Promise.resolve();
-    wait.then(function () { return text === draft.saved ? null : saveDraft(); }).then(function () {
-      if (draft.saved !== text) throw new Error("draft not saved");
-      return api("POST", "/api/feedback/" + encodeURIComponent(draft.id) + "/submit", { text: text });
+    saveDraft().then(function () {
+      if (mine.saved !== text) throw new Error("draft not saved");
+      return api("POST", "/api/feedback/" + encodeURIComponent(mine.id) + "/submit", { text: text });
     }).then(function (r) {
       var at = r.item && r.item.submittedAt;
-      draft = { id: null, section: section, text: "", saved: null, timer: null, inFlight: null };
-      $("composer-text").value = "";
-      line("Sent " + hhmm(at) + " — every section, the CLI and agents can read it", "sent");
+      /* Clear the box only if the person is still on this draft; a comment
+         started meanwhile in another section must not be erased. */
+      if (draft === mine) {
+        draft = { id: null, section: section, text: "", saved: null, timer: null, inFlight: null };
+        $("composer-text").value = "";
+        line("Sent " + hhmm(at) + " — every section, the CLI and agents can read it", "sent");
+      }
       return load();
     }).catch(function (e) {
-      $("composer-done").disabled = false;
-      line("Not sent: " + e.message, "error");
+      if (draft === mine) {
+        $("composer-done").disabled = false;
+        line("Not sent: " + e.message, "error");
+      }
     });
   }
 
@@ -365,11 +389,20 @@
     clearTimeout(draft.timer);
     draft.timer = setTimeout(saveDraft, DRAFT_DEBOUNCE_MS);
   });
-  window.addEventListener("pagehide", flushDraft);
+  /* keepalive lets the last draft save finish after the page is gone. */
+  window.addEventListener("pagehide", function () { flushDraft({ keepalive: true }); });
   window.addEventListener("hashchange", function () { setSection(location.hash.slice(1)); });
 
+  /* A poll re-renders the section; never while a preference is being written
+     (focus anywhere in the form, typed text, or a replacement in progress). */
+  function prefFormInUse() {
+    var f = $("pref-form");
+    if (!f) return false;
+    return f.contains(document.activeElement) || !!$("pref-text").value.trim() || !!$("pref-supersedes").value;
+  }
+
   setInterval(function () {
-    if (document.visibilityState === "visible" && !document.querySelector("#pref-form textarea:focus")) load();
+    if (document.visibilityState === "visible" && !prefFormInUse()) load();
   }, POLL_MS);
 
   load().then(function () {

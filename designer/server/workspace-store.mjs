@@ -47,8 +47,10 @@ export function workspaceStore(target) {
     configureReview(review) {
       return change(v => { v.review = normalizeReview(review); return v.review; });
     },
+    // Through the project store, so a note the pane mirrored into saved work
+    // (same id in project.json) reads as processed everywhere, not only here.
     acknowledge(ids) {
-      return change(v => { for (const note of v.notes) if (ids.includes(note.id)) { note.status = 'processed'; note.processedAt = new Date().toISOString(); } });
+      store.acknowledge(ids);
     },
     addAlternative(mockup, rationale = '') {
       if (!mockup || typeof mockup.html !== 'string' || Buffer.byteLength(JSON.stringify(mockup)) > 256000) throw new Error('Design must contain HTML and fit within 256 KB');

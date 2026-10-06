@@ -102,3 +102,16 @@ test('workspace bounds agent context and rejects oversize designs without losing
  assert.throws(()=>store.addAlternative({html:'x'.repeat(256001)}),/256 KB/);
  assert.equal(store.read().notes.length,9); assert.equal(store.read().alternatives.length,0);
 });
+
+test('Designer acknowledging a note the pane sent from Saved work marks it processed in the project too', async t => {
+ const { projectStore } = await import('../project/project-store.mjs');
+ const repo=temp(t); const project=projectStore(repo);
+ project.upsertDraft({ id:'fb_savedwork1', section:'saved-work', text:'Use the left layout' });
+ project.submitFeedback('fb_savedwork1');
+ const ws=workspaceStore(repo);
+ assert.deepEqual(ws.read().notes.map(n=>[n.id,n.status]),[['fb_savedwork1','received']],'the pane note reaches Designer');
+ ws.acknowledge(['fb_savedwork1']);
+ assert.equal(ws.read().notes[0].status,'processed');
+ const item=projectStore(repo).listFeedback({}).find(f=>f.id==='fb_savedwork1');
+ assert.equal(item.status,'processed','the project view and agent contract no longer list it as pending');
+});
