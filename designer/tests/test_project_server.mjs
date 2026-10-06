@@ -495,3 +495,20 @@ test('POST /api/snapshot spawns the snapshot CLI and returns its path', async (t
   const f = await s2.call('POST', '/api/snapshot', {});
   assert.equal(f.status, 500); assert.equal(typeof f.json.error, 'string');
 });
+
+test('DNS rebinding: a request whose Host is not this loopback server is refused (security SEC-002)', async (t) => {
+  const repo = tempRepo(t);
+  const s = await start(t, repo);
+  const get = (host) => new Promise((resolve, reject) => {
+    const req = http.request({ host: '127.0.0.1', port: s.port, path: '/api/project', method: 'GET', headers: { Host: host } }, (res) => {
+      let body = ''; res.on('data', (b) => { body += b; }); res.on('end', () => resolve({ status: res.statusCode, body, nosniff: res.headers['x-content-type-options'] }));
+    });
+    req.on('error', reject); req.end();
+  });
+  const evil = await get(`rebind.attacker.example:${s.port}`);
+  assert.equal(evil.status, 421);
+  assert.doesNotMatch(evil.body, /"feedback"/);
+  assert.equal(evil.nosniff, 'nosniff');
+  assert.equal((await get(`localhost:${s.port}`)).status, 200);
+  assert.equal((await get(`127.0.0.1:${s.port}`)).status, 200);
+});

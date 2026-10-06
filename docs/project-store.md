@@ -71,7 +71,15 @@ output, checked by `designer/tests/test_project_parity.py`. Every write to any
 file under `.groundwork/` takes `.groundwork/write.lock`, writes a temp file in
 the same directory and renames it into place. A writer waits up to two seconds
 for the lock; a lock left by a dead process on this machine is removed and
-reported, and any other held lock fails with an error naming its holder.
+reported (renamed aside and re-checked, so two waiters cannot both break it),
+any other held lock fails with an error naming its holder, and a writer only
+ever removes its own lock.
+
+The server answers only requests addressed to `localhost:<port>` or
+`127.0.0.1:<port>` (a DNS-rebinding page gets 421), and every write must come
+from the pane's own origin with a JSON body. The optional `--proxy` preview is
+served on the pane's origin so the board can overlay choices on it; only proxy
+a dev build you trust.
 
 ## Migration from the older locations
 
@@ -86,8 +94,9 @@ never the copied app files) and Designer saved work from
 `.designdoc/.groundwork-workspace/` or `.groundwork-workspace/`, and records
 `.designer-state.json`, the Spec files and canvas folders as pointers. It never
 writes, moves or deletes an original. Each source is tracked by content hash in
-`project.json` `migrations[]`: `migrated`, `unchanged`, `recopied` (the original
-changed while the store copy did not, as when an old board server is still
-open) or `conflict` (both changed; nothing is written, the pane names the
-diverging items). `--verify` re-reads every migrated board and exits 1 if any
+`project.json` `migrations[]`: `migrated`, `unchanged`, `recopied` (the original changed while the store still held an unedited byte
+copy of it, as when an old board server is still open) or `conflict` (anything
+else that changed on both sides, including any edit first made in the store;
+nothing is written, and the entry names the diverging items). A store edit is
+never overwritten by a migration. `--verify` re-reads every migrated board and exits 1 if any
 ruling, note or time differs from its source.

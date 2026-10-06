@@ -123,13 +123,17 @@
   }
 
   function boardTitle(b) { return b.title || b.slug; }
+  /* The board's four compare answers, in the words the board shows. Axis and
+     open-item choices are free-form keys and are shown as recorded. */
+  var RULING_LABELS = { "keep-a": "Keep A", "approve-b": "Approve B", "revise-b": "Revise B", other: "Neither" };
+  function rulingLabel(r) { return RULING_LABELS[r] || String(r); }
 
   function renderDecisions(boards) {
     if (openBoard) {
       var b = boards.filter(function (x) { return x.slug === openBoard; })[0];
       if (b) {
         return '<div class="board-bar"><button type="button" class="btn-secondary" data-action="close-board">All boards</button>' +
-          '<span class="meta" data-live-info>' + esc(boardTitle(b)) + " · " + b.open + " open · " + b.ruled + " ruled</span></div>" +
+          '<span class="meta" data-live-info>' + esc(boardTitle(b)) + " · " + esc(b.open) + " open · " + esc(b.ruled) + " ruled</span></div>" +
           '<iframe class="frame frame-board" data-key="board:' + esc(b.slug) + '" title="Decision board ' + esc(boardTitle(b)) +
           '" src="/decisions/' + encodeURIComponent(b.slug) + '/"></iframe>';
       }
@@ -145,7 +149,7 @@
       if (b.conflict) note += '<p class="warn">Two copies differ: ' + esc(typeof b.conflict === "string" ? b.conflict : JSON.stringify(b.conflict)) + "</p>";
       if (!b.valid) note += '<p class="warn">This record has errors: ' + esc((b.errors || []).join("; ")) + "</p>";
       return '<li class="row"><div class="row-main"><div class="row-title">' + esc(boardTitle(b)) + '</div><div class="meta">' +
-        b.open + " open · " + b.ruled + " ruled</div>" + note + "</div>" +
+        esc(b.open) + " open · " + esc(b.ruled) + " ruled</div>" + note + "</div>" +
         '<button type="button" class="row-btn" data-action="open-board" data-slug="' + esc(b.slug) + '">Open board</button></li>';
     }).join("") + "</ul>";
     var ruled = [];
@@ -155,7 +159,7 @@
     ruled.sort(function (x, y) { return String(y.it.ruledAt || "").localeCompare(String(x.it.ruledAt || "")); });
     if (ruled.length) {
       out += '<h2 class="label">Latest answers</h2><ul class="group">' + ruled.slice(0, 8).map(function (r) {
-        return '<li><div class="row-title">' + esc(r.it.title) + '</div><div class="meta">' + esc(r.it.ruling) +
+        return '<li><div class="row-title">' + esc(r.it.title) + '</div><div class="meta">' + esc(rulingLabel(r.it.ruling)) +
           (r.it.ruledAt ? " · " + esc(hhmm(r.it.ruledAt)) : "") + " · " + esc(boardTitle(r.b)) + "</div>" +
           (r.it.note ? '<div class="note-text">' + esc(r.it.note) + "</div>" : "") + "</li>";
       }).join("") + "</ul>";
@@ -167,8 +171,8 @@
     if (!c.available) {
       return '<h2 class="label">Canvas</h2><p class="empty">No canvas found in .designdoc/mockups/ or mockups/. Start one with the canvas server; its page and notes appear here.</p>';
     }
-    var out = '<h2 class="label">Canvas</h2><p class="meta" data-live-info>' + esc(c.htmlFile || "") + " · " + (c.rows || 0) +
-      " canvas notes" + (c.invalidRows ? " · " + c.invalidRows + " unreadable lines skipped" : "") + "</p>";
+    var out = '<h2 class="label">Canvas</h2><p class="meta" data-live-info>' + esc(c.htmlFile || "") + " · " + esc(c.rows || 0) +
+      " canvas notes" + (c.invalidRows ? " · " + esc(c.invalidRows) + " unreadable lines skipped" : "") + "</p>";
     if (c.htmlFile) {
       out += '<iframe class="frame frame-canvas" data-key="canvas" sandbox="" title="Canvas preview" src="/canvas/file"></iframe>';
     } else {
@@ -195,7 +199,7 @@
     var arts = s.artifacts || [];
     if (!arts.length) return '<h2 class="label">Spec files</h2><p class="empty">No Spec files in .designdoc/ yet.</p>';
     return '<h2 class="label">Spec files</h2><ul class="group">' + arts.map(function (a) {
-      return '<li><div class="row-title mono">' + esc(a.path) + '</div><div class="meta">' + esc(a.kind) + " · " + a.bytes + " bytes" +
+      return '<li><div class="row-title mono">' + esc(a.path) + '</div><div class="meta">' + esc(a.kind) + " · " + esc(a.bytes) + " bytes" +
         (a.mtime ? " · changed " + esc(new Date(a.mtime).toLocaleString()) : "") + "</div></li>";
     }).join("") + "</ul>";
   }

@@ -203,7 +203,9 @@ export function makeServer(opts) {
   async function proxyTo(res, method, pathAndQuery) {
     const target = PROXY_ORIGIN.replace(/\/+$/, '') + pathAndQuery;
     try {
-      const upstream = await fetch(target, { method });
+      // Never follow a redirect: the proxied app must not be able to point the
+      // store's origin at another site.
+      const upstream = await fetch(target, { method, redirect: 'manual' });
       const headers = { 'Cache-Control': 'no-store' };
       const ct = upstream.headers.get('content-type');
       if (ct) headers['Content-Type'] = ct;
@@ -396,10 +398,22 @@ export function makeServer(opts) {
     const mutating = req.method !== 'GET' && req.method !== 'HEAD';
     let url;
     try { url = new URL(req.url, 'http://localhost'); } catch { url = new URL('http://localhost/'); }
+    // Every response: no MIME sniffing.
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     try {
+      // DNS rebinding guard: a hostile page that rebinds its own hostname to
+      // 127.0.0.1 is same-origin to the browser, so GETs would carry no Origin.
+      // Only the two loopback names this server prints are answered.
+      const host = String(req.headers.host || '').toLowerCase();
+      const port = boundPort();
+      if (host !== `localhost:${port}` && host !== `127.0.0.1:${port}`) {
+        throw new HttpError(421, `unexpected Host ${JSON.stringify(req.headers.host || '')}; use http://localhost:${port}/`);
+      }
       await route(req, res, url);
     } catch (err) {
       let status = 500; let code = null; let message = String((err && err.message) || err);
+      // Client-facing messages name paths relative to the repo.
+      message = message.split(R + path.sep).join('').split(R).join('<repo>');
       if (err instanceof HttpError) { status = err.status; code = err.code; } else if (err instanceof StoreError) {
         code = err.code; status = STATUS_BY_CODE[err.code] || 500;
       }

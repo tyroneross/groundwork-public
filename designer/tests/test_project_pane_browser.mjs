@@ -318,7 +318,7 @@ for (const vp of VIEWPORTS) {
     });
     assert.equal(put.status, 200);
     await bodyHas('Latest answers', 'ruling never reached Latest answers after a poll', 160);
-    assert.match(await text('#section-body'), /approve-b/);
+    assert.match(await text("#section-body"), /Approve B/);
 
     // ---- Use this design changes the selection --------------------------------
     await openSection(base, 'saved-work');
