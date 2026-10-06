@@ -317,3 +317,52 @@ def test_ruling_diff_counts_one_sided_ids():
     b = json.dumps({"compares": [{"id": "x", "ruling": "keep-a"}, {"id": "z"}]}).encode()
     assert ruling_diff(a, b) == ["y", "z"]
     assert ruling_diff(a, b"{") is None
+
+
+def test_a_store_edit_is_never_overwritten_by_a_later_legacy_edit(tmp_path):
+    """Audit f1: a pane ruling (store edit) followed by an old server editing the
+    legacy board must end in conflict, never in a recopy that erases the ruling."""
+    import shutil as _sh
+    from designer.project.migrate import migrate as _migrate
+    from designer.project.project_store import ProjectStore as _PS
+    root = Path(__file__).resolve().parents[2]
+    legacy = tmp_path / ".designdoc" / "demo"
+    _sh.copytree(root / "designer" / "decisions" / "fixtures" / "compare-demo", legacy)
+    assert {e["status"] for e in _migrate(tmp_path)["entries"] if e["id"] == "decisions:demo"} == {"migrated"}
+    store = _PS(tmp_path)
+    rec = json.loads(store.read_board("demo"))
+    rec["compares"][0]["ruling"] = "approve-b"
+    pane_bytes = (json.dumps(rec, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
+    with store.lock():
+        store.write_board("demo", pane_bytes)
+    # A restart runs migrate again while legacy is untouched.
+    assert [e["status"] for e in _migrate(tmp_path)["entries"] if e["id"] == "decisions:demo"] == ["unchanged"]
+    old = json.loads((legacy / "decisions.json").read_text(encoding="utf-8"))
+    old["compares"][1]["ruling"] = "keep-a"
+    (legacy / "decisions.json").write_text(json.dumps(old, indent=2) + "\n", encoding="utf-8")
+    entry = next(e for e in _migrate(tmp_path)["entries"] if e["id"] == "decisions:demo")
+    assert entry["status"] == "conflict"
+    assert store.read_board("demo") == pane_bytes, "the pane ruling must survive"
+
+
+def test_a_workspace_first_written_through_the_store_is_not_recopied(tmp_path):
+    """Audit f1 workspace path: legacy note n0, store edit adds n1, the legacy
+    file then gains n2; migrate must not replace the store copy."""
+    from designer.project.migrate import migrate as _migrate
+    from designer.project.project_store import ProjectStore as _PS
+    wsdir = tmp_path / ".groundwork-workspace"
+    wsdir.mkdir()
+    base = {"version": 1, "notes": [{"id": "n0", "text": "legacy0", "status": "received",
+                                      "createdAt": "2026-01-01T00:00:00.000Z"}],
+            "alternatives": [], "selectedId": None, "sources": []}
+    (wsdir / "workspace.json").write_text(json.dumps(base, indent=2), encoding="utf-8")
+    store = _PS(tmp_path)
+    store.change_workspace(lambda v: v["notes"].append(
+        {"id": "n1", "text": "PANE CHANGE", "status": "received", "createdAt": "2026-01-02T00:00:00.000Z"}))
+    base["notes"].append({"id": "n2", "text": "old server", "status": "received",
+                          "createdAt": "2026-01-03T00:00:00.000Z"})
+    (wsdir / "workspace.json").write_text(json.dumps(base, indent=2), encoding="utf-8")
+    entry = next(e for e in _migrate(tmp_path)["entries"] if e["kind"] == "workspace")
+    assert entry["status"] == "conflict"
+    ids = [n["id"] for n in store.read_workspace()[0]["notes"]]
+    assert "n1" in ids

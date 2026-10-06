@@ -152,9 +152,16 @@ def _lineage(id: str, kind: str, source: str, dest: str, s_bytes: bytes, d_bytes
             # The legacy copy went back to its baseline: the store is authoritative again.
             return "unchanged", _entry(id, kind, source, dest, base["sourceSha256"],
                                                base.get("destSha256"), "unchanged")
-        return "unchanged", _entry(id, kind, source, dest, s, d, "unchanged")
+        # Keep the baseline dest sha even when the store copy has since been
+        # edited (a ruling made in the pane): the lineage must remember that
+        # the store diverged, or a later legacy edit would look like a safe
+        # recopy and overwrite the person's store-only work.
+        return "unchanged", _entry(id, kind, source, dest, s, base.get("destSha256"), "unchanged")
     if base is not None:
-        if d == base.get("destSha256"):
+        # Recopy only when the store still holds a byte copy of the old
+        # baseline: base dest == base source (it was copied, not first written
+        # through the store) and the store has not changed since.
+        if d == base.get("destSha256") and base.get("destSha256") == base["sourceSha256"]:
             return "recopied", _entry(id, kind, source, dest, s, s, "recopied")
         note = f"legacy {source} and store {dest} both changed since the last migration; {diff_note()}"
         return "conflict", _entry(id, kind, source, dest, base["sourceSha256"], base.get("destSha256"),
