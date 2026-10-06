@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# groundwork project <verb> ... -- the shell door to a repo's Groundwork store.
+# Resolves the install from this script's own location; needs python3 (and node
+# for `serve`). See designer/project/cli.py for the verbs.
+set -euo pipefail
+src="${BASH_SOURCE[0]}"
+while [[ -L "$src" ]]; do
+  dir="$(cd "$(dirname "$src")" && pwd)"; src="$(readlink "$src")"; [[ "$src" != /* ]] && src="$dir/$src"
+done
+root="$(cd "$(dirname "$src")/.." && pwd)"
+if [[ "${1:-}" != "project" ]]; then
+  echo "usage: groundwork project <init|status|migrate|serve|read|feedback|ack|prefer|snapshot|export> [--repo DIR] ..." >&2
+  exit 2
+fi
+shift
+# The store resolves --repo against the caller's directory, so pass it through
+# as an absolute default when the caller omitted it.
+has_repo=0; for arg in "$@"; do [[ "$arg" == "--repo" || "$arg" == --repo=* ]] && has_repo=1; done
+if [[ $has_repo -eq 0 && $# -gt 0 ]]; then
+  verb="$1"; shift
+  if [[ "$verb" == "prefer" && $# -gt 0 ]]; then sub="$1"; shift; set -- "$verb" "$sub" --repo "$PWD" "$@"
+  else set -- "$verb" --repo "$PWD" "$@"; fi
+fi
+PYTHONPATH="$root${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m designer.project "$@"
